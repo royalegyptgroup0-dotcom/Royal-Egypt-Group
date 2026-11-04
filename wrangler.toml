@@ -1,0 +1,8 @@
+name = "royalegyptgroup"
+compatibility_date = "2026-11-04"
+pages_build_output_dir = "./"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "royal-eg-listings"
+database_id = "791dc48e3db344b909976a97e88dee3d"
