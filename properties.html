@@ -29,4 +29,60 @@ function setLang(l){lang=l;document.documentElement.lang=l;document.documentElem
 function cycleLang(){setLang(lang==="ar"?"en":lang==="en"?"ru":"ar")}
 function render(){const q=document.getElementById("q").value.trim().toLowerCase(),area=document.getElementById("area").value,kind=document.getElementById("kind").value;const data=listings.filter(p=>(area==="all"||p.area===area)&&(kind==="all"||p.kind===kind)&&[p.title[lang],p.location[lang],p.desc[lang]].join(" ").toLowerCase().includes(q));document.getElementById("count").textContent=data.length+" · "+dict[lang].count;document.getElementById("cards").innerHTML=data.length?data.map(p=>{const msg=encodeURIComponent((lang==="ar"?"أرغب في الاستفسار عن: ":lang==="ru"?"Меня интересует объект: ":"I am interested in: ")+p.title[lang]);return '<article class="card"><div class="visual" aria-hidden="true">'+(p.kind==="land"?"⌂":p.kind==="residential"?"⌂":"▦")+'</div><div class="body"><span class="tag">'+dict[lang][p.kind==="land"?"land":p.kind==="residential"?"residential":"commercial"]+'</span><h2>'+p.title[lang]+'</h2><div class="loc">⌖ '+p.location[lang]+'</div><div class="facts">'+p.facts[lang].map(x=>'<span>'+x+'</span>').join("")+'</div><p class="desc">'+p.desc[lang]+'</p><div class="actions"><a class="btn" target="_blank" rel="noopener" href="https://wa.me/201225020980?text='+msg+'">'+dict[lang].details+'</a><a class="btn alt" href="mailto:RoyalEgyptgroup0@gmail.com?subject='+encodeURIComponent(p.title[lang])+'">Email</a></div></div></article>'}).join(""):'<div class="empty">'+dict[lang].none+'</div>'}
 ["q","area","kind"].forEach(id=>document.getElementById(id).addEventListener(id==="q"?"input":"change",render));document.getElementById("reset").addEventListener("click",()=>{document.getElementById("q").value="";document.getElementById("area").value="all";document.getElementById("kind").value="all";render()});document.getElementById("year").textContent=new Date().getFullYear();setLang("ar");
-</script></body></html>
+</script>
+<style>
+#royalAdvisorLaunch{position:fixed;bottom:20px;inset-inline-end:20px;z-index:20;background:#c9a45c;color:#17130c;border:0;border-radius:999px;padding:14px 19px;font-weight:800;box-shadow:0 8px 30px #0009;cursor:pointer}
+#royalAdvisor{display:none;position:fixed;z-index:21;bottom:82px;inset-inline-end:20px;width:min(390px,calc(100vw - 28px));height:min(590px,calc(100vh - 115px));background:#171717;border:1px solid #c9a45c88;border-radius:14px;box-shadow:0 15px 55px #000b;overflow:hidden;flex-direction:column;color:#f7f4ed}
+#royalAdvisor.open{display:flex}.ra-head{padding:15px;background:#211d15;border-bottom:1px solid #806a3e;display:flex;justify-content:space-between;align-items:center}.ra-head strong{color:#e0bd78}.ra-head small{display:block;color:#bbb;font-size:11px}.ra-close{background:none;border:0;color:#f7f4ed;font-size:23px;cursor:pointer}.ra-messages{padding:14px;overflow:auto;flex:1;display:flex;flex-direction:column;gap:10px}.ra-msg{padding:10px 12px;border-radius:12px;max-width:90%;font-size:14px;white-space:pre-wrap;line-height:1.65}.ra-bot{background:#28251f;align-self:flex-start}.ra-user{background:#8f713b;color:white;align-self:flex-end}.ra-input{display:flex;gap:7px;padding:11px;border-top:1px solid #ffffff20}.ra-input input{min-width:0;flex:1;background:#101010;border:1px solid #806a3e;color:white;padding:11px;border-radius:7px;font:inherit}.ra-input button{background:#c9a45c;color:#17130c;border:0;border-radius:7px;padding:0 14px;font-weight:bold;cursor:pointer}.ra-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.ra-actions a,.ra-actions button{font-size:12px;padding:8px 10px;border-radius:6px;border:1px solid #c9a45c;color:#e0bd78;background:transparent;cursor:pointer}
+</style>
+<button id="royalAdvisorLaunch" type="button">✦ <span data-i="advisorLaunch">مساعد رويال الذكي</span></button>
+<section id="royalAdvisor" aria-label="Royal Egypt smart property advisor" aria-live="polite">
+ <div class="ra-head"><div><strong data-i="advisorTitle">مساعد رويال الذكي</strong><small data-i="advisorSub">يساعدك تفهم احتياجك وتقارن الفرص المنشورة</small></div><button class="ra-close" id="raClose" aria-label="Close">×</button></div>
+ <div class="ra-messages" id="raMessages"></div>
+ <form class="ra-input" id="raForm"><input id="raInput" autocomplete="off" placeholder="اكتب احتياجك هنا..." data-i-placeholder="advisorPlaceholder"><button type="submit" data-i="send">إرسال</button></form>
+</section>
+<script>
+(()=>{
+const panel=document.getElementById('royalAdvisor'),messages=document.getElementById('raMessages'),input=document.getElementById('raInput');
+const words={
+ar:{hello:'أهلاً بك في Royal Egypt. احكي لي باختصار: بتدور على عقار للسكن، المصيف، الاستثمار، ولا لنشاط تجاري؟',prompt:'اكتب احتياجك أو المنطقة أو الميزانية، وأنا هرتب لك الاختيارات.',unknown:'لم أجد تطابقاً مؤكداً في العروض المنشورة حالياً. أقدر أجهز لك طلب واضح لفريق المبيعات.',found:'الاختيارات الأقرب لطلبك من الكتالوج الحالي:',budget:'ملحوظة: لا توجد أسعار منشورة لهذه العروض، لذلك لا أستطيع تأكيد توافقها مع ميزانيتك قبل مراجعة فريق الشركة.',check:'قبل أي حجز أو دفع، راجع بنفسك مع الشركة والجهات المختصة:',checks:['إثبات الملكية وتسلسل المستندات وصحة بيانات البائع','الموقف القانوني والتراخيص وأي مخالفات أو نزاعات','المساحة الفعلية والحدود والمعاينة على الطبيعة','السعر النهائي والعمولات والضرائب ومواعيد السداد مكتوبة','موعد التسليم وحالة المرافق والصيانة وأي التزامات','تأكيد التوفر الحالي من الشركة قبل اتخاذ قرار'],wa:'إرسال ملخص الطلب على واتساب',restart:'ابدأ من جديد',noPrice:'السعر غير منشور',details:'التفاصيل المنشورة',more:'اكتب تفاصيل إضافية لأضيّق الاختيارات. مثال: الغردقة، أرض، استثمار، ميزانية محددة.'},
+en:{hello:'Welcome to Royal Egypt. What are you looking for: a home, holiday property, investment, or a business space?',prompt:'Tell me your needs, preferred area or budget and I will organize the listed options.',unknown:'I could not find a confirmed match in the current published listings. I can prepare a clear brief for our sales team.',found:'Closest matches in the current catalogue:',budget:'Note: prices are not published for these listings, so budget fit must be confirmed with our team.',check:'Before booking or paying, independently verify:',checks:['Ownership proof, title chain and seller identity','Legal status, permits, violations and disputes','Actual area, boundaries and an in-person inspection','Final price, fees, taxes and written payment schedule','Handover date, utilities, maintenance and obligations','Current availability with the company'],wa:'Send request summary on WhatsApp',restart:'Start over',noPrice:'Price not published',details:'Published details',more:'Add details to narrow the options. Example: Hurghada, land, investment, budget.'},
+ru:{hello:'Добро пожаловать в Royal Egypt. Что вы ищете: жильё, недвижимость для отдыха, инвестицию или коммерческое помещение?',prompt:'Опишите требования, район или бюджет — я помогу сравнить опубликованные варианты.',unknown:'В опубликованных предложениях пока нет подтверждённого совпадения. Я могу подготовить запрос для отдела продаж.',found:'Наиболее подходящие варианты из каталога:',budget:'Важно: цены не опубликованы. Соответствие бюджету нужно уточнить у нашей команды.',check:'Перед бронированием или оплатой самостоятельно проверьте:',checks:['Право собственности, историю документов и личность продавца','Юридический статус, разрешения, нарушения и споры','Фактическую площадь, границы и осмотр объекта','Итоговую цену, комиссии, налоги и график платежей','Срок передачи, коммуникации и обязательства','Актуальное наличие объекта у компании'],wa:'Отправить запрос в WhatsApp',restart:'Начать заново',noPrice:'Цена не опубликована',details:'Опубликованные данные',more:'Добавьте детали для уточнения. Например: Хургада, участок, инвестиция, бюджет.'}
+};
+let criteria={area:null,kind:null,goal:null,budget:null,notes:[]},started=false;
+function t(k){return words[lang]?.[k]||words.ar[k]||k}
+function add(text,who='bot'){const el=document.createElement('div');el.className='ra-msg '+(who==='user'?'ra-user':'ra-bot');el.textContent=text;messages.appendChild(el);messages.scrollTop=messages.scrollHeight;return el}
+function detect(s){
+ const x=s.toLowerCase();
+ if(/الغردقة|hurghada|хургада|ahyaa|الأحياء/.test(x))criteria.area='Hurghada';
+ if(/السخنة|العين السخنة|ain sokhna|sokhna|айн-сохна/.test(x))criteria.area='Ain Sokhna';
+ if(/السويس|suez|суэц/.test(x))criteria.area='Suez';
+ if(/أرض|اراضي|أراضي|land|участок/.test(x))criteria.kind='land';
+ if(/فيلا|شقة|سكن|مصيف|سكني|residential|villa|home|жиль|вилла|отдых/.test(x))criteria.kind='residential';
+ if(/إداري|اداري|تجاري|مكتب|جراج|commercial|office|business|коммерч|офис/.test(x))criteria.kind='commercial';
+ if(/استثمار|استثماري|investment|инвест/.test(x))criteria.goal='investment';
+ if(/سكن|معيشة|home|living|жиль/.test(x))criteria.goal='living';
+ if(/مصيف|إجازة|holiday|vacation|отдых/.test(x))criteria.goal='holiday';
+ const nums=s.match(/[\d,]+\s*(?:جنيه|ج|egp|usd|دولار|million|مليون|тыс|млн)?/i);if(nums)criteria.budget=nums[0];
+}
+function renderMatches(){
+ let found=listings.filter(p=>(!criteria.area||p.area===criteria.area)&&(!criteria.kind||p.kind===criteria.kind));
+ if(!found.length){add(t('unknown'));return}
+ add(t('found'));
+ found.forEach(p=>{const title=p.title[lang]||p.title.ar,loc=p.location[lang]||p.location.ar,desc=p.desc[lang]||p.desc.ar;add('• '+title+'\n'+loc+'\n'+desc+'\n'+t('noPrice'));});
+ add(t('budget'));
+ const checklist=t('checks').map((x,i)=>(i+1)+'. '+x).join('\n');add(t('check')+'\n'+checklist);
+ const summary='Royal Egypt property request\nArea: '+(criteria.area||'Not specified')+'\nType: '+(criteria.kind||'Not specified')+'\nPurpose: '+(criteria.goal||'Not specified')+'\nBudget: '+(criteria.budget||'Not specified')+'\nNotes: '+criteria.notes.join(' | ');
+ const box=document.createElement('div');box.className='ra-actions';
+ const a=document.createElement('a');a.textContent=t('wa');a.target='_blank';a.rel='noopener';a.href='https://wa.me/201225020980?text='+encodeURIComponent(summary);box.appendChild(a);
+ const b=document.createElement('button');b.textContent=t('restart');b.onclick=reset;box.appendChild(b);messages.appendChild(box);messages.scrollTop=messages.scrollHeight;
+}
+function reply(s){detect(s);criteria.notes.push(s);if(criteria.area||criteria.kind){renderMatches()}else{add(t('more'))}}
+function reset(){criteria={area:null,kind:null,goal:null,budget:null,notes:[]};messages.innerHTML='';add(t('hello'));add(t('prompt'))}
+document.getElementById('royalAdvisorLaunch').addEventListener('click',()=>{panel.classList.add('open');if(!started){reset();started=true}input.focus()});
+document.getElementById('raClose').addEventListener('click',()=>panel.classList.remove('open'));
+document.getElementById('raForm').addEventListener('submit',e=>{e.preventDefault();const s=input.value.trim();if(!s)return;add(s,'user');input.value='';reply(s)});
+window.addEventListener('royal-lang-change',()=>{if(started)reset()});
+})();
+</script>
+</body></html>
