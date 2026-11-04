@@ -1,16 +1,13 @@
-# Cloudflare listing uploads setup
+# Royal Egypt listings — free D1-only setup
 
-The public listing form is committed, but uploads remain disabled until the following free-tier resources are created and bound in Cloudflare Pages.
+The listing form stores text details in Cloudflare D1. No R2 bucket or payment card is required for this text-only version. Property photos are collected separately through the official Royal Egypt WhatsApp contact after the listing is submitted.
 
-1. Create a D1 database named `royal-eg-listings`.
-2. Run `migrations/0001_listings.sql` against that database.
-3. Create an R2 bucket named `royal-eg-property-images`.
-4. In Pages > royalegyptgroup > Settings > Functions, add bindings for Production (and Preview if desired):
-   - D1 binding variable: `DB` -> database `royal-eg-listings`
-   - R2 binding variable: `PROPERTY_IMAGES` -> bucket `royal-eg-property-images`
-5. Add an encrypted secret named `ADMIN_TOKEN` with a long random value. Do not commit the token.
-6. Redeploy Pages after adding bindings.
+1. Create the D1 database named `royal-eg-listings`.
+2. Run `migrations/0001_listings.sql` in its Console.
+3. In Cloudflare Pages > `royalegyptgroup` > Settings > Functions, add a D1 binding:
+   - Variable name: `DB`
+   - Database: `royal-eg-listings`
+4. Add an encrypted secret named `ADMIN_TOKEN` with a long random value. Keep it private; do not put it in website code or send it in chat.
+5. Redeploy the Pages project after adding the binding and secret.
 
-Public visitors can submit listings, but all new submissions are stored as `pending`. Only requests to `/api/admin/listings` with the ADMIN_TOKEN can review them. Never expose the token in browser code.
-
-R2 public access is not enabled by this setup. Before publishing approved listing images, add a controlled image-serving route that reads only keys referenced by approved rows. Do not enable public bucket listing.
+Submissions are stored as `pending`. Only an administrator who knows the secret can review, approve, or reject them at `/admin-listings.html`. Approved listings appear in the public catalogue. This version does not accept image uploads because the available storage option requested payment-card details. Do not enable paid services unless explicitly approved.
