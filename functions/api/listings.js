@@ -7,7 +7,7 @@ export async function onRequest({ request, env }) {
     const { results } = await env.DB.prepare(
       "SELECT id,title,property_type,location,area_sqm,price,purpose,description,images,created_at FROM listings WHERE status='approved' ORDER BY created_at DESC LIMIT 100"
     ).all();
-    return json({ listings: results || [] });
+    return json({ listings: (results || []).map(row => ({ ...row, images: JSON.parse(row.images || "[]").map(key => { const parts = key.split("/"); return "/api/listing-image/" + parts[1] + "/" + parts[2]; }) })) });
   }
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
   const data = await request.formData();
