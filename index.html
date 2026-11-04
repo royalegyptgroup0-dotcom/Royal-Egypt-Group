@@ -18,7 +18,7 @@
 <header class="site-header"><div class="wrap nav">
 <a class="brand" href="/" aria-label="Royal Egypt Group"><img src="/royal-logo.jpg" alt="Royal Egypt Group logo"><span class="brand-copy"><strong>ROYAL EGYPT</strong><small>مجموعة رويال إيجيبت</small></span></a>
 <nav class="nav-links"><a href="/" >الرئيسية</a><a href="/properties.html">العقارات</a><a href="/coffee.html">القهوة</a><a href="/transportation.html">النقل</a></nav>
-<div class="nav-actions"><a class="btn btn-small" href="#contact">تواصل معنا</a></div>
+<div class="nav-actions"><a class="btn btn-small" href="#contact">تواصل معنا</a><button class="menu-btn" type="button" aria-label="فتح القائمة" aria-expanded="false">☰</button></div>
 </div></header>
 <main>
 <section class="group-hero"><div class="wrap"><img class="logo" src="/royal-logo.jpg" alt="Royal Egypt Group"><div class="eyebrow">THE GROUP · EGYPT</div><h1>ROYAL EGYPT GROUP</h1><p>مجموعة واحدة، قطاعات متعددة، وتجربة موحدة. اكتشف خدماتنا واختر القسم المناسب لاحتياجاتك.</p><div class="hero-actions" style="justify-content:center;margin-top:26px"><a class="btn" href="#divisions">اكتشف شركات المجموعة</a></div></div></section>
@@ -32,4 +32,4 @@
 </main>
 <footer class="site-footer"><div class="wrap footer-row"><span>© <span id="year">2026</span> Royal Egypt Group · جميع الحقوق محفوظة</span><div class="footer-links"><a href="/properties.html">Properties</a><a href="/coffee.html">Coffee</a><a href="/transportation.html">Transportation</a></div></div></footer>
 <script>document.getElementById('year').textContent=new Date().getFullYear()</script>
-</body></html>
+<script>const menuButton=document.querySelector(".menu-btn"),siteNav=document.querySelector(".nav-links");if(menuButton&&siteNav){menuButton.addEventListener("click",()=>{const open=siteNav.classList.toggle("open");menuButton.setAttribute("aria-expanded",String(open));});siteNav.querySelectorAll("a").forEach(link=>link.addEventListener("click",()=>{siteNav.classList.remove("open");menuButton.setAttribute("aria-expanded","false");}));}</script></body></html>
