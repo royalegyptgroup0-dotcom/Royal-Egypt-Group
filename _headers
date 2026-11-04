@@ -2,3 +2,13 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
+  X-Frame-Options: SAMEORIGIN
+
+/assets/*
+  Cache-Control: public, max-age=86400
+
+/royal-logo.jpg
+  Cache-Control: public, max-age=604800
+
+/*.html
+  Cache-Control: no-cache
