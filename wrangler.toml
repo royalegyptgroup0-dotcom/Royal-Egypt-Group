@@ -5,4 +5,4 @@ pages_build_output_dir = "./"
 [[d1_databases]]
 binding = "DB"
 database_name = "royal-eg-listings"
-database_id = "791dc48e3db344b909976a97e88dee3d"
+database_id = "23185e4e-d299-41b2-abd7-bc533466e94a"
