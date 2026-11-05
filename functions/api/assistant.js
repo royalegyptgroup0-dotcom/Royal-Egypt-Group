@@ -1,3 +1,22 @@
+const requestBuckets = new Map();
+
+function allowRequest(ip) {
+  const now = Date.now();
+  const bucket = requestBuckets.get(ip);
+  if (!bucket || now - bucket.startedAt >= 60_000) {
+    requestBuckets.set(ip, { startedAt: now, count: 1 });
+    if (requestBuckets.size > 500) {
+      for (const [key, value] of requestBuckets) {
+        if (now - value.startedAt >= 60_000) requestBuckets.delete(key);
+      }
+    }
+    return true;
+  }
+  if (bucket.count >= 10) return false;
+  bucket.count += 1;
+  return true;
+}
+
 const json = (data, status = 200) => new Response(JSON.stringify(data), {
   status,
   headers: {
