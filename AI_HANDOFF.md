@@ -43,10 +43,10 @@ Do not merge PR #9 or deploy Production until all Preview gates pass and the own
 
 ## Cloudflare Pages bindings and secrets
 Verified through the authenticated Cloudflare API:
-- Production D1 binding `DB` points to `royal-eg-listings` (`23185e4e-d299-41b2-abd7-bc533466e94a`). The release-candidate Wrangler config explicitly maps Preview to test DB `royal-ai-business-center-test` (`6e57492c-717d-4fb6-b122-75e5c14cf161`) and Production to `royal-eg-listings`; the latest Preview deployment and live binding still require verification.
+- Production D1 binding `DB` points to `royal-eg-listings` (`23185e4e-d299-41b2-abd7-bc533466e94a`). The release-candidate Wrangler config explicitly maps Preview to test DB `royal-ai-business-center-test` (`6e57492c-717d-4fb6-b122-75e5c14cf161`) and Production to `royal-eg-listings`; the latest Preview deployment succeeded and Cloudflare confirmed Preview DB points to the test database.
 - Encrypted secret `ADMIN_TOKEN` exists in Preview and Production. Its value was not read.
 - Encrypted secret `MAKE_INTAKE_WEBHOOK_URL` was added to Preview only and verified by key name. It was not added to Production.
-- `wrangler.toml` in the release candidate declares `[ai] binding = "AI"` for local/default, Preview, and Production environments. Verify the actual Preview Worker runtime binding before calling the assistant operational.
+- `wrangler.toml` in the release candidate declares `[ai] binding = "AI"` for local/default, Preview, and Production environments. The Preview Worker settings now confirm the `AI` binding. A synthetic assistant response test is still pending.
 - R2 binding `PROPERTY_IMAGES` is not verified; image upload is not enabled by the current listing form.
 - No Cloudflare edge rate-limiting rule or Turnstile verification has been configured yet.
 
@@ -97,7 +97,7 @@ Important: their schemas are NOT fully identical:
 - Production `agent_tasks` includes `started_at`; test does not.
 - The inspected definitions for `customers`, `opportunities`, `agents`, `agent_audit_log`, `costs`, `daily_summary`, `deals`, and `revenue` match.
 
-Do not write to either database or apply migrations until the existing Workers are inspected and a non-destructive test migration plus rollback plan are reviewed. Do not drop/recreate either database.
+A non-destructive migration has been applied to the test `listings` table only, adding `contact_name`, `contact_phone`, `area_sqm`, `images`, and `reviewed_at` plus the status/created_at index. The old `image_url` column was preserved and the new columns were verified. The `agent_approvals`, `agent_memory`, and `agent_tasks` schema differences remain untouched pending Worker source inspection. Do not drop/recreate either database.
 
 ## Existing Cloudflare Workers discovered
 Cloudflare API listed these scripts:
