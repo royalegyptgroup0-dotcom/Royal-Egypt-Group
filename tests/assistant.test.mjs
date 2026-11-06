@@ -33,7 +33,8 @@ class FakeDB {
           return { request_count: count };
         },
         all: async () => ({ results: this.listings })
-      })
+      }),
+      all: async () => ({ results: this.listings })
     };
   }
 }
