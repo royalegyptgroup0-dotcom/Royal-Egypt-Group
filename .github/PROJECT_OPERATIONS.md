@@ -317,3 +317,13 @@ The release-candidate branch now includes:
 - CI runs every synthetic test file via `node --experimental-default-type=module --test tests/*.test.mjs`.
 
 **Launch gate:** deploy to Preview only after confirming the current Preview DB bindings and table schemas; exercise one synthetic request of each type; verify duplicate retries; verify the owner inbox; test missing/invalid admin tokens; test listing approval/rejection; verify Arabic/English/Russian form UX. Keep Production untouched until all Preview checks pass. The in-isolate rate limiter does not replace edge-level rate limiting or Turnstile.
+
+
+## Global rate limit and Production readiness — 2026-11-06
+
+- Public intake now uses an atomic D1-backed rate counter keyed by SHA-256 of the Cloudflare client IP, with a 10-request/minute threshold. No raw IP is stored.
+- Migration `0002_intake_rate_limits.sql` was applied to Production D1 and `preview/0003_intake_rate_limits.sql` was applied to Preview D1. Both are schema-only additions.
+- Production Pages AI binding `AI` is now configured. Production D1 still points to `royal-eg-listings`; Preview points to `royal-ai-business-center-test`.
+- Preview intake test passed for customer, opportunity and listing; each synthetic row was removed from TEST D1 afterward. Listing status remained pending. Make test queue was drained and the original webhook scenario left inactive.
+- Production code is still not deployed. Merge only after the final branch CI is green and PR #9 accurately describes the Production settings already applied.
+- Make notifications remain optional/unconfigured in Production. The owner inbox at `/admin-inbox.html` is the operational way to review new requests until a notification provider is authorized and configured.
