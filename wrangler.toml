@@ -6,3 +6,6 @@ pages_build_output_dir = "./"
 binding = "DB"
 database_name = "royal-eg-listings"
 database_id = "23185e4e-d299-41b2-abd7-bc533466e94a"
+
+[ai]
+binding = "AI"
