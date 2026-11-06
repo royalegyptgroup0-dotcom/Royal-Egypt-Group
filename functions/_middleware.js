@@ -6,6 +6,7 @@ const BLOCKED_PATHS = [
   /^\/wrangler\.toml$/i,
   /^\/AI_HANDOFF\.md$/i,
   /^\/CLOUDFLARE_LISTINGS_SETUP\.md$/i,
+  /^\/CONTACT_INTAKE_TEST\.md$/i,
   /^\/README\.md$/i,
   /^\/\.github\//i,
 ];
