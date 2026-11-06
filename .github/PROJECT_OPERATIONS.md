@@ -40,6 +40,8 @@ The multilingual branch compared with main:
 Open draft pull requests:
 - PR #2 — Harden property listing API validation and error handling. Draft, open, not merged.
 - PR #7 — Add secure multilingual website contact intake. Draft, open, not merged.
+- PR #8 — Project operations and launch-control documentation. Draft, open, not merged.
+- PR #9 — Integrated release candidate combining multilingual site, main SEO/security updates, hardened listing APIs, and secure intake. Draft, open, mergeable, not merged.
 
 GitHub Actions:
 - Recent Jekyll site CI runs on main and the contact-intake branch completed successfully.
@@ -101,14 +103,15 @@ The repository `wrangler.toml` on the multilingual branch declares binding `DB` 
 
 The listing migration `migrations/0001_listings.sql` creates a `listings` table with pending/approved/rejected states and a status/created_at index. Do not apply migrations or change live tables without comparing the actual database schema and receiving approval.
 
-Cloudflare Pages bindings/secrets still requiring live verification:
-- D1 binding `DB`.
-- Admin secret `ADMIN_TOKEN`.
-- Workers AI binding `AI` for the multilingual assistant.
-- Preview-only `MAKE_INTAKE_WEBHOOK_URL` for the contact intake test.
-- Edge rate limiting / bot protection for public intake.
+Cloudflare Pages bindings/secrets verified on 2026-11-06:
+- D1 binding `DB` points to production database `23185e4e-d299-41b2-abd7-bc533466e94a` in both Preview and Production.
+- `ADMIN_TOKEN` exists as an encrypted secret in both Preview and Production; its value is masked and was not read.
+- Workers AI binding `AI` is not present in the Pages project configuration; the assistant will not work until this is configured in Preview and redeployed.
+- `MAKE_INTAKE_WEBHOOK_URL` was added as an encrypted secret in Preview only and verified by key name. It was not added to Production.
+- Edge rate limiting / bot protection is still not configured or verified for public intake.
+- Only the `pages.dev` hostname is attached; `royalegyptgroup.com` is not currently listed as a custom domain.
 
-A Cloudflare read-only connection test scenario exists in Make. Its original linked connection was missing, but a separate healthy Cloudflare connection was found through the module specification. The scenario was safely updated to use that connection and successfully called `GET /v4/user` (HTTP 200). This verifies authenticated Cloudflare API read access, not yet Pages/D1 settings or deployment permissions.
+A separate healthy Cloudflare connection was found and used through Make. The read-only audit scenario successfully queried account identity, Pages projects, D1 database inventory, and production D1 table names. It also performed one Preview-only Pages secret update. No Production settings or data were changed.
 
 ## 5. Make inventory observed on 2026-11-06
 
@@ -121,12 +124,12 @@ Scenarios observed in My Team:
 - 8413158 — Royal Egypt — Create Management Folder. Inactive, on-demand, Google Drive connection healthy.
 - 8413745 — Royal Egypt — Save Project Audit Report. Inactive, on-demand, Google Drive connection healthy.
 - 8413630 — Royal Egypt — Save Project Audit Handover to Drive. Inactive, on-demand, Google Drive connection healthy.
-- 8413166 — Royal Egypt — Cloudflare Read-Only Connection Test. On-demand; original missing connection replaced with the healthy existing Cloudflare connection (ID 12773194). Successfully executed a read-only `GET /v4/user` test (HTTP 200). It was activated only as an on-demand scenario; no automatic schedule or production write.
+- 8413166 — Royal Egypt — Cloudflare Read-Only Audit. Active on-demand only; uses the healthy existing Cloudflare connection. Used for read-only account/Pages/D1 inspection and a Preview-only secret update. It has no schedule and runs only when explicitly invoked.
 - 8408747 — Royal Egypt – Secure Website Intake. Inactive; Custom Webhook trigger only. Payload structure has not yet been learned. Do not activate before inspecting a real synthetic payload.
 - 8333266 — Daily CEO Notes | Royal Egypt. Error state and inactive; separate content workflow. Do not modify as part of website intake work without separate review.
 - 8412856 — Integration OpenAI (ChatGPT, Whisper). Active scheduled scenario; inspect purpose and usage before changing or disabling it.
 
-The Make management API returned intermittent `Too Many Requests` responses during later inspection attempts. The Cloudflare read-only scenario update and one on-demand test did succeed. No production automation was activated, and no scenario that receives customer submissions was run.
+The Make management API returned intermittent `Too Many Requests` responses during later inspection attempts, but several on-demand Cloudflare API runs succeeded. The website intake webhook scenario remains inactive; its webhook was put into one-request learning mode and has not yet received a sample.
 
 ## 6. Required target architecture
 
@@ -213,3 +216,39 @@ Do not describe the platform as fully launched until all of the following are ve
 - Owner has the complete handover and rollback guide.
 
 Last status: implementation is in progress; official launch is NOT verified.
+
+
+## 11. Verified release-candidate status (2026-11-06)
+
+- Release branch: `release/royal-eg-release-candidate-2026-11-06`.
+- Draft PR #9: `https://github.com/yasserabdelaziz83-maker/Royal-Egypt-Group/pull/9`.
+- Release candidate commit: `f8ff7e6cd9c46a6459882ebb44a4008970e6fb4a`.
+- GitHub Jekyll site CI completed successfully for this commit.
+- Cloudflare Pages Preview deployment completed successfully; alias: `https://release-royal-eg-release-can.royalegyptgroup.pages.dev`.
+- Production branch remains `main`; no Production deployment was made by this release-candidate work.
+- Preview D1 binding points to the existing production D1 database ID; tests must continue using synthetic data only.
+
+### Production D1 schema inventory (names only; no customer rows read)
+
+A read-only query against `sqlite_master` returned:
+`_cf_KV`, `_debug`, `agent_approvals`, `agent_audit_log`, `agent_memory`, `agent_tasks`, `agents`, `costs`, `customers`, `daily_summary`, `deals`, `listings`, `opportunities`, `revenue`, `sqlite_sequence`.
+
+The query did not read any customer, lead, listing, deal, revenue, or agent records. Schema definitions and test-database parity still need review. Do not write to Production D1.
+
+### Preview intake state
+
+- The encrypted `MAKE_INTAKE_WEBHOOK_URL` secret is now present in Preview only.
+- Make scenario 8408747 remains inactive.
+- Its webhook is in one-request learning mode; no payload structure has been captured yet and no deliveries are queued.
+- Next step: send one synthetic request to the Preview `/api/intake` endpoint, inspect the learned payload, then design the Make routing. Do not activate the intake scenario until mappings and tests are verified.
+
+### Remaining release blockers
+
+1. Add/verify Workers AI binding `AI` in Preview, then test the assistant against approved information and current usage quotas.
+2. Configure a real edge-level abuse control for `/api/intake`; the in-memory assistant limiter is best-effort only.
+3. Send one synthetic intake request and verify Make captures the expected schema.
+4. Review D1 schema definitions and test-database parity without reading personal records.
+5. Verify listing moderation and admin authorization on Preview.
+6. Verify all pages and languages visually on the Preview URL.
+7. Review privacy/consent wording and error messages.
+8. Obtain explicit owner go-live confirmation before merging PR #9 or deploying Production.
