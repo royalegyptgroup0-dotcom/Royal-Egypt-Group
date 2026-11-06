@@ -34,7 +34,7 @@ export async function onRequest(context) {
   }
 
   // Add noindex header for admin pages
-  const is_admin = path.startsWith('/admin');
+  const is_admin = path.startsWith('/admin') || path === '/admin-inbox.html';
 
   // Pass through to the next handler
   const response = await next();
