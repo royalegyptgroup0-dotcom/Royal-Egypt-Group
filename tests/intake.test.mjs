@@ -16,12 +16,13 @@ const validPayload = {
   website: ""
 };
 
-function makeRequest(payload = validPayload, requestOrigin = origin) {
+function makeRequest(payload = validPayload, requestOrigin = origin, ip = "198.51.100.1") {
   return new Request("https://release-royal-eg-release-can.royalegyptgroup.pages.dev/api/intake", {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "origin": requestOrigin
+      "origin": requestOrigin,
+      "cf-connecting-ip": ip
     },
     body: JSON.stringify(payload)
   });
@@ -128,4 +129,27 @@ test("listing offers are always marked pending review", async () => {
 
   assert.equal(response.status, 202);
   assert.equal(forwarded.status, "pending_review");
+});
+
+test("limits each client IP to 10 intake requests per minute per isolate", async () => {
+  const ip = "203.0.113.77";
+  let forwarded = 0;
+  const responses = await withFetch(async () => {
+    forwarded += 1;
+    return new Response("ok", { status: 200 });
+  }, async () => {
+    const results = [];
+    for (let i = 0; i < 11; i += 1) {
+      results.push(await onRequest({
+        request: makeRequest(validPayload, origin, ip),
+        env: { MAKE_INTAKE_WEBHOOK_URL: webhook }
+      }));
+    }
+    return results;
+  });
+
+  assert.deepEqual(responses.map(response => response.status), [
+    202, 202, 202, 202, 202, 202, 202, 202, 202, 202, 429
+  ]);
+  assert.equal(forwarded, 10);
 });
