@@ -215,3 +215,5 @@ Current limitation: the existing business-center Worker has a customer POST but 
 - Added a synthetic Node test confirming the first 10 requests are accepted and the 11th receives HTTP 429 without being forwarded to Make.
 - This is defense in depth only. Pages isolates are distributed and ephemeral, so this is NOT a global rate limiter and does not replace a Cloudflare edge rate-limiting rule or Turnstile. Public intake must remain disabled until edge-level protection and end-to-end Preview validation are complete.
 - Changes were committed to the release-candidate branch in commits `aa7b5a2027334206f218e2a280f412a837a31ef4` and `aaac54f09362fd411c65bc84154d570201ae62ac`.
+
+- Follow-up hardening: HTTP 429 responses now retain the allowlisted Origin CORS header; the synthetic throttle test asserts this behavior. Latest code/test commits: `e4dac37e7853d7ce163fc951820d845307e2cc3c` and `0f44dc86c23ea701904f104d79a980f2b7064e4d`.
