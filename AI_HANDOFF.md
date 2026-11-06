@@ -217,3 +217,18 @@ Current limitation: the existing business-center Worker has a customer POST but 
 - Changes were committed to the release-candidate branch in commits `aa7b5a2027334206f218e2a280f412a837a31ef4` and `aaac54f09362fd411c65bc84154d570201ae62ac`.
 
 - Follow-up hardening: HTTP 429 responses now retain the allowlisted Origin CORS header; the synthetic throttle test asserts this behavior. Latest code/test commits: `e4dac37e7853d7ce163fc951820d845307e2cc3c` and `0f44dc86c23ea701904f104d79a980f2b7064e4d`.
+
+
+## Owner inbox and direct D1 persistence — 2026-11-06
+
+- `POST /api/intake` now requires the Pages D1 binding `DB` and persists the validated request before attempting the optional Make notification.
+- Uses a client-generated UUID `request_id` as the target row's primary key, with `INSERT OR IGNORE`, so a retry with the same request id does not create a second customer/opportunity/listing record or send a second Make notification.
+- The contact form keeps its request UUID while a submission is retried and clears it only after a successful accepted response.
+- Customer submissions write to `customers`; property-search opportunities write to `opportunities`; property offers write to `listings` with `status='pending'`. Make is now an optional orchestration/notification layer; D1 is authoritative. A Make outage does not discard a stored request.
+- Added authenticated `GET/PATCH /api/admin/inbox` at `functions/api/admin/inbox.js`, protected by `Authorization: Bearer ADMIN_TOKEN`. GET returns up to 100 records per table. PATCH only updates customer/opportunity statuses from the allowlist; listing moderation remains on `/api/admin/listings`.
+- Added `admin-inbox.html`, a noindex owner UI. It keeps the admin token in page memory only, provides customer/opportunity status updates, and approves/rejects pending listings through the existing admin API. URL path: `/admin-inbox.html`.
+- Middleware marks the owner inbox page noindex. Added synthetic tests for the inbox API and expanded CI to run all `tests/*.test.mjs`.
+- CI reported success for the synthetic intake/inbox test workflow at commit `b9001529a785468b9844d209a779e6df877b0a0d`. Jekyll workflow for that commit was still in progress at the time of this note. Recheck the latest branch-head workflows before merge.
+- This code is on the release-candidate branch only. It has NOT been deployed to Pages Preview or Production in this step. Validate the D1 column names against both bound databases before deployment. Production D1 must remain unchanged until Preview tests pass.
+- The current Make intake scenario (8408747) is still inactive and still only has a Custom Webhook trigger. Do not activate it until its notification behavior is designed and tested. The database write now happens in Pages, not Make. Make must not be given direct D1 access.
+- Known protection limit: the in-isolate rate limiter is best-effort only; it is not a global edge rate limiter. Configure Cloudflare edge protection / Turnstile before unrestricted public launch.
