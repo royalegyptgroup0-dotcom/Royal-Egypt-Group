@@ -2,12 +2,31 @@ const MAX_BODY_BYTES = 10 * 1024;
 const ALLOWED_TYPES = new Set(["customer", "opportunity", "listing"]);
 const ALLOWED_LANGUAGES = new Set(["ar", "en", "ru"]);
 const TRUSTED_WEBHOOK_HOST = "hook.eu1.make.com";
+const requestBuckets = new Map();
 const SECURITY_HEADERS = {
   "content-type": "application/json; charset=utf-8",
   "cache-control": "no-store",
   "x-content-type-options": "nosniff",
   "referrer-policy": "no-referrer",
 };
+
+// Best-effort per-isolate protection only; configure Cloudflare edge rate limiting too.
+function allowRequest(ip) {
+  const now = Date.now();
+  const bucket = requestBuckets.get(ip);
+  if (!bucket || now - bucket.startedAt >= 60_000) {
+    requestBuckets.set(ip, { startedAt: now, count: 1 });
+    if (requestBuckets.size > 500) {
+      for (const [key, value] of requestBuckets) {
+        if (now - value.startedAt >= 60_000) requestBuckets.delete(key);
+      }
+    }
+    return true;
+  }
+  if (bucket.count >= 10) return false;
+  bucket.count += 1;
+  return true;
+}
 
 function json(data, status, origin) {
   const headers = new Headers(SECURITY_HEADERS);
@@ -54,6 +73,10 @@ export async function onRequest({ request, env }) {
   }
 
   if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
+
+  const clientIp = request.headers.get("CF-Connecting-IP") || "unknown";
+  if (!allowRequest(clientIp)) return json({ error: "rate_limited" }, 429);
+
   if (!env.MAKE_INTAKE_WEBHOOK_URL) return json({ error: "intake_not_configured" }, 503);
   if (!trustedWebhook(env.MAKE_INTAKE_WEBHOOK_URL)) {
     return json({ error: "intake_configuration_invalid" }, 503);
