@@ -16,6 +16,7 @@ binding = "AI"
 binding = "DB"
 database_name = "royal-ai-business-center-test"
 database_id = "6e57492c-717d-4fb6-b122-75e5c14cf161"
+migrations_dir = "migrations/preview"
 
 [env.preview.ai]
 binding = "AI"
