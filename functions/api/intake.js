@@ -75,7 +75,7 @@ export async function onRequest({ request, env }) {
   if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
   const clientIp = request.headers.get("CF-Connecting-IP") || "unknown";
-  if (!allowRequest(clientIp)) return json({ error: "rate_limited" }, 429);
+  if (!allowRequest(clientIp)) return json({ error: "rate_limited" }, 429, origin);
 
   if (!env.MAKE_INTAKE_WEBHOOK_URL) return json({ error: "intake_not_configured" }, 503);
   if (!trustedWebhook(env.MAKE_INTAKE_WEBHOOK_URL)) {
