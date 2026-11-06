@@ -240,11 +240,11 @@ The query did not read any customer, lead, listing, deal, revenue, or agent reco
 - The encrypted `MAKE_INTAKE_WEBHOOK_URL` secret is now present in Preview only.
 - Make scenario 8408747 remains inactive.
 - Its webhook is in one-request learning mode; no payload structure has been captured yet and no deliveries are queued.
-- Next step: send one synthetic request to the Preview `/api/intake` endpoint, inspect the learned payload, then design the Make routing. Do not activate the intake scenario until mappings and tests are verified.
+- A synthetic Preview POST completed with HTTP 202 and Make captured the payload structure. Learned fields: `event`, `reference`, `request_type`, `status`, `name`, `phone`, `email`, `location`, `details`, `language`, `consent`, `source`, `received_at`. The request used placeholder data only; no customer records were created. Next step: inspect D1 schemas and existing backend APIs, then design the Make routing. Do not activate the intake scenario until mappings and tests are verified.
 
 ### Remaining release blockers
 
-1. Add/verify Workers AI binding `AI` in Preview, then test the assistant against approved information and current usage quotas.
+1. The release candidate adds `[ai] binding = "AI"` to `wrangler.toml`; verify the actual Preview Worker binding/runtime before declaring the assistant operational.
 2. Configure a real edge-level abuse control for `/api/intake`; the in-memory assistant limiter is best-effort only.
 3. Send one synthetic intake request and verify Make captures the expected schema.
 4. Review D1 schema definitions and test-database parity without reading personal records.
@@ -252,3 +252,12 @@ The query did not read any customer, lead, listing, deal, revenue, or agent reco
 6. Verify all pages and languages visually on the Preview URL.
 7. Review privacy/consent wording and error messages.
 8. Obtain explicit owner go-live confirmation before merging PR #9 or deploying Production.
+
+
+### Synthetic intake test result
+
+- One synthetic Preview request returned HTTP 202 (`accepted: true`).
+- Make learned the 13 expected payload fields.
+- The request used a placeholder name, placeholder phone, and `.invalid` email domain; no real customer details were used.
+- The webhook scenario remains inactive and has no queued deliveries. No D1 rows were inserted.
+- The one-shot HTTP test scenario is inactive after the test.
