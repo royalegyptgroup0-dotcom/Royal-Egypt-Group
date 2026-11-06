@@ -2,7 +2,7 @@ const MAX_BODY_BYTES = 10 * 1024;
 const ALLOWED_TYPES = new Set(["customer", "opportunity", "listing"]);
 const ALLOWED_LANGUAGES = new Set(["ar", "en", "ru"]);
 const TRUSTED_WEBHOOK_HOST = "hook.eu1.make.com";
-const requestBuckets = new Map();
+const MAX_REQUESTS_PER_IP_PER_MINUTE = 10;
 const SECURITY_HEADERS = {
   "content-type": "application/json; charset=utf-8",
   "cache-control": "no-store",
@@ -10,21 +10,24 @@ const SECURITY_HEADERS = {
   "referrer-policy": "no-referrer",
 };
 
-function allowRequest(ip) {
-  const now = Date.now();
-  const bucket = requestBuckets.get(ip);
-  if (!bucket || now - bucket.startedAt >= 60_000) {
-    requestBuckets.set(ip, { startedAt: now, count: 1 });
-    if (requestBuckets.size > 500) {
-      for (const [key, value] of requestBuckets) {
-        if (now - value.startedAt >= 60_000) requestBuckets.delete(key);
-      }
-    }
-    return true;
-  }
-  if (bucket.count >= 10) return false;
-  bucket.count += 1;
-  return true;
+async function allowRequest(db, ip) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip));
+  const ipHash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
+  const windowStart = Math.floor(Date.now() / 60_000);
+  const row = await db.prepare(`
+    INSERT INTO intake_rate_limits (ip_hash, window_start, request_count, updated_at)
+    VALUES (?, ?, 1, datetime('now'))
+    ON CONFLICT(ip_hash) DO UPDATE SET
+      request_count = CASE
+        WHEN intake_rate_limits.window_start = excluded.window_start
+          THEN intake_rate_limits.request_count + 1
+        ELSE 1
+      END,
+      window_start = excluded.window_start,
+      updated_at = datetime('now')
+    RETURNING request_count
+  `).bind(ipHash, windowStart).first();
+  return Number(row?.request_count || 0) <= MAX_REQUESTS_PER_IP_PER_MINUTE;
 }
 
 function json(data, status, origin) {
@@ -112,7 +115,7 @@ export async function onRequest({ request, env }) {
   if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405, origin);
 
   const clientIp = request.headers.get("CF-Connecting-IP") || "unknown";
-  if (!allowRequest(clientIp)) return json({ error: "rate_limited" }, 429, origin);
+  try {\n    if (!await allowRequest(env.DB, clientIp)) return json({ error: "rate_limited" }, 429, origin);\n  } catch {\n    return json({ error: "intake_protection_unavailable" }, 503, origin);\n  }
   if (!env.DB) return json({ error: "intake_storage_unavailable" }, 503, origin);
   if (!(request.headers.get("content-type") || "").toLowerCase().includes("application/json")) {
     return json({ error: "json_required" }, 415, origin);
