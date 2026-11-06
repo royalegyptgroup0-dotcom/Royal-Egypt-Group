@@ -244,7 +244,7 @@ The query did not read any customer, lead, listing, deal, revenue, or agent reco
 
 ### Remaining release blockers
 
-1. The release candidate adds `[ai] binding = "AI"` to `wrangler.toml`; verify the actual Preview Worker binding/runtime before declaring the assistant operational.
+1. The Preview Worker settings confirm `AI` is a Workers AI binding. The release candidate also declares `[ai] binding = "AI"` for Preview and Production.
 2. Configure a real edge-level abuse control for `/api/intake`; the in-memory assistant limiter is best-effort only.
 3. Send one synthetic intake request and verify Make captures the expected schema.
 4. Review D1 schema definitions and test-database parity without reading personal records.
@@ -295,3 +295,12 @@ Cloudflare's Preview Pages Worker settings now show:
 - `ADMIN_TOKEN` and `MAKE_INTAKE_WEBHOOK_URL` → encrypted secrets.
 
 Production remains bound to `royal-eg-listings`. No Production D1 writes or deployments were performed.
+
+
+### Assistant Preview test result
+
+- Cloudflare Preview Worker settings show the `AI` binding.
+- The Pages Function successfully answered synthetic questions in English, Arabic, and Russian (HTTP 200).
+- The assistant reads only approved public listing fields from the Preview test D1 database; no customer contact records are queried.
+- Direct Workers AI test confirmed `@cf/google/gemma-4-26b-a4b-it` is available. The probe used under 1 Neuron.
+- Cloudflare's current Workers AI free allocation is 10,000 Neurons/day; exceeding it stops further free-plan requests until the daily reset. No paid plan was enabled.
