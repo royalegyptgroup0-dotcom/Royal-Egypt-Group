@@ -108,7 +108,7 @@ Cloudflare Pages bindings/secrets still requiring live verification:
 - Preview-only `MAKE_INTAKE_WEBHOOK_URL` for the contact intake test.
 - Edge rate limiting / bot protection for public intake.
 
-A Cloudflare read-only connection test scenario exists in Make, but its linked Cloudflare connection was reported as `missing`. Direct Cloudflare management is therefore not verified through the current Make connection.
+A Cloudflare read-only connection test scenario exists in Make. Its original linked connection was missing, but a separate healthy Cloudflare connection was found through the module specification. The scenario was safely updated to use that connection and successfully called `GET /v4/user` (HTTP 200). This verifies authenticated Cloudflare API read access, not yet Pages/D1 settings or deployment permissions.
 
 ## 5. Make inventory observed on 2026-11-06
 
@@ -121,12 +121,12 @@ Scenarios observed in My Team:
 - 8413158 — Royal Egypt — Create Management Folder. Inactive, on-demand, Google Drive connection healthy.
 - 8413745 — Royal Egypt — Save Project Audit Report. Inactive, on-demand, Google Drive connection healthy.
 - 8413630 — Royal Egypt — Save Project Audit Handover to Drive. Inactive, on-demand, Google Drive connection healthy.
-- 8413166 — Royal Egypt — Cloudflare Read-Only Connection Test. Inactive, on-demand; its Cloudflare connection is missing.
+- 8413166 — Royal Egypt — Cloudflare Read-Only Connection Test. On-demand; original missing connection replaced with the healthy existing Cloudflare connection (ID 12773194). Successfully executed a read-only `GET /v4/user` test (HTTP 200). It was activated only as an on-demand scenario; no automatic schedule or production write.
 - 8408747 — Royal Egypt – Secure Website Intake. Inactive; Custom Webhook trigger only. Payload structure has not yet been learned. Do not activate before inspecting a real synthetic payload.
 - 8333266 — Daily CEO Notes | Royal Egypt. Error state and inactive; separate content workflow. Do not modify as part of website intake work without separate review.
 - 8412856 — Integration OpenAI (ChatGPT, Whisper). Active scheduled scenario; inspect purpose and usage before changing or disabling it.
 
-The Make management API returned a temporary `Too Many Requests` response during the latest inspection. No scenario was edited, activated, deleted, or run during that inspection.
+The Make management API returned intermittent `Too Many Requests` responses during later inspection attempts. The Cloudflare read-only scenario update and one on-demand test did succeed. No production automation was activated, and no scenario that receives customer submissions was run.
 
 ## 6. Required target architecture
 
