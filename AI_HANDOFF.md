@@ -206,3 +206,12 @@ Current limitation: the existing business-center Worker has a customer POST but 
 - Make intake scenario 8408747 remains inactive and has no routing or write modules.
 - Audit/test scenarios are deactivated after each one-shot run.
 - Do not activate public intake until edge rate limiting/Turnstile, authenticated commit route, idempotency, owner notifications, and end-to-end Preview tests are complete.
+
+
+## Intake throttling hardening — 2026-11-06
+
+- Added a best-effort per-IP request bucket to `functions/api/intake.js`: maximum 10 POST requests per minute per Cloudflare Pages isolate.
+- OPTIONS preflight requests are not counted. Requests are keyed by `CF-Connecting-IP`; stale buckets are cleaned when the map grows beyond 500 entries.
+- Added a synthetic Node test confirming the first 10 requests are accepted and the 11th receives HTTP 429 without being forwarded to Make.
+- This is defense in depth only. Pages isolates are distributed and ephemeral, so this is NOT a global rate limiter and does not replace a Cloudflare edge rate-limiting rule or Turnstile. Public intake must remain disabled until edge-level protection and end-to-end Preview validation are complete.
+- Changes were committed to the release-candidate branch in commits `aa7b5a2027334206f218e2a280f412a837a31ef4` and `aaac54f09362fd411c65bc84154d570201ae62ac`.
