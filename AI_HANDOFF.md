@@ -153,3 +153,56 @@ Make management API has intermittent rate limits. Do not burn operations on repe
 
 
 Workers AI cost note: Cloudflare currently includes 10,000 Neurons per day at no charge on Workers Free. Requests beyond the daily free allocation fail until reset unless the account is on Workers Paid. The project has not been upgraded to a paid plan.
+
+
+## CRM API audit — verified from the TEST Worker source (2026-11-06)
+
+The owner dashboard is a static UI Worker and calls the separate `royal-ai-business-center-test` API using the `X-Admin-Token` header. The dashboard UI does not write directly to D1 and does not persist the admin token in localStorage/sessionStorage.
+
+The test business-center Worker currently exposes these relevant routes:
+- `GET /api/customers` — returns up to 100 customer rows.
+- `POST /api/customers` — authenticated customer creation; validates name and selected fields, writes to `customers`, then audits the creation.
+- `GET /api/opportunities` — read-only list; no `POST /api/opportunities` route exists yet.
+- `GET /api/deals`, `GET /api/revenue`, `GET /api/costs`.
+- Dashboard, daily report, agents, tasks, and approvals routes also exist.
+- No `/api/listings` route exists in this business-center Worker. Property listings are handled by the Pages Functions described below.
+
+Authentication uses `X-Admin-Token` compared to the Worker's encrypted `ADMIN_TOKEN` secret. The Worker has an in-memory per-isolate limit of 60 requests per token per minute; it is not a global edge rate limiter.
+
+The separate owner-dashboard Worker serves the dashboard HTML and points its API constant at the TEST business-center Worker. It requires the owner to enter the admin token for each session; the token is held in JavaScript memory.
+
+## Website Pages Functions — verified from release-candidate source
+
+- `GET /api/listings` returns approved public listing fields only.
+- `POST /api/listings` accepts multipart form data, validates property fields and consent, rejects uploaded files, and inserts into D1 with `status='pending'`.
+- `GET /api/admin/listings` requires `Authorization: Bearer ADMIN_TOKEN` and returns pending listings.
+- `PATCH /api/admin/listings` requires the same admin token and approves/rejects a pending listing, setting `reviewed_at`.
+- `POST /api/intake` validates a public website intake request and forwards a normalized 13-field event to the Make webhook. It does not write D1 and does not notify the owner dashboard directly.
+
+## Test D1 schema verified via PRAGMA (schema only; no business rows read)
+
+Test `customers` fields include:
+`id`, `name`, `email`, `phone`, `country`, `language`, `type`, `budget_min`, `budget_max`, `interests`, `source`, `assigned_agent`, `status`, `notes`, `created_at`, `updated_at`.
+
+Test `opportunities` fields include:
+`id`, `title`, `type`, `details`, `country`, `estimated_value`, `status`, `source`, `assigned_agent`, `url`, `created_at`.
+
+Test `listings` fields include:
+`id`, `contact_name`, `contact_phone`, `title`, `property_type`, `location`, `area_sqm`, `price`, `purpose`, `description`, `images`, `image_url` (legacy), `status`, `created_at`, `reviewed_at`.
+
+## Integration design decision
+
+Do not give Make direct D1 credentials or let it execute arbitrary SQL. Make should be the workflow/orchestration layer only. A trusted Cloudflare endpoint should own writes and validation:
+1. Public form → Pages `/api/intake` → Make webhook (already implemented and synthetic-tested).
+2. Make router classifies `customer`, `opportunity`, `listing`.
+3. A narrow authenticated Cloudflare intake-commit endpoint (or existing Worker endpoint extended safely) performs one allowlisted D1 insert using prepared statements and an idempotency key/reference.
+4. Listing submissions always create `pending` rows; never auto-approve.
+5. Owner notification/dashboard event should be stored in a dedicated safe queue/table or exposed through an authenticated API. Do not assume the current dashboard has an inbox; it currently shows KPIs, agents, approvals, and daily report only.
+6. Make error handling must retain the reference and avoid duplicate inserts on retries.
+
+Current limitation: the existing business-center Worker has a customer POST but no opportunity POST. The website Pages Function already accepts direct listing submissions but the intake webhook flow does not currently call it. These contracts must be unified before enabling live intake.
+
+## Current workflow safety
+- Make intake scenario 8408747 remains inactive and has no routing or write modules.
+- Audit/test scenarios are deactivated after each one-shot run.
+- Do not activate public intake until edge rate limiting/Turnstile, authenticated commit route, idempotency, owner notifications, and end-to-end Preview tests are complete.
