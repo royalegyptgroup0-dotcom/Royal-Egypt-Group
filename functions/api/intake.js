@@ -114,9 +114,13 @@ export async function onRequest({ request, env }) {
   }
   if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405, origin);
 
-  const clientIp = request.headers.get("CF-Connecting-IP") || "unknown";
-  try {\n    if (!await allowRequest(env.DB, clientIp)) return json({ error: "rate_limited" }, 429, origin);\n  } catch {\n    return json({ error: "intake_protection_unavailable" }, 503, origin);\n  }
   if (!env.DB) return json({ error: "intake_storage_unavailable" }, 503, origin);
+  const clientIp = request.headers.get("CF-Connecting-IP") || "unknown";
+  try {
+    if (!await allowRequest(env.DB, clientIp)) return json({ error: "rate_limited" }, 429, origin);
+  } catch {
+    return json({ error: "intake_protection_unavailable" }, 503, origin);
+  }
   if (!(request.headers.get("content-type") || "").toLowerCase().includes("application/json")) {
     return json({ error: "json_required" }, 415, origin);
   }
