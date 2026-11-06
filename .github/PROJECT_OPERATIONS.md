@@ -106,7 +106,7 @@ The listing migration `migrations/0001_listings.sql` creates a `listings` table 
 Cloudflare Pages bindings/secrets verified on 2026-11-06:
 - D1 binding `DB` points to production database `23185e4e-d299-41b2-abd7-bc533466e94a` in both Preview and Production.
 - `ADMIN_TOKEN` exists as an encrypted secret in both Preview and Production; its value is masked and was not read.
-- Workers AI binding `AI` is not present in the Pages project configuration; the assistant will not work until this is configured in Preview and redeployed.
+- Workers AI binding `AI` is verified in the Preview Pages Worker settings as an `ai` binding. Production binding is declared in the release candidate but is not deployed until a future approved Production release.
 - `MAKE_INTAKE_WEBHOOK_URL` was added as an encrypted secret in Preview only and verified by key name. It was not added to Production.
 - Edge rate limiting / bot protection is still not configured or verified for public intake.
 - Only the `pages.dev` hostname is attached; `royalegyptgroup.com` is not currently listed as a custom domain.
@@ -285,3 +285,13 @@ Prior project instructions require that testing use the separate test environmen
 - Production → `royal-eg-listings` (`23185e4e-d299-41b2-abd7-bc533466e94a`)
 
 Do not run listing API, assistant, or CRM tests until the latest Preview deployment is confirmed to use the test database. No D1 writes have been made by this release-candidate work.
+
+
+### Preview runtime binding verification
+
+Cloudflare's Preview Pages Worker settings now show:
+- `DB` → test D1 database `6e57492c-717d-4fb6-b122-75e5c14cf161`.
+- `AI` → Workers AI binding.
+- `ADMIN_TOKEN` and `MAKE_INTAKE_WEBHOOK_URL` → encrypted secrets.
+
+Production remains bound to `royal-eg-listings`. No Production D1 writes or deployments were performed.
