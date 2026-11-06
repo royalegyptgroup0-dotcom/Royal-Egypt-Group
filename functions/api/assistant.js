@@ -129,7 +129,7 @@ export async function onRequest({ request, env }) {
   ].join(" ");
 
   try {
-    const result = await env.AI.run("@cf/google/gemma-4-26b-a4b-it", {
+    const result = await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fast", {
       messages: [{ role: "system", content: system }, ...messages],
       chat_template_kwargs: { enable_thinking: false },
       max_tokens: 500
