@@ -304,3 +304,16 @@ Production remains bound to `royal-eg-listings`. No Production D1 writes or depl
 - The assistant reads only approved public listing fields from the Preview test D1 database; no customer contact records are queried.
 - Direct Workers AI test confirmed `@cf/google/gemma-4-26b-a4b-it` is available. The probe used under 1 Neuron.
 - Cloudflare's current Workers AI free allocation is 10,000 Neurons/day; exceeding it stops further free-plan requests until the daily reset. No paid plan was enabled.
+
+
+## Intake and owner inbox update — 2026-11-06
+
+The release-candidate branch now includes:
+
+- D1-first persistence for public contact intake: customers → `customers`, property searches → `opportunities`, property offers → `listings` (always pending moderation).
+- UUID request IDs and `INSERT OR IGNORE` idempotency. A repeated browser submission with the same request ID does not duplicate the row.
+- Make notification is best-effort and occurs after D1 persistence. A Make outage does not lose the saved lead. Make remains inactive until a notification workflow is explicitly configured and tested.
+- Owner API `GET/PATCH /api/admin/inbox` protected by `ADMIN_TOKEN` and a static owner UI at `/admin-inbox.html`. The UI token is memory-only; customer/opportunity statuses are allowlisted; listing approval uses the separate moderation API.
+- CI runs every synthetic test file via `node --experimental-default-type=module --test tests/*.test.mjs`.
+
+**Launch gate:** deploy to Preview only after confirming the current Preview DB bindings and table schemas; exercise one synthetic request of each type; verify duplicate retries; verify the owner inbox; test missing/invalid admin tokens; test listing approval/rejection; verify Arabic/English/Russian form UX. Keep Production untouched until all Preview checks pass. The in-isolate rate limiter does not replace edge-level rate limiting or Turnstile.
