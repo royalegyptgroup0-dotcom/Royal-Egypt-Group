@@ -226,7 +226,7 @@ Last status: implementation is in progress; official launch is NOT verified.
 - GitHub Jekyll site CI completed successfully for this commit.
 - Cloudflare Pages Preview deployment completed successfully; alias: `https://release-royal-eg-release-can.royalegyptgroup.pages.dev`.
 - Production branch remains `main`; no Production deployment was made by this release-candidate work.
-- Preview D1 binding points to the existing production D1 database ID; tests must continue using synthetic data only.
+- Before the isolation fix, Preview was bound to the production D1 database. The release-candidate config now maps Preview to the test database; do not test D1-backed features until Cloudflare confirms the new binding.
 
 ### Production D1 schema inventory (names only; no customer rows read)
 
@@ -276,3 +276,12 @@ A read-only `sqlite_master` schema query (no customer or business rows) confirme
 - The `customers`, `opportunities`, `agents`, `agent_audit_log`, `costs`, `daily_summary`, `deals`, and `revenue` definitions match in the inspected output.
 
 **Decision:** do not write to the test database or run migrations yet. First inspect the existing Worker code and all consumers, prepare a non-destructive forward migration for test, and verify backups/rollback. Never "fix" this by dropping/recreating either database.
+
+
+### Test-isolation requirement (binding constraint)
+
+Prior project instructions require that testing use the separate test environment and never write to Production or the real-estate production D1 database. A read-only configuration audit found that Pages Preview had been bound to the Production D1 database. The release candidate now declares explicit Wrangler environments:
+- Preview → `royal-ai-business-center-test` (`6e57492c-717d-4fb6-b122-75e5c14cf161`)
+- Production → `royal-eg-listings` (`23185e4e-d299-41b2-abd7-bc533466e94a`)
+
+Do not run listing API, assistant, or CRM tests until the latest Preview deployment is confirmed to use the test database. No D1 writes have been made by this release-candidate work.
