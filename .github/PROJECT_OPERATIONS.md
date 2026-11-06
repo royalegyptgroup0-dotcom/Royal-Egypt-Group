@@ -261,3 +261,18 @@ The query did not read any customer, lead, listing, deal, revenue, or agent reco
 - The request used a placeholder name, placeholder phone, and `.invalid` email domain; no real customer details were used.
 - The webhook scenario remains inactive and has no queued deliveries. No D1 rows were inserted.
 - The one-shot HTTP test scenario is inactive after the test.
+
+
+### D1 schema comparison — production vs test (2026-11-06)
+
+A read-only `sqlite_master` schema query (no customer or business rows) confirmed that the 12 common business tables are not all structurally identical.
+
+- Production has 12 business tables plus `_cf_KV` and `_debug`; test has the 12 business tables plus `_cf_KV`. SQLite's internal `sqlite_sequence` was excluded from the schema comparison.
+- Four common tables differ: `listings`, `agent_approvals`, `agent_memory`, and `agent_tasks`.
+- Production `listings` includes `contact_name`, `contact_phone`, `area_sqm`, `images`, and `reviewed_at`; test instead has a legacy `image_url` field and lacks several production fields.
+- Production `agent_approvals` has required task/action fields and a foreign key; test has a looser definition.
+- Production `agent_memory` has an id, timestamps, and unique(category,key); test uses category/key as its primary key.
+- Production `agent_tasks` includes `started_at`; test does not.
+- The `customers`, `opportunities`, `agents`, `agent_audit_log`, `costs`, `daily_summary`, `deals`, and `revenue` definitions match in the inspected output.
+
+**Decision:** do not write to the test database or run migrations yet. First inspect the existing Worker code and all consumers, prepare a non-destructive forward migration for test, and verify backups/rollback. Never "fix" this by dropping/recreating either database.
