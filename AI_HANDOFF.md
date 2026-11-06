@@ -1,106 +1,152 @@
-# Royal Egypt Group — AI Project Handoff
+# Royal Egypt Group — Verified Project Handoff
 
-Last updated: 2026-11-05
+Last verified: 2026-11-06
+Owner: Royal Egypt Group
+Company: شركة رويال ايجبت للتسويق العقاري
 
 ## Mission
-Build and operate the Royal Egypt Group web platform and, later, a persistent assistant/agent hosted on Cloudflare. The owner wants the platform to remain as free as reasonably possible. Never promise that every component or AI usage will remain free; verify current plan limits before enabling paid usage.
+Build a secure, multilingual Royal Egypt Group platform and a maintainable automation/agent layer while keeping costs as close to zero as reasonably possible. Never promise unlimited free usage. Preserve production and document every change so the owner can operate the system without depending on an external developer.
 
-## Organization structure
-- Royal Egypt Group (parent)
+## Organization
+- Royal Egypt Group
 - Royal Egypt Properties
 - Royal Egypt Coffee
 - Royal Egypt Transportation
 
-Company context: شركة رويال ايجبت للتسويق العقاري.
-
-Preferred public domain: https://royalegyptgroup.com/
-Current Cloudflare Pages hostname seen by the owner: https://royalegyptgroup.pages.dev
-
-## Repository
+## Repository and release candidate
 - GitHub: https://github.com/yasserabdelaziz83-maker/Royal-Egypt-Group
-- Default branch: main
+- Default branch: `main`
+- Release candidate branch: `release/royal-eg-release-candidate-2026-11-06`
+- Draft PR #9: https://github.com/yasserabdelaziz83-maker/Royal-Egypt-Group/pull/9
+- Operations manual: `.github/PROJECT_OPERATIONS.md` (blocked from public Pages paths by middleware)
+- Current Pages production hostname: https://royalegyptgroup.pages.dev
+- Preferred custom domain: https://royalegyptgroup.com (not currently attached to Pages)
 
-Known files:
-- index.html
-- properties.html
-- developers.html
-- coffee.html
-- transportation.html
-- admin-listings.html
-- functions/
-- migrations/
-- wrangler.toml
-- CLOUDFLARE_LISTINGS_SETUP.md
-- README.md
-- assets/
-- royal-logo.jpg
-- _headers
-- robots.txt
-- sitemap.xml
+The release candidate combines:
+- Multilingual Arabic / English / Russian homepage, hero, division pages, developer directory, and shared assistant UI.
+- Main branch SEO metadata, sitemap, robots rules, Google verification, Cloudflare Web Analytics beacon, and security middleware.
+- Hardened property listing APIs from Draft PR #2.
+- Secure multilingual website intake endpoint and form from Draft PR #7, with additional webhook-host validation.
+- Owner operations documentation and automated syntax/intake tests.
 
-## Product requirements
-1. Arabic-first, right-to-left responsive website, with English/Russian support considered for marketing.
-2. Real-estate listings submission with moderation: submitted listings must not become public until an administrator approves them.
-3. Property search / intelligent real-estate assistant.
-4. Developer directory with official sources and clear non-endorsement disclaimer.
-5. Royal Egypt Coffee and Royal Egypt Transportation sections.
-6. Admin dashboard for reviewing and managing listings.
-7. Future persistent Royal Egypt agent that can retain project context, maintain a task queue, inspect the repository, propose code changes, and report results.
+Do not merge PR #9 or deploy Production until all Preview gates pass and the owner confirms go-live.
 
-## Existing implementation notes (not yet independently re-verified against live deployment)
-- Feature branch redesigns `index.html` with a photographic property cover hero and Arabic/English/Russian controls; the hero currently references an Unsplash-hosted image URL.
-- properties.html has a listing submission flow using POST /api/listings and reads listings via GET /api/listings.
-- A shared multilingual assistant UI and `/api/assistant` endpoint have been added on feature branch `feature/multilingual-hero-assistant-2026-11-05`. The endpoint expects a Cloudflare Pages Workers AI binding named `AI`; it is not live until the binding is added in Cloudflare Pages Settings > Functions > Bindings > Add > Workers AI, variable name `AI`, followed by a redeploy. The prior properties-page keyword assistant is intercepted by the shared UI script and routed to this endpoint.
-- developers.html contains a static developer directory and filtering; it states directory presence is not Royal Egypt endorsement or guarantee.
-- coffee.html and transportation.html were previously noted as informational / coming-soon pages, not complete booking systems.
-- Listing images were previously described as being sent via WhatsApp because direct image storage was not fully configured.
-- admin-listings.html exists but its authentication and authorization must be audited before use.
+## Verified deployment status
+- Cloudflare Pages project: `royalegyptgroup`.
+- Production branch remains `main`.
+- Release candidate Preview deployment succeeded for commit `0aa07cbb6223b5b801a1ee7405359833ccc235aa`; the latest deployment may advance as new commits are pushed.
+- Preview branch alias: https://release-royal-eg-release-can.royalegyptgroup.pages.dev
+- Only `royalegyptgroup.pages.dev` is attached as a domain; the custom `.com` domain is not attached.
+- GitHub Jekyll CI succeeded on the release-candidate commits inspected.
+- Added GitHub workflow `.github/workflows/functions-check.yml`: Node 22 syntax checks all Functions/assets JavaScript and runs synthetic intake tests. The first run completed successfully.
+- Production has not been changed by this work.
 
-## Cloudflare deployment state — needs verification
-- Workers AI pricing checked 2026-11-05: Cloudflare documents 10,000 Neurons/day at no charge on Workers Free; usage beyond this requires Workers Paid and is billed at $0.011 per 1,000 Neurons. On Free, further operations fail after the daily free allocation. Monitor usage before public launch.
-- A Cloudflare Pages project named/associated with royalegyptgroup was visible to the owner.
-- At least one deployment was reported successful.
-- A separate deployment attempt reported: "Failed to publish your function", apparently related to database configuration.
-- wrangler.toml previously showed a D1 binding named DB for database royal-eg-listings.
-- The owner previously saw "You have no D1 database"; it is not confirmed whether the D1 database was subsequently created and correctly bound to the Pages project.
-- Next diagnostic: in the correct Cloudflare account, open the royalegyptgroup Pages project → Settings → Functions → D1 database bindings. Confirm binding variable DB points to database royal-eg-listings. Do not create duplicate databases or change production settings until the current configuration is inspected.
-- Never assume R2 binding PROPERTY_IMAGES exists; it was referenced in code but not confirmed in the deployment configuration.
+## Cloudflare Pages bindings and secrets
+Verified through the authenticated Cloudflare API:
+- D1 binding `DB` exists in both Preview and Production and points to production database ID `23185e4e-d299-41b2-abd7-bc533466e94a`.
+- Encrypted secret `ADMIN_TOKEN` exists in Preview and Production. Its value was not read.
+- Encrypted secret `MAKE_INTAKE_WEBHOOK_URL` was added to Preview only and verified by key name. It was not added to Production.
+- `wrangler.toml` in the release candidate now declares `[ai] binding = "AI"`. Verify the actual Preview Worker runtime binding and assistant endpoint before calling the assistant operational; the Pages project summary does not expose this binding in the same field as its D1 binding.
+- R2 binding `PROPERTY_IMAGES` is not verified; image upload is not enabled by the current listing form.
+- No Cloudflare edge rate-limiting rule or Turnstile verification has been configured yet.
 
-## Agent architecture target
-Build incrementally, with security first:
-- Cloudflare Worker / Pages Functions as the authenticated agent API.
-- D1 for durable project memory, task records, audit events, and (if needed) approved content metadata.
-- GitHub as the source of truth for code and version history.
-- An AI model provider only after its pricing, free limits, data handling, and secrets configuration are checked. Do not hardcode API keys.
-- A simple private admin interface for submitting tasks and reviewing proposed changes.
-- Scheduled/background execution only after explicit setup and clear limits.
+## Website features and limits
+- Arabic-first responsive group homepage with Arabic / English / Russian support.
+- Royal Egypt Properties: listing catalogue and moderated listing submission.
+- Developer directory: informational, official-source links, explicit non-endorsement disclaimer.
+- Coffee and Transportation pages are informational / coming soon; online ordering and transport booking are not active transactional systems.
+- Public property listings come from approved records only.
+- The admin page `admin-listings.html` uses an in-memory password input and sends `Authorization: Bearer ADMIN_TOKEN`; the server checks the secret before listing moderation. Do not store the token in browser storage or share it.
+- Listing image endpoint expects R2 `PROPERTY_IMAGES`, but current public form rejects uploaded files and directs image handoff through WhatsApp.
+- Assistant endpoint uses `@cf/google/gemma-4-26b-a4b-it`, replies in the visitor's language, and now queries only approved public listing fields from D1. It does not read customer contact records.
+- The assistant has a best-effort in-memory per-isolate request limiter; this is not a substitute for global edge protection.
+- The assistant must never invent price, availability, ownership, legal status, permits, developer endorsement, coffee products, or transport schedules.
 
-## Safety and operating rules
-- Do not expose admin tokens, API keys, passwords, or personal data in chat, source code, logs, or public repository files.
-- Store secrets only in Cloudflare encrypted secrets / environment settings.
-- Do not automatically publish listings, send marketing messages, contact developers, spend money, buy services, change DNS, or deploy production changes without explicit owner approval.
-- Agent may research public developer information and prepare drafts; outreach requires explicit approval and must respect website terms, privacy, and anti-spam rules.
-- Prefer free services, but clearly disclose quotas, limits, and possible charges before enabling any metered feature.
-- Make changes on a separate branch or via pull request where practical; preserve working production deployments.
-- Verify code and deployment behavior; distinguish repository inspection from live-site testing.
-- Keep this handoff document updated when verified decisions or project status materially change.
+## Website contact intake — Preview test passed
+- Public form posts to `POST /api/intake`.
+- The Pages Function validates Origin, JSON size, field limits, request type, language, consent, and a honeypot.
+- The outbound webhook host is restricted to `https://hook.eu1.make.com`; the secret value is never committed.
+- Listing submissions are tagged `pending_review`; no automatic publication.
+- Preview-only Make secret `MAKE_INTAKE_WEBHOOK_URL` is configured.
+- One synthetic Preview request returned HTTP 202 (`accepted: true`).
+- Make learned these 13 fields: `event`, `reference`, `request_type`, `status`, `name`, `phone`, `email`, `location`, `details`, `language`, `consent`, `source`, `received_at`.
+- The synthetic request used placeholder data only. No real customer records were created and no D1 rows were inserted.
+- Make scenario 8408747 remains inactive; payload schema learned, no queued deliveries. Do not activate until routing and downstream API permissions are verified.
+- The one-shot HTTP test scenario 8414627 is inactive after use.
 
-## Immediate next steps
-1. Verify D1 database and Pages binding DB in the correct Cloudflare account.
-2. Inspect current functions/, migrations/, wrangler.toml, and admin-listings.html together; reconcile schema and runtime bindings.
-3. Fix and test listing API and moderation flow without breaking the last successful deployment.
-4. Audit admin authentication.
-5. Design the persistent agent API and memory schema only after the current D1 setup is verified.
-6. Add an explicit approval gate for all production deployments and external actions.
-7. For feature branch `feature/multilingual-hero-assistant-2026-11-05`, add the Pages Workers AI binding `AI` in Cloudflare Dashboard before expecting `/api/assistant` to return model responses. The endpoint uses `@cf/google/gemma-4-26b-a4b-it`, validates request size and message roles, and instructs the model not to invent prices, availability, legal status or guarantees.
+## D1 databases and schema parity
+Production:
+- Database: `royal-eg-listings`
+- ID: `23185e4e-d299-41b2-abd7-bc533466e94a`
 
-## Conversation continuity
-This file is a curated project handoff, not a full export of ChatGPT conversations. New important decisions, requirements, and verified progress should be summarized here. Do not claim Cloudflare can automatically import the user's ChatGPT chat history.
+Test:
+- Database: `royal-ai-business-center-test`
+- ID: `6e57492c-717d-4fb6-b122-75e5c14cf161`
 
+A read-only `sqlite_master` query inspected table definitions only; no customer, lead, deal, revenue, listing, or agent records were read.
 
-## Contact intake — integration candidate (2026-11-06)
-- A multilingual contact form and Pages Function `POST /api/intake` are included in the release-candidate branch.
-- The function forwards validated requests to the Make Custom Webhook through the encrypted environment secret `MAKE_INTAKE_WEBHOOK_URL`; never commit the secret value.
-- The webhook destination is restricted in code to the trusted HTTPS host `hook.eu1.make.com`.
-- Listing offers are tagged `pending_review` and are never auto-published.
-- Public launch remains blocked until Preview secret setup, Cloudflare edge rate limiting, learned Make payload schema, synthetic end-to-end test, and owner approval are complete.
+Both databases have the same 12 business table names:
+`agent_approvals`, `agent_audit_log`, `agent_memory`, `agent_tasks`, `agents`, `costs`, `customers`, `daily_summary`, `deals`, `listings`, `opportunities`, `revenue`.
+
+Important: their schemas are NOT fully identical:
+- Production also has `_debug`; test does not. Both have `_cf_KV`.
+- Four common tables differ: `listings`, `agent_approvals`, `agent_memory`, and `agent_tasks`.
+- Production `listings` includes `contact_name`, `contact_phone`, `area_sqm`, `images`, and `reviewed_at`; test has legacy `image_url` and lacks several production fields.
+- Production `agent_approvals` has required task/action fields and a foreign key; test has a looser definition.
+- Production `agent_memory` has id/timestamps and unique(category,key); test uses category/key as its primary key.
+- Production `agent_tasks` includes `started_at`; test does not.
+- The inspected definitions for `customers`, `opportunities`, `agents`, `agent_audit_log`, `costs`, `daily_summary`, `deals`, and `revenue` match.
+
+Do not write to either database or apply migrations until the existing Workers are inspected and a non-destructive test migration plus rollback plan are reviewed. Do not drop/recreate either database.
+
+## Existing Cloudflare Workers discovered
+Cloudflare API listed these scripts:
+- `d1-get-started`
+- `reg-admin-audit`
+- `royal-ai-business-center`
+- `royal-ai-business-center-test`
+- `royal-eg-owner-dashboard`
+- `royal-egypt-agent`
+- `royalegyptgroup`
+
+The `royal-ai-business-center` Worker settings show:
+- `ADMIN_TOKEN` encrypted secret (value not read)
+- `DASHBOARD_ORIGIN` plain-text binding
+- `DB` D1 binding to production database `royal-eg-listings`
+
+Worker source and endpoint contracts still need inspection. Do not assume the Worker already provides customer/opportunity intake APIs. The Pages project and Worker named `royal-eg-owner-dashboard` are separate resources until proven otherwise.
+
+## Make scenarios
+Organization ID: 9505709
+Team: My Team (3460199)
+
+- 8408747 — `Royal Egypt – Secure Website Intake`: inactive, webhook payload learned; no routing modules or D1 writes yet.
+- 8413166 — `Royal Egypt — Cloudflare Read-Only Audit`: on-demand only and currently inactive after each inspection. Uses existing Cloudflare connection ID 12773194. Never put secrets in its mapper.
+- 8414627 — `Royal Egypt — Preview Intake Synthetic Test`: inactive after its one successful test.
+- 8413158 — `Royal Egypt — Create Management Folder`: inactive, Google Drive.
+- 8413745 — `Royal Egypt — Save Project Audit Report`: inactive, Google Drive.
+- 8413630 — `Royal Egypt — Save Project Audit Handover to Drive`: inactive, Google Drive.
+- 8333266 — `Daily CEO Notes | Royal Egypt`: separate content workflow; previously error/inactive. Do not merge it into the website intake workflow.
+- 8412856 — `Integration OpenAI (ChatGPT, Whisper)`: active scheduled scenario; inspect before any change.
+
+Make management API has intermittent rate limits. Do not burn operations on repeated polling; batch work and keep scenarios inactive unless an explicit test/run is needed.
+
+## Required next steps
+1. Inspect source/settings/routes for `royal-ai-business-center`, `royal-ai-business-center-test`, `royal-eg-owner-dashboard`, and `royal-egypt-agent`.
+2. Confirm whether existing Workers already expose authenticated customer/opportunity/listing APIs. Prefer existing authenticated APIs over new D1 write paths.
+3. Inspect full D1 schema/indexes and compare the four mismatched tables; prepare a non-destructive test migration only after Worker dependencies are known.
+4. Add and test Turnstile or equivalent edge-level anti-abuse protection for public intake; keep the endpoint closed to public use until then.
+5. Verify the Pages Preview Worker actually has the `AI` binding and test the assistant against approved listings only.
+6. Design Make routing for customer, opportunity, and listing submissions using the learned 13-field payload and verified API contracts.
+7. Add owner notifications and dashboard status tracking without exposing customer data.
+8. Test listing moderation and admin authentication on Preview.
+9. Verify all pages/languages and accessibility on Preview.
+10. Obtain explicit owner go-live approval before merging PR #9, activating production Make workflows, or deploying Production.
+
+## Security rules
+- Never expose secrets, webhook URLs, admin tokens, passwords, or customer data in chat, source code, logs, or public files.
+- Store secrets only in encrypted Cloudflare settings or secure Make connections.
+- Never read real customer records during audits.
+- Never publish a listing automatically.
+- No production D1 writes, production automation activation, marketing outreach, DNS changes, paid upgrades, or Production deployment without explicit approval.
+- Keep a changelog and rollback path for every release.
