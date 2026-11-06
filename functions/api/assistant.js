@@ -33,11 +33,11 @@ export async function onRequest({ request, env }) {
 
   // Best-effort per-isolate guard; configure Cloudflare edge rate limiting for global enforcement.
   const clientIp = request.headers.get("CF-Connecting-IP") || "unknown";
-  if (!allowRequest(clientIp)) return json({ error: "تم تجاوز عدد الطلبات المسموح. حاول بعد دقيقة." }, 429);
+  if (!allowRequest(clientIp)) return json({ error: "rate_limited" }, 429);
 
   if (!env.AI || typeof env.AI.run !== "function") {
     return json({
-      error: "المساعد الذكي لم يتم تفعيل ربط Cloudflare Workers AI بعد."
+      error: "assistant_not_configured"
     }, 503);
   }
 
@@ -65,11 +65,38 @@ export async function onRequest({ request, env }) {
     return json({ error: "محتوى المحادثة غير صالح." }, 400);
   }
 
+  let approvedListings = [];
+  let listingsState = "unavailable";
+  if (env.DB) {
+    try {
+      const { results } = await env.DB.prepare(
+        "SELECT title,property_type,location,area_sqm,price,purpose,description FROM listings WHERE status='approved' ORDER BY created_at DESC LIMIT 20"
+      ).all();
+      approvedListings = (results || []).map(row => ({
+        title: String(row.title || "").slice(0, 140),
+        property_type: String(row.property_type || "").slice(0, 80),
+        location: String(row.location || "").slice(0, 180),
+        area_sqm: row.area_sqm ?? null,
+        price: row.price ?? null,
+        purpose: row.purpose ?? null,
+        description: String(row.description || "").slice(0, 500)
+      }));
+      listingsState = "loaded";
+    } catch {
+      listingsState = "unavailable";
+    }
+  }
+
+  const listingsContext = listingsState === "loaded"
+    ? JSON.stringify(approvedListings)
+    : "unavailable — do not claim that no listings exist; ask the visitor to contact the team to confirm.";
+
   const system = [
     "You are the multilingual customer assistant for Royal Egypt Group in Egypt.",
     "Reply in the same language as the latest user message: Arabic, English, or Russian.",
     "Help with the group's real-estate marketing, property enquiries, developer directory, coffee and transportation sections.",
-    "Use only the facts in this prompt. The group has property opportunities in Al Ahyaa, Hurghada; Stella di Mare near Ain Sokhna; and administrative space on Nasser Street in Suez.",
+    "Use only the facts in this prompt and the approved public listings JSON below. Never claim that a property is currently available unless it appears in that list. If the list is empty, say there are no currently published listings in the website catalogue. If the listings data is unavailable, say you cannot verify current listings and ask the visitor to contact the team.",
+    `Approved public listings (JSON): ${listingsContext}`,
     "Never invent prices, availability, legal status, ownership, permits, payment plans, developer endorsements, transport schedules, coffee products, or services that are not confirmed.",
     "For current property availability, prices, documents, or booking, tell the visitor to confirm directly with the team on WhatsApp +20 122 502 0980 or email RoyalEgyptgroup0@gmail.com.",
     "The property catalogue may show published opportunities, but it is not a legal verification or guarantee. Encourage independent document and legal checks before payment.",
@@ -85,10 +112,10 @@ export async function onRequest({ request, env }) {
     });
     const answer = result?.response || result?.output_text || result?.result?.response;
     if (typeof answer !== "string" || !answer.trim()) {
-      return json({ error: "لم أتمكن من تكوين إجابة الآن. حاول مرة أخرى." }, 502);
+      return json({ error: "assistant_unavailable" }, 502);
     }
     return json({ answer: answer.trim() });
   } catch {
-    return json({ error: "المساعد غير متاح مؤقتًا. يمكنك التواصل معنا عبر واتساب." }, 502);
+    return json({ error: "assistant_unavailable" }, 502);
   }
 }
