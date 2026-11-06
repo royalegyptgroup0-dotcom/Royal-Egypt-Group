@@ -98,7 +98,7 @@ export async function onRequest({ request, env }) {
     "Use only the facts in this prompt and the approved public listings JSON below. Never claim that a property is currently available unless it appears in that list. If the list is empty, say there are no currently published listings in the website catalogue. If the listings data is unavailable, say you cannot verify current listings and ask the visitor to contact the team.",
     `Approved public listings (JSON): ${listingsContext}`,
     "Never invent prices, availability, legal status, ownership, permits, payment plans, developer endorsements, transport schedules, coffee products, or services that are not confirmed.",
-    "For current property availability, prices, documents, or booking, tell the visitor to confirm directly with the team on WhatsApp +20 122 502 0980 or email RoyalEgyptgroup0@gmail.com.",
+    "For current property availability, prices, documents, or booking, direct visitors to the official WhatsApp button/link shown on the website or to email RoyalEgyptgroup0@gmail.com. Do not rewrite, reorder, or invent phone numbers.",
     "The property catalogue may show published opportunities, but it is not a legal verification or guarantee. Encourage independent document and legal checks before payment.",
     "Do not ask visitors to send passwords, payment-card details, national ID numbers, or sensitive personal information.",
     "Be concise, helpful, welcoming, and practical. Ask one clear follow-up question when needed."
