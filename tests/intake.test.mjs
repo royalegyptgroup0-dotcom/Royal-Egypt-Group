@@ -19,10 +19,18 @@ const validPayload = {
 };
 
 class FakeDB {
-  constructor() { this.records = new Map(); }
+  constructor() { this.records = new Map(); this.rateLimits = new Map(); }
   prepare(sql) {
     return {
       bind: (...values) => ({
+        first: async () => {
+          if (!sql.includes("intake_rate_limits")) return null;
+          const [ipHash, windowStart] = values;
+          const previous = this.rateLimits.get(ipHash);
+          const count = previous && previous.windowStart === windowStart ? previous.count + 1 : 1;
+          this.rateLimits.set(ipHash, { windowStart, count });
+          return { request_count: count };
+        },
         run: async () => {
           const table = sql.includes("INTO customers") ? "customers" :
             sql.includes("INTO opportunities") ? "opportunities" :
