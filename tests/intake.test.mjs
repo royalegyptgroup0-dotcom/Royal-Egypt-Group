@@ -152,4 +152,5 @@ test("limits each client IP to 10 intake requests per minute per isolate", async
     202, 202, 202, 202, 202, 202, 202, 202, 202, 202, 429
   ]);
   assert.equal(forwarded, 10);
+  assert.equal(responses[10].headers.get("access-control-allow-origin"), origin);
 });
