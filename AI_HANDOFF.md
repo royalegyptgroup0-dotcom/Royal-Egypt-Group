@@ -46,7 +46,7 @@ Verified through the authenticated Cloudflare API:
 - Production D1 binding `DB` points to `royal-eg-listings` (`23185e4e-d299-41b2-abd7-bc533466e94a`). The release-candidate Wrangler config explicitly maps Preview to test DB `royal-ai-business-center-test` (`6e57492c-717d-4fb6-b122-75e5c14cf161`) and Production to `royal-eg-listings`; the latest Preview deployment succeeded and Cloudflare confirmed Preview DB points to the test database.
 - Encrypted secret `ADMIN_TOKEN` exists in Preview and Production. Its value was not read.
 - Encrypted secret `MAKE_INTAKE_WEBHOOK_URL` was added to Preview only and verified by key name. It was not added to Production.
-- `wrangler.toml` in the release candidate declares `[ai] binding = "AI"` for local/default, Preview, and Production environments. The Preview Worker settings now confirm the `AI` binding. A synthetic assistant response test is still pending.
+- `wrangler.toml` in the release candidate declares `[ai] binding = "AI"` for local/default, Preview, and Production environments. The Preview Worker settings now confirm the `AI` binding. Synthetic English, Arabic, and Russian assistant requests returned HTTP 200 in Preview.
 - R2 binding `PROPERTY_IMAGES` is not verified; image upload is not enabled by the current listing form.
 - No Cloudflare edge rate-limiting rule or Turnstile verification has been configured yet.
 
@@ -150,3 +150,6 @@ Make management API has intermittent rate limits. Do not burn operations on repe
 - Never publish a listing automatically.
 - No production D1 writes, production automation activation, marketing outreach, DNS changes, paid upgrades, or Production deployment without explicit approval.
 - Keep a changelog and rollback path for every release.
+
+
+Workers AI cost note: Cloudflare currently includes 10,000 Neurons per day at no charge on Workers Free. Requests beyond the daily free allocation fail until reset unless the account is on Workers Paid. The project has not been upgraded to a paid plan.
