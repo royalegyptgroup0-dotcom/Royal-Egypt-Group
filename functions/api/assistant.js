@@ -110,7 +110,13 @@ export async function onRequest({ request, env }) {
       chat_template_kwargs: { enable_thinking: false },
       max_tokens: 500
     });
-    const answer = result?.response || result?.output_text || result?.result?.response;
+    const answer = [
+      result?.response,
+      result?.output_text,
+      result?.result?.response,
+      result?.choices?.[0]?.message?.content,
+      result?.result?.choices?.[0]?.message?.content
+    ].find(value => typeof value === "string" && value.trim());
     if (typeof answer !== "string" || !answer.trim()) {
       return json({ error: "assistant_unavailable" }, 502);
     }
