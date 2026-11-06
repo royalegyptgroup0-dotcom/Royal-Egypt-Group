@@ -39,14 +39,14 @@ Do not merge PR #9 or deploy Production until all Preview gates pass and the own
 - Only `royalegyptgroup.pages.dev` is attached as a domain; the custom `.com` domain is not attached.
 - GitHub Jekyll CI succeeded on the release-candidate commits inspected.
 - Added GitHub workflow `.github/workflows/functions-check.yml`: Node 22 syntax checks all Functions/assets JavaScript and runs synthetic intake tests. The first run completed successfully.
-- Production has not been changed by this work.
+- Production has not been changed by this work. Project policy requires all tests to use the separate test database and prohibits Production writes during testing.
 
 ## Cloudflare Pages bindings and secrets
 Verified through the authenticated Cloudflare API:
-- D1 binding `DB` exists in both Preview and Production and points to production database ID `23185e4e-d299-41b2-abd7-bc533466e94a`.
+- Production D1 binding `DB` points to `royal-eg-listings` (`23185e4e-d299-41b2-abd7-bc533466e94a`). The release-candidate Wrangler config explicitly maps Preview to test DB `royal-ai-business-center-test` (`6e57492c-717d-4fb6-b122-75e5c14cf161`) and Production to `royal-eg-listings`; the latest Preview deployment and live binding still require verification.
 - Encrypted secret `ADMIN_TOKEN` exists in Preview and Production. Its value was not read.
 - Encrypted secret `MAKE_INTAKE_WEBHOOK_URL` was added to Preview only and verified by key name. It was not added to Production.
-- `wrangler.toml` in the release candidate now declares `[ai] binding = "AI"`. Verify the actual Preview Worker runtime binding and assistant endpoint before calling the assistant operational; the Pages project summary does not expose this binding in the same field as its D1 binding.
+- `wrangler.toml` in the release candidate declares `[ai] binding = "AI"` for local/default, Preview, and Production environments. Verify the actual Preview Worker runtime binding before calling the assistant operational.
 - R2 binding `PROPERTY_IMAGES` is not verified; image upload is not enabled by the current listing form.
 - No Cloudflare edge rate-limiting rule or Turnstile verification has been configured yet.
 
