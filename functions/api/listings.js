@@ -44,11 +44,37 @@ async function allowRequest(db, ip) {
   return Number(row?.request_count || 0) <= MAX_REQUESTS_PER_IP_PER_MINUTE;
 }
 
+const ERROR_MESSAGES = {
+  database_unavailable: "قاعدة بيانات الإعلانات غير متاحة حاليًا.",
+  method_not_allowed: "طريقة الطلب غير مسموح بها.",
+  origin_not_allowed: "مصدر الطلب غير مسموح.",
+  multipart_form_required: "صيغة إرسال الإعلان غير صحيحة.",
+  payload_too_large: "حجم البيانات أكبر من الحد المسموح.",
+  invalid_body: "تعذر قراءة بيانات الإعلان.",
+  listing_protection_unavailable: "تعذر تفعيل حماية استقبال الإعلانات. حاول لاحقًا.",
+  rate_limited: "وصلت إلى الحد المؤقت لإرسال الإعلانات. حاول بعد دقيقة.",
+  invalid_form_data: "صيغة البيانات غير صحيحة. أعد إرسال النموذج.",
+  submission_rejected: "تم رفض الطلب الآلي.",
+  required_fields_missing: "يرجى استكمال الحقول المطلوبة.",
+  field_too_long: "أحد الحقول أطول من الحد المسموح.",
+  invalid_phone: "يرجى إدخال رقم هاتف صحيح.",
+  invalid_property_type: "نوع العقار المحدد غير صحيح.",
+  consent_required: "الموافقة مطلوبة لإرسال الإعلان.",
+  invalid_area: "المساحة يجب أن تكون رقمًا موجبًا وصحيحًا.",
+  invalid_purpose: "الغرض المحدد غير صحيح.",
+  image_upload_unavailable: "استقبال الصور غير متاح حاليًا. أرسل الصور بعد تسجيل الإعلان عبر واتساب Royal Egypt.",
+  listing_storage_failed: "تعذر حفظ الإعلان حاليًا. حاول مرة أخرى لاحقًا.",
+};
+
+function fail(code, status, origin = "") {
+  return json({ error: ERROR_MESSAGES[code] || "تعذر تنفيذ الطلب حاليًا.", code }, status, origin);
+}
+
 export async function onRequest({ request, env }) {
   const origin = request.headers.get("Origin") || "";
 
   if (request.method === "OPTIONS") {
-    if (!allowedOrigin(origin)) return json({ error: "origin_not_allowed" }, 403);
+    if (!allowedOrigin(origin)) return fail("origin_not_allowed", 403);
     return new Response(null, {
       status: 204,
       headers: {
@@ -61,7 +87,7 @@ export async function onRequest({ request, env }) {
     });
   }
 
-  if (!env.DB) return json({ error: "database_unavailable" }, 503, origin);
+  if (!env.DB) return fail("database_unavailable", 503, origin);
 
   if (request.method === "GET") {
     try {
@@ -74,44 +100,44 @@ export async function onRequest({ request, env }) {
     }
   }
 
-  if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405, origin);
-  if (!allowedOrigin(origin)) return json({ error: "origin_not_allowed" }, 403);
+  if (request.method !== "POST") return fail("method_not_allowed", 405, origin);
+  if (!allowedOrigin(origin)) return fail("origin_not_allowed", 403);
 
   const contentType = (request.headers.get("content-type") || "").toLowerCase();
   if (!contentType.includes("multipart/form-data")) {
-    return json({ error: "multipart_form_required" }, 415, origin);
+    return fail("multipart_form_required", 415, origin);
   }
 
   const declaredLength = Number(request.headers.get("content-length") || 0);
-  if (declaredLength > MAX_BODY_BYTES) return json({ error: "payload_too_large" }, 413, origin);
+  if (declaredLength > MAX_BODY_BYTES) return fail("payload_too_large", 413, origin);
 
   try {
     const bodyBytes = await request.clone().arrayBuffer();
-    if (bodyBytes.byteLength > MAX_BODY_BYTES) return json({ error: "payload_too_large" }, 413, origin);
+    if (bodyBytes.byteLength > MAX_BODY_BYTES) return fail("payload_too_large", 413, origin);
   } catch {
-    return json({ error: "invalid_body" }, 400, origin);
+    return fail("invalid_body", 400, origin);
   }
 
   const clientIp = request.headers.get("CF-Connecting-IP") || "unknown";
   try {
-    if (!await allowRequest(env.DB, clientIp)) return json({ error: "rate_limited" }, 429, origin);
+    if (!await allowRequest(env.DB, clientIp)) return fail("rate_limited", 429, origin);
   } catch {
-    return json({ error: "listing_protection_unavailable" }, 503, origin);
+    return fail("listing_protection_unavailable", 503, origin);
   }
 
   let data;
   try {
     data = await request.formData();
   } catch {
-    return json({ error: "invalid_form_data" }, 400, origin);
+    return fail("invalid_form_data", 400, origin);
   }
 
   const value = key => String(data.get(key) ?? "").trim();
-  if (value("website")) return json({ error: "submission_rejected" }, 400, origin);
+  if (value("website")) return fail("submission_rejected", 400, origin);
 
   const required = ["contact_name", "contact_phone", "title", "property_type", "location", "description"];
   for (const key of required) {
-    if (!value(key)) return json({ error: "required_fields_missing" }, 400, origin);
+    if (!value(key)) return fail("required_fields_missing", 400, origin);
   }
 
   const limits = {
@@ -125,40 +151,37 @@ export async function onRequest({ request, env }) {
     description: 3000,
   };
   for (const [key, max] of Object.entries(limits)) {
-    if (value(key).length > max) return json({ error: "field_too_long" }, 400, origin);
+    if (value(key).length > max) return fail("field_too_long", 400, origin);
   }
 
   const phone = value("contact_phone");
   const digits = phone.replace(/\D/g, "");
   if (!/^[+0-9()\s.-]{7,30}$/.test(phone) || digits.length < 7 || digits.length > 15) {
-    return json({ error: "invalid_phone" }, 400, origin);
+    return fail("invalid_phone", 400, origin);
   }
 
   if (!ALLOWED_PROPERTY_TYPES.has(value("property_type"))) {
-    return json({ error: "invalid_property_type" }, 400, origin);
+    return fail("invalid_property_type", 400, origin);
   }
-  if (data.get("consent") !== "on") return json({ error: "consent_required" }, 400, origin);
+  if (data.get("consent") !== "on") return fail("consent_required", 400, origin);
 
   const areaRaw = value("area_sqm");
   let area = null;
   if (areaRaw) {
     area = Number(areaRaw);
     if (!Number.isFinite(area) || area <= 0 || area > 10_000_000) {
-      return json({ error: "invalid_area" }, 400, origin);
+      return fail("invalid_area", 400, origin);
     }
   }
 
   const purpose = value("purpose") || "بيع";
-  if (!ALLOWED_PURPOSES.has(purpose)) return json({ error: "invalid_purpose" }, 400, origin);
+  if (!ALLOWED_PURPOSES.has(purpose)) return fail("invalid_purpose", 400, origin);
 
   const images = data.getAll("images").filter(file =>
     file && typeof file.arrayBuffer === "function" && file.size > 0
   );
   if (images.length) {
-    return json({
-      error: "image_upload_unavailable",
-      message: "استقبال الصور غير متاح حاليًا. أرسل الصور بعد تسجيل الإعلان عبر واتساب Royal Egypt.",
-    }, 400, origin);
+    return fail("image_upload_unavailable", 400, origin);
   }
 
   const id = crypto.randomUUID();
@@ -181,6 +204,6 @@ export async function onRequest({ request, env }) {
 
     return json({ id, status: "pending" }, 201, origin);
   } catch {
-    return json({ error: "listing_storage_failed" }, 503, origin);
+    return fail("listing_storage_failed", 503, origin);
   }
 }
