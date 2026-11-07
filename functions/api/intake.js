@@ -177,7 +177,7 @@ export async function onRequest({ request, env }) {
   }
 
   // The database is authoritative. Make is an optional orchestration/notification layer.
-  // A webhook outage must never make the visitor submit the same lead again.
+  // There is no durable retry queue yet, so never label a failed delivery as pending.
   let notificationStatus = "not_configured";
   if (inserted && env.MAKE_INTAKE_WEBHOOK_URL && trustedWebhook(env.MAKE_INTAKE_WEBHOOK_URL)) {
     try {
@@ -186,9 +186,9 @@ export async function onRequest({ request, env }) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify(forwarded),
       });
-      notificationStatus = upstream.ok ? "sent" : "pending";
+      notificationStatus = upstream.ok ? "sent" : "delivery_failed";
     } catch {
-      notificationStatus = "pending";
+      notificationStatus = "delivery_failed";
     }
   } else if (!inserted) {
     notificationStatus = "duplicate";
