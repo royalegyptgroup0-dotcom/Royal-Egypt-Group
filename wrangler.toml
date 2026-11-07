@@ -8,6 +8,7 @@ binding = "DB"
 database_name = "royal-eg-listings"
 database_id = "23185e4e-d299-41b2-abd7-bc533466e94a"
 
+# Preview-only override; Cloudflare Pages dashboard Preview binding is also isolated.
 # All Cloudflare Pages Preview deployments use the isolated test database.
 # This prevents branch previews from writing to Production D1.
 [[env.preview.d1_databases]]
