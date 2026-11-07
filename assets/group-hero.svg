@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 760" role="img" aria-label="Abstract Egyptian skyline with pyramids at sunset">
+<defs>
+ <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#07111f"/><stop offset=".52" stop-color="#182536"/><stop offset="1" stop-color="#9b6739"/></linearGradient>
+ <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f2d69a"/><stop offset="1" stop-color="#a77b39"/></linearGradient>
+ <linearGradient id="water" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#182b39"/><stop offset="1" stop-color="#050b12"/></linearGradient>
+ <radialGradient id="glow"><stop stop-color="#f4c77d" stop-opacity=".75"/><stop offset="1" stop-color="#f4c77d" stop-opacity="0"/></radialGradient>
+</defs>
+<rect width="1600" height="760" fill="url(#sky)"/>
+<circle cx="1250" cy="250" r="360" fill="url(#glow)"/>
+<path d="M0 500 L1600 500 L1600 760 L0 760Z" fill="url(#water)"/>
+<g fill="#0a121c" opacity=".9">
+ <path d="M500 505V310h70v195zm90 0V250h95v255zm125 0V330h60v175zm90 0V210h105v295zm135 0V295h75v210zm100 0V245h110v260zm135 0V335h72v170z"/>
+ <path d="M575 310h70v-35h-70zm120-60h95v-28h-95zm200-40h105v-28H895zm210 35h110v-24h-110z"/>
+</g>
+<g fill="none" stroke="#d8ad68" stroke-opacity=".55" stroke-width="3">
+ <path d="M535 340h35m-35 25h35m-35 25h35m75-130h95m-95 25h95m-95 25h95m-95 25h95m-95 25h95m80-135h105m-105 25h105m-105 25h105m-105 25h105m-105 25h105m105-95h75m-75 25h75m-75 25h75m-75 25h75"/>
+</g>
+<g fill="#101722"><path d="M1150 505 1300 265 1450 505Z"/><path d="M1325 505 1450 315 1580 505Z"/></g>
+<g fill="none" stroke="#d6ae70" stroke-opacity=".55" stroke-width="3"><path d="M1300 265 1300 505m-75-120h150m-125-40h100m-75-40h50M1450 315v190m-80-75h160m-135-40h110"/></g>
+<path d="M0 505 Q350 490 700 510T1600 500" fill="none" stroke="#d6b579" stroke-opacity=".6" stroke-width="3"/>
+<g fill="none" stroke="#d6b579" stroke-opacity=".3" stroke-width="2">
+ <path d="M0 560q220 24 440 0t440 0t440 0t280 0M0 610q180 18 360 0t360 0t360 0t520 0M0 680q220 15 440 0t440 0t440 0t280 0"/>
+</g>
+<g fill="#080f18"><path d="M100 510q-15-100 0-150q20 55 10 150zm-18-105 22 18m-22 20 22 18m-22 20 22 18m22-74 20-18m-20 40 20-18m-20 40 20-18"/><path d="M1530 510q-15-100 0-150q20 55 10 150zm-18-105 22 18m-22 20 22 18m-22 20 22 18m22-74 20-18m-20 40 20-18m-20 40 20-18"/></g>
+<rect width="1600" height="760" fill="none" stroke="#d6b579" stroke-opacity=".15" stroke-width="2"/>
+</svg>
