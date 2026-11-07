@@ -185,3 +185,30 @@ test("rejects oversized multipart bodies before parsing", async () => {
   assert.equal(response.status, 413);
   assert.equal(db.records.length, 0);
 });
+
+
+test("rejects oversized streaming bodies even when Content-Length is absent", async () => {
+  const db = new FakeDB();
+  const encoder = new TextEncoder();
+  const chunks = [encoder.encode("x".repeat(6_000)), encoder.encode("y".repeat(6_000))];
+  const body = new ReadableStream({
+    start(controller) {
+      for (const chunk of chunks) controller.enqueue(chunk);
+      controller.close();
+    },
+  });
+  const request = new Request("https://preview-branch.royalegyptgroup.pages.dev/api/listings", {
+    method: "POST",
+    headers: {
+      origin: "https://preview-branch.royalegyptgroup.pages.dev",
+      "cf-connecting-ip": "198.51.100.11",
+      "content-type": "multipart/form-data; boundary=synthetic",
+    },
+    body,
+    duplex: "half",
+  });
+  assert.equal(request.headers.has("content-length"), false);
+  const response = await onRequest({ request, env: { DB: db } });
+  assert.equal(response.status, 413);
+  assert.equal(db.records.length, 0);
+});
