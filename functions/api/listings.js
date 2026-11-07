@@ -85,13 +85,11 @@ export async function onRequest({ request, env }) {
   const declaredLength = Number(request.headers.get("content-length") || 0);
   if (declaredLength > MAX_BODY_BYTES) return json({ error: "payload_too_large" }, 413, origin);
 
-  if (declaredLength === 0) {
-    try {
-      const bodyBytes = await request.clone().arrayBuffer();
-      if (bodyBytes.byteLength > MAX_BODY_BYTES) return json({ error: "payload_too_large" }, 413, origin);
-    } catch {
-      return json({ error: "invalid_body" }, 400, origin);
-    }
+  try {
+    const bodyBytes = await request.clone().arrayBuffer();
+    if (bodyBytes.byteLength > MAX_BODY_BYTES) return json({ error: "payload_too_large" }, 413, origin);
+  } catch {
+    return json({ error: "invalid_body" }, 400, origin);
   }
 
   const clientIp = request.headers.get("CF-Connecting-IP") || "unknown";
