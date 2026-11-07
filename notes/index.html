@@ -138,6 +138,15 @@
         top.append(node("span","day","CEO NOTES · DAY " + post.day));
         if(post.publishedAt) top.append(node("time","date",post.publishedAt));
         card.append(top);
+        if(post.imageUrl){
+          const image = document.createElement("img");
+          image.src = post.imageUrl;
+          image.alt = "صورة توضيحية: " + (post.title || "CEO Notes");
+          image.loading = "lazy";
+          image.decoding = "async";
+          image.style.cssText = "display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:12px;margin:4px 0 16px;border:1px solid #c8a56855";
+          card.append(image);
+        }
         card.append(node("h3","",post.title || "ملاحظة يومية"));
         card.append(node("p","article",post.article || ""));
         const detail = node("div","detail");
@@ -186,7 +195,7 @@
         filtered.forEach(post => list.append(makePost(post)));
       }
       search.addEventListener("input",render);
-      fetch((location.pathname.endsWith("/") ? location.pathname : location.pathname + "/") + "posts.json",{cache:"no-store"})
+      fetch("https://ceo-notes-ai.yasser-abdelaziz83.workers.dev/feed",{cache:"no-store"}).catch(() => fetch((location.pathname.endsWith("/") ? location.pathname : location.pathname + "/") + "posts.json",{cache:"no-store"}))
         .then(response => { if(!response.ok) throw new Error("posts_unavailable"); return response.json(); })
         .then(data => {
           const items = Array.isArray(data) ? data : (Array.isArray(data.posts) ? data.posts : []);
