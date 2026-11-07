@@ -72,4 +72,5 @@ const usd=document.getElementById("usdEgp"),eur=document.getElementById("eurEgp"
 const loadRates=async()=>{try{const response=await fetch("https://api.frankfurter.dev/v1/latest?base=USD&symbols=EGP,EUR",{headers:{Accept:"application/json"},cache:"no-store"});if(!response.ok)throw new Error("rate service unavailable");const data=await response.json();const usdValue=data.rates?.EGP;if(!usdValue)throw new Error("EGP rate missing");if(usd)usd.textContent="1 USD = "+Number(usdValue).toFixed(2)+" EGP";if(eur){const eurValue=data.rates?.EUR;if(eurValue)eur.textContent="1 EUR = "+(Number(usdValue)/Number(eurValue)).toFixed(2)+" EGP";else eur.textContent="غير متاح"}if(updated)updated.textContent="آخر تاريخ متاح: "+(data.date||"غير محدد")+" · سعر مرجعي"}catch(error){if(usd)usd.textContent="غير متاح حاليًا";if(eur)eur.textContent="غير متاح حاليًا";if(updated)updated.textContent="تعذر الاتصال بالمصدر · الموقع يعمل بشكل طبيعي"}};
 loadRates();
 })();
-</script>\n</body></html>
+</script>
+</body></html>
