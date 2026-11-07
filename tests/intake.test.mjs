@@ -203,11 +203,26 @@ test("Make outage does not lose an already stored request", async () => {
   assert.equal(response.status, 202);
   const result = await response.json();
   assert.equal(result.stored, true);
-  assert.equal(result.notification_status, "pending");
+  assert.equal(result.notification_status, "delivery_failed");
   assert.equal(db.records.size, 1);
 });
 
-test("limits each client IP to 10 intake requests per minute per isolate", async () => {
+test("reports a non-success Make response as delivery_failed", async () => {
+  const db = new FakeDB();
+  const response = await withFetch(async () => new Response("synthetic upstream failure", { status: 503 }), () =>
+    onRequest({
+      request: makeRequest(),
+      env: { DB: db, MAKE_INTAKE_WEBHOOK_URL: webhook }
+    })
+  );
+  assert.equal(response.status, 202);
+  const result = await response.json();
+  assert.equal(result.stored, true);
+  assert.equal(result.notification_status, "delivery_failed");
+  assert.equal(db.records.size, 1);
+});
+
+test("limits each client IP to 10 intake requests per minute using the shared D1 counter", async () => {
   const ip = "203.0.113.77";
   const db = new FakeDB();
   let forwarded = 0;
