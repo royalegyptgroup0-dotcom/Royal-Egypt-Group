@@ -111,11 +111,31 @@ export async function onRequest({ request, env }) {
   const declaredLength = Number(request.headers.get("content-length") || 0);
   if (declaredLength > MAX_BODY_BYTES) return fail("payload_too_large", 413, origin);
 
+  const reader = request.body?.getReader();
+  if (!reader) return fail("invalid_body", 400, origin);
+  const bodyChunks = [];
+  let bodySize = 0;
   try {
-    const bodyBytes = await request.clone().arrayBuffer();
-    if (bodyBytes.byteLength > MAX_BODY_BYTES) return fail("payload_too_large", 413, origin);
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      bodySize += value.byteLength;
+      if (bodySize > MAX_BODY_BYTES) {
+        reader.cancel().catch(() => {});
+        return fail("payload_too_large", 413, origin);
+      }
+      bodyChunks.push(value);
+    }
   } catch {
     return fail("invalid_body", 400, origin);
+  }
+
+  // Rebuild only the already-bounded body so formData() never buffers an unbounded upload.
+  const boundedBody = new Uint8Array(bodySize);
+  let bodyOffset = 0;
+  for (const chunk of bodyChunks) {
+    boundedBody.set(chunk, bodyOffset);
+    bodyOffset += chunk.byteLength;
   }
 
   const clientIp = request.headers.get("CF-Connecting-IP") || "unknown";
@@ -127,7 +147,14 @@ export async function onRequest({ request, env }) {
 
   let data;
   try {
-    data = await request.formData();
+    const boundedHeaders = new Headers(request.headers);
+    boundedHeaders.delete("content-length");
+    const boundedRequest = new Request(request.url, {
+      method: "POST",
+      headers: boundedHeaders,
+      body: boundedBody,
+    });
+    data = await boundedRequest.formData();
   } catch {
     return fail("invalid_form_data", 400, origin);
   }
