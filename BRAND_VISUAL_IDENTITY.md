@@ -32,3 +32,17 @@ Before publishing any designed image, verify:
 ## Current website implementation
 - The homepage hero uses the existing official logo asset.
 - New campaign and generated images must follow these rules before they are added to the site or scheduled for publication.
+
+## Reusable website overlay
+- `/assets/brand-watermark.svg` is the reusable lockup. It references the exact website master asset at `/royal-logo.jpg`; it is not a replacement logo.
+- `/assets/brand-artwork.css` provides responsive placement for designed artwork.
+- Example:
+  ```html
+  <figure class="brand-artwork">
+    <img src="/path/to/campaign-artwork.webp" alt="Campaign artwork">
+    <img class="brand-artwork__mark" src="/assets/brand-watermark.svg" alt="Royal Egypt Group">
+  </figure>
+  ```
+- Add `brand-artwork--portrait` to the wrapper for portrait graphics.
+- Include `/assets/brand-artwork.css` on pages that use this pattern.
+- This overlay is for designed campaign art only, not original property/listing/customer photography.
