@@ -34,13 +34,13 @@ Before publishing any designed image, verify:
 - New campaign and generated images must follow these rules before they are added to the site or scheduled for publication.
 
 ## Reusable website overlay
-- `/assets/brand-watermark.svg` is the reusable lockup. It references the exact website master asset at `/royal-logo.jpg`; it is not a replacement logo.
+- Use the exact master image `/royal-logo.jpg` as a normal HTML `<img>` element; do not embed it as an external SVG resource.
 - `/assets/brand-artwork.css` provides responsive placement for designed artwork.
 - Example:
   ```html
   <figure class="brand-artwork">
     <img src="/path/to/campaign-artwork.webp" alt="Campaign artwork">
-    <img class="brand-artwork__mark" src="/assets/brand-watermark.svg" alt="Royal Egypt Group">
+    <img class="brand-artwork__mark" src="/royal-logo.jpg" alt="الشعار الرسمي لمجموعة Royal Egypt Group">
   </figure>
   ```
 - Add `brand-artwork--portrait` to the wrapper for portrait graphics.
