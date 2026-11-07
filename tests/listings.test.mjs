@@ -175,3 +175,13 @@ test("fails closed when the shared rate-limit table is unavailable", async () =>
   const response = await onRequest({ request: makeRequest(), env: { DB: db } });
   assert.equal(response.status, 503);
 });
+
+test("rejects oversized multipart bodies before parsing", async () => {
+  const db = new FakeDB();
+  const response = await onRequest({
+    request: makeRequest({ description: "x".repeat(12_000) }),
+    env: { DB: db },
+  });
+  assert.equal(response.status, 413);
+  assert.equal(db.records.length, 0);
+});
