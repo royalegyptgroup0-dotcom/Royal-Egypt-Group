@@ -118,8 +118,11 @@ export default {async fetch(request){
   return new Response(JSON.stringify(data),{headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});
  }
  if(url.pathname==="/markets"){
-  try{return new Response(JSON.stringify(await marketData(url.origin)),{headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"public, max-age=300","X-Content-Type-Options":"nosniff"}});}
-  catch(e){return new Response(JSON.stringify({error:"market_data_unavailable",message:"Daily reference rates are temporarily unavailable."}),{status:503,headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});}
+  try{
+   const data=await marketData(url.origin),headers={"Content-Type":"application/json; charset=utf-8","Cache-Control":data.stale?"public, max-age=60":"public, max-age=300","X-Content-Type-Options":"nosniff","X-Data-Stale":String(Boolean(data.stale))};
+   if(data.stale)headers.Warning='110 - "Response is stale"';
+   return new Response(JSON.stringify(data),{headers});
+  }catch(e){return new Response(JSON.stringify({error:"market_data_unavailable",message:"Daily reference rates are temporarily unavailable."}),{status:503,headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});}
  }
  if(url.pathname==="/rss.xml")return new Response(rss(await latestFeed(url.origin)),{headers:XML_HEADERS});
  if(url.pathname==="/robots.txt")return new Response("User-agent: *\nAllow: /\nSitemap: https://ceo-notes.pages.dev/sitemap.xml\n",{headers:{"Content-Type":"text/plain; charset=utf-8","Cache-Control":"public, max-age=3600"}});
