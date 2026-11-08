@@ -63,6 +63,9 @@ test("returns customers, opportunities and listings to an authenticated owner", 
   assert.equal(result.listings[0].status, "pending");
   assert.equal(result.orders.length, 1);
   assert.equal(result.orders[0].order_type, "coffee");
+  const ordersQuery = db.calls.find(sql => typeof sql === "string" && sql.includes("FROM orders"));
+  assert.match(ordersQuery, /LIMIT 100/);
+  assert.doesNotMatch(ordersQuery, /SELECT \*/);
 });
 
 test("updates an allowlisted customer status", async () => {
