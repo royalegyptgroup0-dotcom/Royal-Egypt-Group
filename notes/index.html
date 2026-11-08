@@ -57,6 +57,9 @@
     .date{color:#88857e;font-size:10px}
     .post h3{font-size:20px;line-height:1.5;margin:0 0 13px;color:#f2e8d4}
     .article{white-space:pre-line;color:#d0cbc1;font-size:13px;line-height:2;margin:0}
+    .post-actions{display:flex;justify-content:flex-start;margin-top:14px}
+    .share-button{border:1px solid #c8a56866;background:#c8a56812;color:var(--gold2);border-radius:8px;padding:7px 13px;font-size:11px;cursor:pointer}
+    .share-button:hover,.share-button:focus-visible{background:#c8a56824;border-color:var(--gold);outline:none}
     .detail{border-top:1px solid var(--line);margin-top:18px;padding-top:15px;display:grid;gap:12px}
     .detail-block{font-size:12px;color:#c8c2b7}
     .detail-block strong{display:block;color:var(--gold2);font-size:11px;margin-bottom:3px}
@@ -190,6 +193,7 @@
       }
       function makePost(post){
         const card = node("article","post");
+        if(post.day !== undefined) card.id = "post-" + String(post.day);
         const top = node("div","post-top");
         top.append(node("span","day","CEO NOTES · DAY " + post.day));
         if(post.publishedAt) top.append(node("time","date",post.publishedAt));
@@ -231,6 +235,29 @@
           detail.append(tagList);
         }
         card.append(detail);
+        const actions = node("div","post-actions");
+        const share = node("button","share-button","مشاركة المقال");
+        share.type = "button";
+        share.addEventListener("click",async()=>{
+          const shareUrl = location.origin + location.pathname + "#post-" + encodeURIComponent(String(post.day || ""));
+          const payload = {title:post.title || "CEO Notes",text:(post.title || "CEO Notes") + " — CEO Notes",url:shareUrl};
+          try{
+            if(navigator.share){await navigator.share(payload);}
+            else if(navigator.clipboard && navigator.clipboard.writeText){
+              await navigator.clipboard.writeText(shareUrl);
+              share.textContent = "تم نسخ الرابط";
+              share.setAttribute("aria-label","تم نسخ رابط المقال");
+            }else{
+              window.open("https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(shareUrl),"_blank","noopener,noreferrer");
+            }
+          }catch(error){
+            if(error && error.name !== "AbortError"){
+              share.textContent = "تعذرت المشاركة";
+            }
+          }
+        });
+        actions.append(share);
+        card.append(actions);
         return card;
       }
       function render(){
