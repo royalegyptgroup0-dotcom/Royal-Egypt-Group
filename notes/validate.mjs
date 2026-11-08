@@ -17,6 +17,9 @@ for (const post of feed.posts) {
   assert.ok(!days.has(Number(post.day)), "post days must be unique");
   days.add(Number(post.day));
   assert.equal(post.status, "Published", "public fallback may contain only published posts");
+  assert.ok(typeof post.category === "string" && post.category.trim(), `post ${post.day} needs a category`);
+  assert.ok(Array.isArray(post.tags) && post.tags.length > 0, `post ${post.day} needs topic tags`);
+  assert.ok(post.tags.every(tag => typeof tag === "string" && tag.trim()), `post ${post.day} has invalid topic tags`);
   for (const field of ["title", "article", "ideaOfTheDay", "ceoChallenge", "discussionQuestion"]) {
     assert.ok(typeof post[field] === "string" && post[field].trim(), `post ${post.day} needs ${field}`);
   }
@@ -39,7 +42,16 @@ const htmlMarkers = [
   'card.id = "post-"',
   'id="ceo-radio"',
   'src="/radio.js"',
-  'The United States Of America'
+  'The United States Of America',
+  'id="archive-controls"',
+  'id="category-filter"',
+  'id="tag-filters"',
+  'function renderFilters()',
+  'activeTag',
+  'post.tags',
+  'property="og:image"',
+  'name="twitter:card"',
+  'article:published_time'
 ];
 for (const marker of htmlMarkers) assert.ok(html.includes(marker), `homepage is missing: ${marker}`);
 
@@ -66,6 +78,10 @@ const workerMarkers = [
   'const articleMatch=url.pathname.match(',
   'function articleHtml(post)',
   'ceo-notes.pages.dev/post/',
+  'article:published_time',
+  'article:section',
+  'twitter:image',
+  'taxonomy',
   'caches.default.put',
   'caches.default.match',
   'Cache-Control',
