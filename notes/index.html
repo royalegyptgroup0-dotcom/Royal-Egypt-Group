@@ -197,7 +197,7 @@
         filtered.forEach(post => list.append(makePost(post)));
       }
       search.addEventListener("input",render);
-      fetch("https://ceo-notes-ai.yasser-abdelaziz83.workers.dev/feed",{cache:"no-store"}).catch(() => fetch((location.pathname.endsWith("/") ? location.pathname : location.pathname + "/") + "posts.json",{cache:"no-store"}))
+      fetch("/feed",{cache:"no-store"}).catch(() => fetch((location.pathname.endsWith("/") ? location.pathname : location.pathname + "/") + "posts.json",{cache:"no-store"}))
         .then(response => { if(!response.ok) throw new Error("posts_unavailable"); return response.json(); })
         .then(data => {
           const items = Array.isArray(data) ? data : (Array.isArray(data.posts) ? data.posts : []);
