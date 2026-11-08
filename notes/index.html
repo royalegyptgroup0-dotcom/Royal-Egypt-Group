@@ -35,6 +35,16 @@
     h1 span{color:var(--gold2)}
     .hero p{max-width:690px;margin:0 auto;color:#bcb7ad;font-size:16px}
     .hero-note{display:inline-flex;margin-top:27px;padding:7px 14px;border:1px solid #c8a56855;border-radius:30px;color:#d6c39d;font-size:11px}
+    .world-clock{padding:0 0 48px}
+    .clock-heading{display:flex;align-items:end;justify-content:space-between;gap:14px;margin-bottom:15px}
+    .clock-heading h2{font-size:19px;margin:0}
+    .clock-heading p{font-size:11px;color:var(--muted);margin:0}
+    .clocks{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:11px}
+    .clock{background:linear-gradient(145deg,#17191b,#101214);border:1px solid var(--line);border-radius:13px;padding:14px;min-width:0}
+    .clock-city{font-size:11px;color:#d8c7a5}
+    .clock-time{font-size:clamp(17px,2.5vw,25px);font-weight:700;letter-spacing:.5px;direction:ltr;text-align:right;font-variant-numeric:tabular-nums}
+    .clock-date{font-size:10px;color:var(--muted);direction:ltr;text-align:right}
+    .clock-zone{font-size:9px;color:#8d8980;margin-top:3px}
     .toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 25px}
     .section-title{margin:0;font-size:23px}
     .count{color:var(--muted);font-size:12px}
@@ -60,7 +70,7 @@
     .about p{color:var(--muted);font-size:13px;margin:0}
     footer{padding:22px 0;color:#817d75;font-size:11px;border-top:1px solid var(--line)}
     .footer-row{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
-    @media(max-width:700px){.nav{min-height:68px}.navlinks{gap:13px;font-size:11px}.mark{width:39px;height:39px}.brand-name strong{font-size:13px}.hero{padding:56px 0 44px}.hero p{font-size:14px}.toolbar{align-items:stretch;flex-direction:column}.search{width:100%}.posts{grid-template-columns:1fr}.post{padding:19px}.post h3{font-size:18px}}
+    @media(max-width:700px){.clocks{grid-template-columns:repeat(2,minmax(0,1fr))}.clock:last-child{grid-column:1/-1}.nav{min-height:68px}.navlinks{gap:13px;font-size:11px}.mark{width:39px;height:39px}.brand-name strong{font-size:13px}.hero{padding:56px 0 44px}.hero p{font-size:14px}.toolbar{align-items:stretch;flex-direction:column}.search{width:100%}.posts{grid-template-columns:1fr}.post{padding:19px}.post h3{font-size:18px}}
     @media(max-width:420px){.navlinks a:last-child{display:none}.brand-name small{font-size:9px}}
     @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
   </style>
@@ -87,6 +97,22 @@
         <h1>فكر أوضح.<br><span>وقُد بوعي أكبر.</span></h1>
         <p>مساحة يومية لأفكار عملية عن القيادة والإدارة والعمل الذكي. مش شعارات محفوظة؛ ملاحظات تساعدك تشوف المشكلة من زاوية مختلفة وتحوّل الفكرة لخطوة قابلة للتنفيذ.</p>
         <div class="hero-note">مقال جديد كل يوم · فكرة · تحدٍ عملي · نقاش</div>
+      </div>
+    </section>
+
+    <section class="wrap world-clock" aria-labelledby="clock-title">
+      <div class="clock-heading">
+        <div>
+          <h2 id="clock-title">ساعات الأعمال حول العالم</h2>
+          <p>توقيت مباشر حسب المناطق الزمنية الرسمية، دون API أو اشتراك خارجي.</p>
+        </div>
+      </div>
+      <div class="clocks" id="world-clocks">
+        <div class="clock"><div class="clock-city">القاهرة</div><div class="clock-time">--:--:--</div><div class="clock-zone">Africa/Cairo</div></div>
+        <div class="clock"><div class="clock-city">لندن</div><div class="clock-time">--:--:--</div><div class="clock-zone">Europe/London</div></div>
+        <div class="clock"><div class="clock-city">نيويورك</div><div class="clock-time">--:--:--</div><div class="clock-zone">America/New_York</div></div>
+        <div class="clock"><div class="clock-city">موسكو</div><div class="clock-time">--:--:--</div><div class="clock-zone">Europe/Moscow</div></div>
+        <div class="clock"><div class="clock-city">دبي</div><div class="clock-time">--:--:--</div><div class="clock-zone">Asia/Dubai</div></div>
       </div>
     </section>
 
@@ -125,7 +151,35 @@
       const list = document.getElementById("posts");
       const search = document.getElementById("search");
       const count = document.getElementById("count");
+      const clockRoot = document.getElementById("world-clocks");
       document.getElementById("year").textContent = String(new Date().getFullYear());
+      const clockFormatters = [
+        {zone:"Africa/Cairo",time:new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Cairo",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}),date:new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Cairo",weekday:"short",day:"2-digit",month:"short"})},
+        {zone:"Europe/London",time:new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}),date:new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",weekday:"short",day:"2-digit",month:"short"})},
+        {zone:"America/New_York",time:new Intl.DateTimeFormat("en-GB",{timeZone:"America/New_York",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}),date:new Intl.DateTimeFormat("en-GB",{timeZone:"America/New_York",weekday:"short",day:"2-digit",month:"short"})},
+        {zone:"Europe/Moscow",time:new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/Moscow",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}),date:new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/Moscow",weekday:"short",day:"2-digit",month:"short"})},
+        {zone:"Asia/Dubai",time:new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Dubai",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}),date:new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Dubai",weekday:"short",day:"2-digit",month:"short"})}
+      ];
+      function updateWorldClocks(){
+        const now = new Date();
+        clockRoot.querySelectorAll(".clock").forEach((card,index)=>{
+          const item = clockFormatters[index];
+          if(!item) return;
+          card.querySelector(".clock-time").textContent = item.time.format(now);
+          card.querySelector(".clock-date").textContent = item.date.format(now);
+        });
+      }
+      clockRoot.querySelectorAll(".clock").forEach((card,index)=>{
+        const date = document.createElement("div");
+        date.className = "clock-date";
+        card.append(date);
+        const zone = document.createElement("div");
+        zone.className = "clock-zone";
+        zone.textContent = clockFormatters[index].zone;
+        card.querySelector(".clock-zone").replaceWith(zone);
+      });
+      updateWorldClocks();
+      window.setInterval(updateWorldClocks,1000);
       let posts = [];
 
       function node(tag, className, value){
