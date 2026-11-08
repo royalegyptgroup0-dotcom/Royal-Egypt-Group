@@ -31,12 +31,14 @@ input{width:100%;margin:10px 0}button{cursor:pointer;background:var(--gold);colo
 <div class="stats">
 <div class="stat">العملاء الجدد<strong id="customerCount">0</strong></div>
 <div class="stat">الفرص التجارية<strong id="opportunityCount">0</strong></div>
-<div class="stat">إعلانات العقارات المعلقة<strong id="pendingCount">0</strong></div>\n<div class="stat">الطلبات الواردة<strong id="ordersCount">0</strong></div>
+<div class="stat">إعلانات العقارات المعلقة<strong id="pendingCount">0</strong></div>
+<div class="stat">الطلبات الواردة<strong id="ordersCount">0</strong></div>
 </div>
 <nav class="tabs" aria-label="أقسام الطلبات">
 <button data-tab="customers" aria-pressed="true">العملاء</button>
 <button data-tab="opportunities" aria-pressed="false">الفرص</button>
-<button data-tab="listings" aria-pressed="false">العقارات</button>\n<button data-tab="orders" aria-pressed="false">الطلبات</button>
+<button data-tab="listings" aria-pressed="false">العقارات</button>
+<button data-tab="orders" aria-pressed="false">الطلبات</button>
 </nav>
 <p id="appStatus" class="notice" role="status"></p>
 <div id="records" class="list"></div>
@@ -64,7 +66,8 @@ function render(){const host=$("records");host.replaceChildren();const items=dat
 for(const item of items){
 if(activeTab==="customers"){const c=card(item.name,[item.phone,item.email,item.language,item.created_at].filter(Boolean).join(" · "),item.interests||item.notes);c.append(field("المصدر",item.source));c.append(statusControl("customer",item.id,item.status));host.append(c);}
 else if(activeTab==="opportunities"){const c=card(item.title,[item.type,item.country,item.status,item.created_at].filter(Boolean).join(" · "),item.details);c.append(field("القيمة التقديرية",item.estimated_value));c.append(statusControl("opportunity",item.id,item.status));host.append(c);}
-else if(activeTab==="orders"){const sector=item.order_type==="coffee"?"Royal Egypt Coffee":"Royal Egypt Transportation";const c=card(sector+" — "+(item.customer_name||""),[item.customer_phone,item.customer_email,item.preferred_date,item.preferred_time,item.status,item.created_at].filter(Boolean).join(" · "),item.details);c.append(field("اللغة",item.language));host.append(c);}\nelse{const c=card(item.title,[item.contact_name,item.contact_phone,item.property_type,item.location,item.status,item.created_at].filter(Boolean).join(" · "),item.description);c.append(field("السعر",item.price));if(item.status==="pending"){const actions=el("div","actions");const approve=el("button","","موافقة ونشر");const reject=el("button","danger","رفض");for(const [button,status] of [[approve,"approved"],[reject,"rejected"]])button.addEventListener("click",async()=>{button.disabled=true;try{await api("/api/admin/listings",{method:"PATCH",body:JSON.stringify({id:item.id,status})});$("appStatus").textContent=status==="approved"?"تمت الموافقة على الإعلان":"تم رفض الإعلان";await load();}catch(e){$("appStatus").textContent=e.message;button.disabled=false;}});actions.append(approve,reject);c.append(actions);}host.append(c);}
+else if(activeTab==="orders"){const sector=item.order_type==="coffee"?"Royal Egypt Coffee":"Royal Egypt Transportation";const c=card(sector+" — "+(item.customer_name||""),[item.customer_phone,item.customer_email,item.preferred_date,item.preferred_time,item.status,item.created_at].filter(Boolean).join(" · "),item.details);c.append(field("اللغة",item.language));host.append(c);}
+else{const c=card(item.title,[item.contact_name,item.contact_phone,item.property_type,item.location,item.status,item.created_at].filter(Boolean).join(" · "),item.description);c.append(field("السعر",item.price));if(item.status==="pending"){const actions=el("div","actions");const approve=el("button","","موافقة ونشر");const reject=el("button","danger","رفض");for(const [button,status] of [[approve,"approved"],[reject,"rejected"]])button.addEventListener("click",async()=>{button.disabled=true;try{await api("/api/admin/listings",{method:"PATCH",body:JSON.stringify({id:item.id,status})});$("appStatus").textContent=status==="approved"?"تمت الموافقة على الإعلان":"تم رفض الإعلان";await load();}catch(e){$("appStatus").textContent=e.message;button.disabled=false;}});actions.append(approve,reject);c.append(actions);}host.append(c);}
 }}
 })();
 </script>
