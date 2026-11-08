@@ -58,6 +58,7 @@
     .day{color:var(--gold2);font-size:11px;letter-spacing:1.2px;font-weight:700}
     .date{color:#88857e;font-size:10px}
     .post h3{font-size:20px;line-height:1.5;margin:0 0 13px;color:#f2e8d4}
+    .post-link:hover{color:var(--gold2)}
     .article{white-space:pre-line;color:#d0cbc1;font-size:13px;line-height:2;margin:0}
     .post-actions{display:flex;justify-content:flex-start;margin-top:14px}
     .share-button{border:1px solid #c8a56866;background:#c8a56812;color:var(--gold2);border-radius:8px;padding:7px 13px;font-size:11px;cursor:pointer}
@@ -186,6 +187,8 @@
       updateWorldClocks();
       window.setInterval(updateWorldClocks,1000);
       let posts = [];
+      const selectedPostMatch = location.pathname.match(/^\\/post\\/(\\d+)\\/?$/);
+      const selectedPostDay = selectedPostMatch ? Number(selectedPostMatch[1]) : null;
 
       function node(tag, className, value){
         const el = document.createElement(tag);
@@ -209,7 +212,11 @@
           image.style.cssText = "display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:12px;margin:4px 0 16px;border:1px solid #c8a56855";
           card.append(image);
         }
-        card.append(node("h3","",post.title || "ملاحظة يومية"));
+        const heading = node("h3","");
+        const titleLink = node("a","post-link",post.title || "ملاحظة يومية");
+        titleLink.href = "/post/" + encodeURIComponent(String(post.day || ""));
+        heading.append(titleLink);
+        card.append(heading);
         card.append(node("p","article",post.article || ""));
         const detail = node("div","detail");
         if(post.ideaOfTheDay){
@@ -241,7 +248,7 @@
         const share = node("button","share-button","مشاركة المقال");
         share.type = "button";
         share.addEventListener("click",async()=>{
-          const shareUrl = location.origin + location.pathname + "#post-" + encodeURIComponent(String(post.day || ""));
+          const shareUrl = location.origin + "/post/" + encodeURIComponent(String(post.day || ""));
           const payload = {title:post.title || "CEO Notes",text:(post.title || "CEO Notes") + " — CEO Notes",url:shareUrl};
           try{
             if(navigator.share){await navigator.share(payload);}
@@ -265,6 +272,7 @@
       function render(){
         const q = search.value.trim().toLocaleLowerCase("ar");
         const filtered = posts.filter(post => {
+          if(selectedPostDay && Number(post.day) !== selectedPostDay) return false;
           const haystack = [post.day,post.title,post.article,post.ideaOfTheDay,post.ceoChallenge,post.discussionQuestion,post.hashtags].join(" ").toLocaleLowerCase("ar");
           return haystack.includes(q);
         });
@@ -292,6 +300,23 @@
             if(!Array.isArray(items)) throw new Error("invalid_posts_format");
             posts = items.filter(item => item && item.status !== "Draft" && item.status !== "Reserved")
               .sort((a,b) => Number(b.day || 0) - Number(a.day || 0));
+            if(selectedPostDay){
+              const selected = posts.find(post => Number(post.day) === selectedPostDay);
+              if(selected){
+                document.title = (selected.title || "CEO Notes") + " | CEO Notes";
+                const description = String(selected.article || "").slice(0,155);
+                const descriptionMeta = document.querySelector('meta[name="description"]');
+                if(descriptionMeta) descriptionMeta.content = description;
+                const canonical = document.querySelector('link[rel="canonical"]');
+                if(canonical) canonical.href = location.origin + "/post/" + selectedPostDay;
+                const ogTitle = document.querySelector('meta[property="og:title"]');
+                if(ogTitle) ogTitle.content = document.title;
+                const ogDescription = document.querySelector('meta[property="og:description"]');
+                if(ogDescription) ogDescription.content = description;
+                const ogUrl = document.querySelector('meta[property="og:url"]');
+                if(ogUrl) ogUrl.content = canonical ? canonical.href : location.href;
+              }
+            }
             render();
             return;
           }catch(error){
