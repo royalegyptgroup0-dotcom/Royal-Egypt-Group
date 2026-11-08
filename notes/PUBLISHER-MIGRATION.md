@@ -4,9 +4,22 @@ Status: design only; no cutover is authorized by this document.
 
 ## Current production flow
 
-The primary Make publisher is scenario `8438190` (“CEO Notes | AI Editorial + Image + Facebook + Live Feed 19:30”). At the latest read-only check on 2026-11-08 20:50 Africa/Cairo, Make reported `status=paused` while its separate `isActive` flag was `true`; its configured daily time is 19:30 Africa/Cairo and the listed next execution time (17:30 UTC) had already passed. No run was recorded for 2026-11-08. Its last recorded run was 2026-11-07 21:41:52 UTC, marked success with four operations, including one successful Facebook module invocation. The final receipt stage was not shown as executed in that run, so a complete receipt is not verified.
+The primary Make publisher is scenario `8438190` (“CEO Notes | AI Editorial + Image + Facebook + Live Feed 19:30”). Repeated read-only checks on 2026-11-08 returned `status=paused` while the separate `isActive` flag was `true`; its configured daily time is 19:30 Africa/Cairo and the listed next execution time (17:30 UTC) had already passed. No run was recorded for 2026-11-08. Its last recorded run was 2026-11-07 21:41:52 UTC, marked success with four operations. Execution inspection shows modules 1–4 ran, including one Facebook module, while the Royal Egypt Properties and final receipt modules did not run. Module input/output drill-down returned no stored records, so the post ID and final receipt cannot be independently confirmed.
 
 The legacy scenario `8419318` (“CEO Notes | Daily Publisher 19:30”) remains paused and inactive (`isActive=false`). Do not activate it.
+
+## Verified production gap — 2026-11-08
+
+A read-only inspection of the deployed Worker and Make module configurations found a partial-publication recovery defect that must be fixed before the scenario is resumed:
+
+- The Make flow writes the article to the canonical feed before the social actions.
+- The feed write returns `alreadyPublished=true` for an existing published day, and the Make filter intentionally blocks the social route in that case.
+- The Worker receipt handler currently accepts `receiptOnly` only when both the CEO Page post ID and Royal Egypt Properties post ID are present in the same request.
+- Make calls that receipt handler only after both Facebook modules succeed.
+- Therefore, if the CEO Page post succeeds but the Royal Egypt Properties post fails, the CEO post can remain without a stored receipt. A normal retry for the same day is then blocked by the existing-day gate, while blindly replaying a Facebook action risks a duplicate.
+- The last recorded execution (2026-11-07 21:41:52 UTC) was marked success but its execution inspection shows only modules 1–4 ran; modules 5 and 6 did not run. The four-operation success is not evidence of a completed two-page publication or receipt.
+
+Required repair: persist one receipt immediately after each destination succeeds, keep each destination independently idempotent, and provide a controlled reconciliation path for ambiguous outcomes. Test every partial-failure permutation in an isolated environment before editing the production Worker or Make scenario. Do not manually retry, resume, or republish an uncertain item.
 
 The primary scenario's configured flow is:
 
