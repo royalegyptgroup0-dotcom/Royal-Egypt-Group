@@ -10,7 +10,13 @@
       "discussionQuestion": "إيه المؤشر اللي ممكن يبان ممتاز بينما التجربة على الأرض مش ممتازة؟",
       "hashtags": "#CEO_Notes #CEO_Challenge #فكرة_اليوم #إدارة #قيادة",
       "status": "Published",
-      "publishedAt": "2026-11-06"
+      "publishedAt": "2026-11-06",
+      "category": "الإدارة والأداء",
+      "tags": [
+        "مؤشرات الأداء",
+        "تجربة العميل",
+        "جودة الخدمة"
+      ]
     },
     {
       "day": 26,
@@ -22,7 +28,13 @@
       "hashtags": "#CEO_Notes #CEO_Challenge #فكرة_اليوم #إدارة #قيادة #تمكين_الفريق",
       "status": "Published",
       "publishedAt": "2026-11-07T18:47:11.607Z",
-      "imageUrl": "https://ceo-notes-ai.yasser-abdelaziz83.workers.dev/image/26"
+      "imageUrl": "https://ceo-notes-ai.yasser-abdelaziz83.workers.dev/image/26",
+      "category": "القيادة",
+      "tags": [
+        "التفويض",
+        "تمكين الفريق",
+        "بناء الثقة"
+      ]
     },
     {
       "day": 27,
@@ -34,7 +46,13 @@
       "hashtags": "#CEO_Notes #CEO_Challenge #فكرة_اليوم #إدارة #قيادة #اتخاذ_القرار #تفكير_نقدي",
       "publishedAt": "2026-11-07T21:42:03.981Z",
       "status": "Published",
-      "imageUrl": "https://ceo-notes-ai.yasser-abdelaziz83.workers.dev/image/27"
+      "imageUrl": "https://ceo-notes-ai.yasser-abdelaziz83.workers.dev/image/27",
+      "category": "القيادة",
+      "tags": [
+        "اتخاذ القرار",
+        "التفكير النقدي",
+        "التأني"
+      ]
     }
   ]
 }
