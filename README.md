@@ -3,7 +3,8 @@
 A responsive group portal for Royal Egypt Group and its three business divisions.
 
 ## Group structure and pages
-- `index.html`: parent company hub — Royal Egypt Group.
+- `index.html`: parent company hub — Royal Egypt Group, linked to the financial markets center.
+- `markets.html`: investor information center with TradingView market widgets (EGX30/global indices, gold, financial news and economic calendar), world clocks, and reference FX rates.
 - `properties.html`: Royal Egypt Properties searchable property catalogue and rule-based enquiry assistant.
 - `coffee.html`: Royal Egypt Coffee division landing page (initial information page; not yet an online shop).
 - `transportation.html`: Royal Egypt Transportation division landing page (initial information page; not yet a booking system).
