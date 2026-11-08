@@ -74,15 +74,17 @@ Scope: CEO Notes only. Keep this code and its publishing data separate from Roya
 - [x] Verify live API response in CEO Notes Preview and the canonical production domain.
 - Never present reference FX or calculated gold values as executable bank/dealer quotes.
 
-### P5 — Independent publishing automation
-- Design a Cloudflare-native workflow to replace Make only after parity tests.
-- Use bounded scheduled jobs, idempotency keys, retries, and an audit trail.
-- Require human approval before external social publishing.
+### P5 — Independent publishing automation <design documented 2026-11-08>
+- [x] Document the Cloudflare-native target flow, local-time scheduling, idempotency, bounded retries, dead-letter handling, receipts, and cutover gates in `notes/PUBLISHER-MIGRATION.md`.
+- [ ] Build an isolated Cloudflare-native prototype and test partial failures without publishing to production pages.
+- [ ] Verify secure Facebook authorization and required permissions through an approved connection.
+- [ ] Require human approval before external social publishing.
 - Keep the current Make publisher active on its existing schedule until the Cloudflare-native replacement passes parity tests and a separate cutover is approved.
 
-### P6 — Secure editorial dashboard
-- Private authenticated editor for drafts, review, scheduling proposals, and archive corrections.
-- Server-side authorization only; no secrets in frontend code.
+### P6 — Secure editorial dashboard <design documented 2026-11-08>
+- [x] Document the private editor, translation review, approval states, server-side authorization, receipts, and audit requirements in `notes/EDITORIAL-DASHBOARD.md`.
+- [ ] Verify a supported Cloudflare Access hostname and identity policy; do not expose the editor on the public Pages hostname without verified protection.
+- [ ] Implement the private API and editor after the access boundary is proven.
 - No direct publishing action without visible confirmation and an audit receipt.
 
 ### P7 — Reliability and continuity <in progress 2026-11-08>
@@ -91,6 +93,7 @@ Scope: CEO Notes only. Keep this code and its publishing data separate from Roya
 - [x] Create a baseline snapshot for 2026-11-08 covering Days 25–27 and the two stored image assets.
 - [x] Read back the backup feed, manifest, and image assets; SHA-256 checks match the live source values.
 - [x] Confirm the publisher Worker health endpoint and live feed remain available after the backup deployment.
+- [x] Document backup verification, isolated restore, and production rollback steps in `notes/OPERATIONS.md`.
 - [ ] Verify the first scheduled backup run and exercise a restore in an isolated namespace before any live restore.
 - [ ] Add automated feed, sitemap, RSS, and article-route health checks.
 - [ ] Add duplicate-content, broken-image, and broken-link checks.
@@ -126,4 +129,4 @@ Scope: CEO Notes only. Keep this code and its publishing data separate from Roya
 - [ ] Interactive filter behavior, keyboard navigation, and responsive layout verified in a real browser.
 
 ## Current focus
-P0/P3/P7 — verify the first publishing receipt and scheduled backup, review the private English/Russian drafts, and complete historical archive reconciliation without importing unverified content.
+P0/P3/P6/P7 — verify the first publishing receipt and scheduled backup, review the private English/Russian drafts, establish a supported Access hostname, and complete historical archive reconciliation without importing unverified content.
