@@ -15,7 +15,7 @@ function normalizeEditorialFeed(feed){
   const suppliedTags=Array.isArray(post?.tags)&&post.tags.length?post.tags:[];
   const localTags=Array.isArray(local.tags)&&local.tags.length?local.tags:[];
   const hashtagText=Array.isArray(post?.hashtags)?post.hashtags.join(" "):String(post?.hashtags||"");
-  const derivedTags=hashtagText.split(/\\s+/).map(tag=>tag.replace(/^#/,"").replace(/_/g," ")).filter(tag=>tag&&!["CEO Notes","CEO Challenge","فكرة اليوم"].includes(tag));
+  const derivedTags=hashtagText.split(/\s+/).map(tag=>tag.replace(/^#/,"").replace(/_/g," ")).filter(tag=>tag&&!["CEO Notes","CEO Challenge","فكرة اليوم"].includes(tag));
   const tags=suppliedTags.length?suppliedTags:(localTags.length?localTags:[...new Set(derivedTags)]);
   return {...post,category:post.category||local.category||"غير مصنّف",tags};
  });
