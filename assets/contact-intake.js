@@ -23,7 +23,7 @@ form.addEventListener("submit",async event=>{
   email:String(values.get("email")||"").trim(),
   request_type:String(values.get("request_type")||""),
   location:String(values.get("location")||"").trim(),
-  details:String(values.get("details")||"").trim(),
+  details:[form.dataset.interestSector||"",String(values.get("details")||"").trim()].filter(Boolean).join(" — "),
   language:String(values.get("language")||"ar"),
   consent:values.get("consent")==="yes",
   website:String(values.get("website")||"")
