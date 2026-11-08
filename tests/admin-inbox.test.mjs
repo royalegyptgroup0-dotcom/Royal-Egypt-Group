@@ -53,8 +53,9 @@ test("rejects incorrect admin token", async () => {
   assert.equal(response.status, 401);
 });
 
-test("returns customers, opportunities and listings to an authenticated owner", async () => {
-  const response = await onRequest({ request: request("GET"), env: { DB: new FakeDB(), ADMIN_TOKEN: token } });
+test("returns customers, opportunities, listings and orders to an authenticated owner", async () => {
+  const db = new FakeDB();
+  const response = await onRequest({ request: request("GET"), env: { DB: db, ADMIN_TOKEN: token } });
   assert.equal(response.status, 200);
   const result = await response.json();
   assert.equal(result.customers.length, 1);
