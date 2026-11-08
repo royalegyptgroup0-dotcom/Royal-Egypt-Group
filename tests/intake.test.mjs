@@ -268,7 +268,8 @@ test("accepts the current Pages Preview hostname", async () => {
   );
   assert.equal(response.status, 202);
   assert.equal(db.records.size, 1);
-});\n
+});
+
 test("accepts apex and www custom-domain origins for website intake", async () => {
   for (const customOrigin of ["https://royalegyptgroup.com", "https://www.royalegyptgroup.com"]) {
     const db = new FakeDB();
