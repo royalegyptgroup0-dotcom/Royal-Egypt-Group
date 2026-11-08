@@ -37,6 +37,14 @@
     h1 span{color:var(--gold2)}
     .hero p{max-width:690px;margin:0 auto;color:#bcb7ad;font-size:16px}
     .hero-note{display:inline-flex;margin-top:27px;padding:7px 14px;border:1px solid #c8a56855;border-radius:30px;color:#d6c39d;font-size:11px}
+    .market-watch{padding:0 0 42px}
+    .market-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+    .market-card{background:linear-gradient(145deg,#17191b,#101214);border:1px solid var(--line);border-radius:13px;padding:14px;min-width:0}
+    .market-label{font-size:11px;color:#d8c7a5}
+    .market-value{font-size:clamp(17px,2.4vw,23px);font-weight:750;font-variant-numeric:tabular-nums;direction:ltr;text-align:right;white-space:nowrap}
+    .market-unit{font-size:10px;color:var(--muted);text-align:right}
+    .market-note{font-size:10px;color:#928d83;margin:12px 0 0}
+    .market-updated{font-size:10px;color:var(--muted);text-align:left}
     .world-clock{padding:0 0 48px}
     .clock-heading{display:flex;align-items:end;justify-content:space-between;gap:14px;margin-bottom:15px}
     .clock-heading h2{font-size:19px;margin:0}
@@ -76,7 +84,7 @@
     .about p{color:var(--muted);font-size:13px;margin:0}
     footer{padding:22px 0;color:#817d75;font-size:11px;border-top:1px solid var(--line)}
     .footer-row{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
-    @media(max-width:700px){.clocks{grid-template-columns:repeat(2,minmax(0,1fr))}.clock:last-child{grid-column:1/-1}.nav{min-height:68px}.navlinks{gap:13px;font-size:11px}.mark{width:39px;height:39px}.brand-name strong{font-size:13px}.hero{padding:56px 0 44px}.hero p{font-size:14px}.toolbar{align-items:stretch;flex-direction:column}.search{width:100%}.posts{grid-template-columns:1fr}.post{padding:19px}.post h3{font-size:18px}}
+    @media(max-width:700px){.market-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.clocks{grid-template-columns:repeat(2,minmax(0,1fr))}.clock:last-child{grid-column:1/-1}.nav{min-height:68px}.navlinks{gap:13px;font-size:11px}.mark{width:39px;height:39px}.brand-name strong{font-size:13px}.hero{padding:56px 0 44px}.hero p{font-size:14px}.toolbar{align-items:stretch;flex-direction:column}.search{width:100%}.posts{grid-template-columns:1fr}.post{padding:19px}.post h3{font-size:18px}}
     @media(max-width:420px){.navlinks a:last-child{display:none}.brand-name small{font-size:9px}}
     @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
   </style>
@@ -104,6 +112,20 @@
         <p>مساحة يومية لأفكار عملية عن القيادة والإدارة والعمل الذكي. مش شعارات محفوظة؛ ملاحظات تساعدك تشوف المشكلة من زاوية مختلفة وتحوّل الفكرة لخطوة قابلة للتنفيذ.</p>
         <div class="hero-note">مقال جديد كل يوم · فكرة · تحدٍ عملي · نقاش</div>
       </div>
+    </section>
+
+    <section class="wrap market-watch" aria-labelledby="market-title">
+      <div class="clock-heading">
+        <div>
+          <h2 id="market-title">مؤشرات العملات والذهب</h2>
+          <p>أسعار مرجعية يومية من مصادر مفتوحة</p>
+        </div>
+        <div class="market-updated" id="market-updated" aria-live="polite">جارٍ تحميل البيانات…</div>
+      </div>
+      <div class="market-grid" id="market-board" aria-live="polite">
+        <div class="market-card"><div class="market-label">أسعار العملات</div><div class="market-value">—</div><div class="market-unit">جارٍ التحميل</div></div>
+      </div>
+      <p class="market-note">الأسعار مرجعية يومية وليست أسعار تداول لحظية أو أسعار شراء وبيع البنوك. قيمة الذهب محسوبة من أونصة تروي XAU، ولا تمثل سعر المشغولات أو السعر المحلي بعد المصنعية والضرائب. المصدر: <a href="https://frankfurter.dev/" target="_blank" rel="noopener noreferrer" style="color:var(--gold2)">Frankfurter</a>.</p>
     </section>
 
     <section class="wrap world-clock" aria-labelledby="clock-title">
@@ -157,6 +179,50 @@
       const list = document.getElementById("posts");
       const search = document.getElementById("search");
       const count = document.getElementById("count");
+      const marketBoard = document.getElementById("market-board");
+      const marketUpdated = document.getElementById("market-updated");
+      function marketCard(label,value,unit){
+        const card=node("div","market-card");
+        card.append(node("div","market-label",label));
+        card.append(node("div","market-value",value));
+        card.append(node("div","market-unit",unit));
+        return card;
+      }
+      async function loadMarkets(){
+        try{
+          const response=await fetch("/markets",{cache:"no-store",headers:{"Accept":"application/json"}});
+          if(!response.ok) throw new Error("market_data_unavailable");
+          const data=await response.json();
+          const fx=Object.fromEntries((Array.isArray(data.fx)?data.fx:[]).map(item=>[item.quote,Number(item.rate)]));
+          const gold=Object.fromEntries((Array.isArray(data.gold)?data.gold:[]).map(item=>[item.quote,Number(item.rate)]));
+          const fmt=(value,digits=4)=>Number(value).toLocaleString("en-US",{maximumFractionDigits:digits});
+          const cards=[];
+          const pairs=[
+            ["دولار / جنيه مصري","EGP","جنيه لكل دولار",3],
+            ["دولار / يورو","EUR","يورو لكل دولار",4],
+            ["دولار / إسترليني","GBP","إسترليني لكل دولار",4],
+            ["دولار / روبل","RUB","روبل لكل دولار",2],
+            ["دولار / درهم إماراتي","AED","درهم لكل دولار",4],
+            ["دولار / ريال سعودي","SAR","ريال لكل دولار",4]
+          ];
+          pairs.forEach(([label,code,unit,digits])=>{
+            if(Number.isFinite(fx[code])) cards.push(marketCard(label,fmt(fx[code],digits),unit));
+          });
+          if(Number.isFinite(gold.USD)) cards.push(marketCard("أونصة الذهب","$"+fmt(gold.USD,2),"دولار أمريكي / أونصة تروي"));
+          if(Number.isFinite(gold.EGP)){
+            cards.push(marketCard("أونصة الذهب","ج.م "+fmt(gold.EGP,0),"جنيه مصري / أونصة تروي"));
+            cards.push(marketCard("جرام ذهب 24 قيراط","ج.م "+fmt(gold.EGP/31.1034768,2),"قيمة مرجعية محسوبة قبل المصنعية والضرائب"));
+          }
+          if(!cards.length) throw new Error("empty_market_data");
+          marketBoard.replaceChildren(...cards);
+          marketUpdated.textContent="تاريخ البيانات: "+String(data.date || "غير متاح");
+        }catch(error){
+          marketBoard.replaceChildren();
+          marketBoard.append(node("div","empty","تعذر تحميل المؤشرات حاليًا. حاول مرة أخرى لاحقًا."));
+          marketUpdated.textContent="البيانات غير متاحة مؤقتًا";
+        }
+      }
+      loadMarkets();
       const clockRoot = document.getElementById("world-clocks");
       document.getElementById("year").textContent = String(new Date().getFullYear());
       const clockFormatters = [
