@@ -56,12 +56,12 @@ function sitemap(feed){
 }
 function articleHtml(post){
  const title=xml((post.title||"CEO Notes")+" | CEO Notes");
- const description=xml(String(post.article||"").replace(/\\s+/g," ").slice(0,155));
+ const description=xml(String(post.article||"").replace(/\s+/g," ").slice(0,155));
  const canonical="https://ceo-notes.pages.dev/post/"+encodeURIComponent(String(post.day));
  const image=typeof post.imageUrl==="string"&&post.imageUrl.startsWith("https://")?xml(post.imageUrl):"";
  const published=post.publishedAt&&!Number.isNaN(new Date(post.publishedAt).getTime())?xml(new Date(post.publishedAt).toISOString()):"";
  const section=xml(post.category||"");
- return HTML.replace(/<title>[\\s\\S]*?<\\/title>/,'<title>'+title+'</title>')
+ return HTML.replace(/<title>[\s\S]*?<\/title>/,'<title>'+title+'</title>')
   .replace(/<meta name="description" content="[^"]*">/,'<meta name="description" content="'+description+'">')
   .replace(/<meta property="og:type" content="[^"]*">/,'<meta property="og:type" content="article">')
   .replace(/<meta property="og:title" content="[^"]*">/,'<meta property="og:title" content="'+title+'">')
