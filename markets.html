@@ -128,7 +128,7 @@ const clocks=[...document.querySelectorAll(".clock-card")];
 function tick(){const now=new Date();for(const card of clocks){const zone=card.dataset.zone;const time=card.querySelector("strong");if(time)time.textContent=new Intl.DateTimeFormat("en-GB",{timeZone:zone,hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(now)}}
 tick();setInterval(tick,1000);
 const fields={USD:document.getElementById("usdEgp"),EUR:document.getElementById("eurEgp"),GBP:document.getElementById("gbpEgp")},stamp=document.getElementById("fxStamp");
-async function rates(){try{const r=await fetch("https://api.frankfurter.dev/v1/latest?base=USD&symbols=EGP,EUR,GBP",{headers:{Accept:"application/json"},cache:"no-store"});if(!r.ok)throw Error("rate unavailable");const d=await r.json();const usd=Number(d.rates?.EGP),eur=Number(d.rates?.EUR),gbp=Number(d.rates?.GBP);if(!usd||!eur||!gbp)throw Error("incomplete rates");fields.USD.textContent="1 USD = "+usd.toFixed(2)+" EGP";fields.EUR.textContent="1 EUR = "+(usd/eur).toFixed(2)+" EGP";fields.GBP.textContent="1 GBP = "+(usd/gbp).toFixed(2)+" EGP";stamp.textContent="آخر تاريخ بيانات متاح: "+d.date+" · مرجع يومي وليس سعر تنفيذ"}catch(e){for(const el of Object.values(fields))el.textContent="غير متاح حاليًا";stamp.textContent="تعذر جلب السعر المرجعي الآن. لم نعرض بيانات قديمة."}}
+async function rates(){try{const r=await fetch("https://api.frankfurter.dev/v1/latest?base=USD&symbols=EGP,EUR,GBP",{headers:{Accept:"application/json"},cache:"no-store"});if(!r.ok)throw Error("rate unavailable");const d=await r.json();const usd=Number(d.rates?.EGP),eur=Number(d.rates?.EUR),gbp=Number(d.rates?.GBP);if(!usd||!eur||!gbp)throw Error("incomplete rates");fields.USD.textContent="1 USD = "+usd.toFixed(2)+" EGP";fields.EUR.textContent="1 EUR = "+(usd/eur).toFixed(2)+" EGP";fields.GBP.textContent="1 GBP = "+(usd/gbp).toFixed(2)+" EGP";stamp.textContent=(currentLanguage==="ar"?"آخر تاريخ بيانات متاح: ":currentLanguage==="ru"?"Последняя доступная дата: ":"Latest available data date: ")+d.date+(currentLanguage==="ar"?" · مرجع يومي وليس سعر تنفيذ":currentLanguage==="ru"?" · справочный курс, не курс сделки":" · daily reference, not an executable rate")}catch(e){for(const el of Object.values(fields))el.textContent=currentLanguage==="ar"?"غير متاح حاليًا":currentLanguage==="ru"?"Временно недоступно":"Currently unavailable";stamp.textContent=currentLanguage==="ar"?"تعذر جلب السعر المرجعي الآن. لم نعرض بيانات قديمة.":currentLanguage==="ru"?"Не удалось получить справочные курсы. Устаревшие данные не отображаются.":"Unable to retrieve reference rates. No stale data is displayed."}}
 
 const languageSelect=document.getElementById("siteLanguage");
 const translations={
@@ -163,10 +163,12 @@ const translations={
 "تعذر جلب السعر المرجعي الآن. لم نعرض بيانات قديمة.":["Unable to retrieve reference rates. No stale data is displayed.","Не удалось получить справочные курсы. Устаревшие данные не отображаются."],
 "غير متاح حاليًا":["Currently unavailable","Временно недоступно"]
 };
+let currentLanguage="ar";
 function setLanguage(lang){
+ currentLanguage=lang;
  const index=lang==="en"?0:lang==="ru"?1:-1;
  document.documentElement.lang=lang;document.documentElement.dir=lang==="ar"?"rtl":"ltr";
- document.body.querySelectorAll("*").forEach(el=>{if(el.children.length===0&&el.childNodes.length===1&&el.firstChild.nodeType===3){const node=el.firstChild;if(!node.dataset.arOriginal)node.dataset.arOriginal=node.nodeValue;const original=node.dataset.arOriginal.trim();const translated=translations[original];if(translated)node.nodeValue=node.dataset.arOriginal.replace(original,index<0?original:translated[index]);}});
+ const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let node;while(node=walker.nextNode()){if(!node.dataset.arOriginal)node.dataset.arOriginal=node.nodeValue;const original=node.dataset.arOriginal.trim();const translated=translations[original];if(translated)node.nodeValue=node.dataset.arOriginal.replace(original,index<0?original:translated[index]);}
  document.querySelectorAll("[aria-label]").forEach(el=>{if(!el.dataset.arLabel)el.dataset.arLabel=el.getAttribute("aria-label");const t=translations[el.dataset.arLabel];if(t)el.setAttribute("aria-label",index<0?el.dataset.arLabel:t[index]);});
  if(languageSelect)languageSelect.value=lang;
  try{localStorage.setItem("royalMarketsLanguage",lang)}catch(e){}
