@@ -30,6 +30,8 @@ for (const marker of [
   'prefers-reduced-motion',
   'share-button',
   'navigator.share',
+  'titleLink.href = "/post/"',
+  'selectedPostDay',
   'caches.default.put',
   'caches.default.match',
   'url.pathname==="/rss.xml"',
