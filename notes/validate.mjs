@@ -21,8 +21,9 @@ for (const post of feed.posts) {
   }
 }
 
-for (const marker of [
+const htmlMarkers = [
   'rel="canonical" href="https://ceo-notes.pages.dev/"',
+  'href="https://ceo-notes.pages.dev/rss.xml"',
   'id="world-clocks"',
   'async function loadPosts()',
   'fetch("/feed"',
@@ -32,23 +33,29 @@ for (const marker of [
   'navigator.share',
   'titleLink.href = "/post/"',
   'selectedPostDay',
-  'caches.default.put',
-  'caches.default.match',
-  'url.pathname==="/rss.xml"',
-  'url.pathname==="/sitemap.xml"',
-  'url.pathname.match(/^\\/post\\/(\\d+)\\/?$/)',
-  'function articleHtml(post)',
-  'ceo-notes.pages.dev/post/',
-  'url.pathname==="/robots.txt"',
   'card.id = "post-"'
-]) assert.ok(html.includes(marker), `homepage is missing: ${marker}`);
+];
+for (const marker of htmlMarkers) assert.ok(html.includes(marker), `homepage is missing: ${marker}`);
 
 for (const zone of ["Africa/Cairo", "Europe/London", "America/New_York", "Europe/Moscow", "Asia/Dubai"]) {
   assert.ok(html.includes(zone), `world clock is missing timezone: ${zone}`);
 }
 
-for (const marker of ['const HTML=', 'const POSTS=', 'url.pathname==="/feed"', 'url.pathname==="/"', 'Cache-Control','no-store']) {
-  assert.ok(worker.includes(marker), `Pages Worker is missing: ${marker}`);
-}
+const workerMarkers = [
+  'const HTML=',
+  'const POSTS=',
+  'url.pathname==="/feed"',
+  'url.pathname==="/rss.xml"',
+  'url.pathname==="/sitemap.xml"',
+  'url.pathname==="/robots.txt"',
+  String.raw`url.pathname.match(/^\/post\/(\d+)\/?$/)`,
+  'function articleHtml(post)',
+  'ceo-notes.pages.dev/post/',
+  'caches.default.put',
+  'caches.default.match',
+  'Cache-Control',
+  'no-store'
+];
+for (const marker of workerMarkers) assert.ok(worker.includes(marker), `Pages Worker is missing: ${marker}`);
 
-console.log(`CEO Notes checks passed: ${feed.posts.length} published posts, 5 world clocks, feed fallback, and Pages Worker routes.`);
+console.log(`CEO Notes checks passed: ${feed.posts.length} published posts, 5 world clocks, article routes, RSS, sitemap, robots, and resilient feed.`);
