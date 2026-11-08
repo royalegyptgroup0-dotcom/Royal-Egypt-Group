@@ -1,0 +1,36 @@
+name: CEO Notes feed metadata verification
+
+on:
+  push:
+    branches:
+      - feature/ceo-notes-feed-metadata
+    paths:
+      - "notes/**"
+      - "scripts/build-ceo-notes-worker.mjs"
+      - ".github/workflows/ceo-notes-feed-metadata-verify.yml"
+  pull_request:
+    branches:
+      - ceo-notes-site
+    paths:
+      - "notes/**"
+      - "scripts/build-ceo-notes-worker.mjs"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check radio JavaScript syntax
+        run: node --check notes/radio.js
+      - name: Check Pages Worker JavaScript syntax
+        run: node --check --input-type=module < notes/_worker.js
+      - name: Verify Worker bundle synchronization
+        run: node scripts/build-ceo-notes-worker.mjs
+      - name: Validate CEO Notes content and site
+        run: node notes/validate.mjs
