@@ -194,3 +194,14 @@ test("assistant enforces the request body cap before parsing", async () => {
   assert.equal(response.status, 413);
   assert.equal((await response.json()).error, "message_too_long");
 });
+
+test("assistant accepts the apex and www Royal Egypt custom domains", async () => {
+  for (const customOrigin of ["https://royalegyptgroup.com", "https://www.royalegyptgroup.com"]) {
+    const response = await onRequest({
+      request: request([{ role: "user", content: "Hello" }], "203.0.113.21", customOrigin),
+      env: env(new FakeDB())
+    });
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).answer, "Synthetic assistant reply");
+  }
+});
