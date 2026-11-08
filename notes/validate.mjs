@@ -56,7 +56,7 @@ const htmlMarkers = [
 ];
 for (const marker of htmlMarkers) assert.ok(html.includes(marker), `homepage is missing: ${marker}`);
 
-const inlineScripts = [...html.matchAll(/<script\\b(?![^>]*\\bsrc=)[^>]*>([\\s\\S]*?)<\\/script>/gi)];
+const inlineScripts = [...html.matchAll(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)];
 assert.ok(inlineScripts.length > 0, "homepage must include its application script");
 inlineScripts.forEach((match, index) => new Script(match[1], { filename: `ceo-notes-inline-${index + 1}.js` }));
 
