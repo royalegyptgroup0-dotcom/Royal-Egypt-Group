@@ -30,6 +30,8 @@ for (const marker of [
   'prefers-reduced-motion',
   'share-button',
   'navigator.share',
+  'caches.default.put',
+  'caches.default.match',
   'card.id = "post-"'
 ]) assert.ok(html.includes(marker), `homepage is missing: ${marker}`);
 
