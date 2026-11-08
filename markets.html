@@ -171,9 +171,9 @@ function setLanguage(lang){
  const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let node;while(node=walker.nextNode()){if(!node.dataset.arOriginal)node.dataset.arOriginal=node.nodeValue;const original=node.dataset.arOriginal.trim();const translated=translations[original];if(translated)node.nodeValue=node.dataset.arOriginal.replace(original,index<0?original:translated[index]);}
  document.querySelectorAll("[aria-label]").forEach(el=>{if(!el.dataset.arLabel)el.dataset.arLabel=el.getAttribute("aria-label");const t=translations[el.dataset.arLabel];if(t)el.setAttribute("aria-label",index<0?el.dataset.arLabel:t[index]);});
  if(languageSelect)languageSelect.value=lang;
- try{localStorage.setItem("royalMarketsLanguage",lang)}catch(e){}
+ try{localStorage.setItem("royal-lang",lang)}catch(e){}
 }
-let saved="ar";try{saved=localStorage.getItem("royalMarketsLanguage")||"ar"}catch(e){}
+let saved="ar";try{saved=localStorage.getItem("royal-lang")||"ar"}catch(e){}
 if(!["ar","en","ru"].includes(saved))saved="ar";
 if(languageSelect){languageSelect.value=saved;languageSelect.addEventListener("change",()=>setLanguage(languageSelect.value));}
 setLanguage(saved);
