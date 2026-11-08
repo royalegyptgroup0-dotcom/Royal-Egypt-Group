@@ -54,7 +54,7 @@ const workerMarkers = [
   'url.pathname==="/rss.xml"',
   'url.pathname==="/sitemap.xml"',
   'url.pathname==="/robots.txt"',
-  String.raw`url.pathname.match(/^\\/post\\/(\\d+)\\/?$/)`,
+  'const articleMatch=url.pathname.match(',
   'function articleHtml(post)',
   'ceo-notes.pages.dev/post/',
   'caches.default.put',
