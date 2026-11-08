@@ -2,14 +2,26 @@ name = "royalegyptgroup"
 compatibility_date = "2026-11-04"
 pages_build_output_dir = "./"
 
-# Production D1 — keep the live database binding unchanged.
 [[d1_databases]]
 binding = "DB"
 database_name = "royal-eg-listings"
 database_id = "fec37fa6-9406-4bb9-aba1-25f03a7cb2ed"
 
-# Preview-only D1 — isolated synthetic/test data.
+[ai]
+binding = "AI"
+
 [[env.preview.d1_databases]]
 binding = "DB"
 database_name = "royal-eg-listings-preview"
 database_id = "2d8c26ad-041e-4a51-aa13-ddb2120ce836"
+
+[env.preview.ai]
+binding = "AI"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "royal-eg-listings"
+database_id = "fec37fa6-9406-4bb9-aba1-25f03a7cb2ed"
+
+[env.production.ai]
+binding = "AI"

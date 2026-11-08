@@ -40,4 +40,4 @@ fetch("/api/listings").then(r=>r.ok?r.json():null).then(data=>{if(!data||!Array.
 })();
 </script><script>
 (()=>{const form=document.getElementById("listingForm");if(!form)return;const status=document.getElementById("listingStatus");form.addEventListener("submit",async e=>{e.preventDefault();status.textContent="جارٍ إرسال الإعلان...";const data=new FormData(form);try{const response=await fetch("/api/listings",{method:"POST",body:data});const result=await response.json();if(!response.ok)throw new Error(result.error||"تعذر إرسال الإعلان");form.reset();status.textContent="تم استلام إعلانك للمراجعة. رقم الطلب: "+result.id+" — لن يظهر قبل الموافقة."; }catch(err){status.textContent=err.message==="Failed to fetch"?"خدمة استقبال الإعلانات لم تُفعّل بعد. حاول لاحقًا أو تواصل معنا عبر واتساب.":err.message;}});})();
-</script></body></html>
+</script><script src="/assets/site-enhancements.js" defer></script></body></html>
