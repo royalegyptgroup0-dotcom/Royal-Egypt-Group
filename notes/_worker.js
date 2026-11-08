@@ -5,17 +5,35 @@ const POSTS="{\n  \"version\": 1,\n  \"posts\": [\n    {\n      \"day\": 25,\n  
 const UPSTREAM="https://ceo-notes-ai.yasser-abdelaziz83.workers.dev/feed";
 const CACHE_TTL=86400;
 function cacheKey(origin,path){return new Request(new URL(path,origin),{method:"GET"});}
+function normalizeEditorialFeed(feed){
+ const fallback=JSON.parse(POSTS);
+ const localPosts=Array.isArray(fallback?.posts)?fallback.posts:[];
+ const byDay=new Map(localPosts.map(post=>[Number(post.day),post]));
+ const sourcePosts=Array.isArray(feed?.posts)?feed.posts:[];
+ const posts=sourcePosts.map(post=>{
+  const local=byDay.get(Number(post?.day))||{};
+  const suppliedTags=Array.isArray(post?.tags)&&post.tags.length?post.tags:[];
+  const localTags=Array.isArray(local.tags)&&local.tags.length?local.tags:[];
+  const hashtagText=Array.isArray(post?.hashtags)?post.hashtags.join(" "):String(post?.hashtags||"");
+  const derivedTags=hashtagText.split(/\s+/).map(tag=>tag.replace(/^#/,"").replace(/_/g," ")).filter(tag=>tag&&!["CEO Notes","CEO Challenge","فكرة اليوم"].includes(tag));
+  const tags=suppliedTags.length?suppliedTags:(localTags.length?localTags:[...new Set(derivedTags)]);
+  return {...post,category:post.category||local.category||"غير مصنّف",tags};
+ });
+ return {...feed,posts};
+}
 async function latestFeed(origin){
  const key=cacheKey(origin,"/__ceo_notes_feed_cache");
  try{
   const upstream=await fetch(UPSTREAM,{headers:{"Accept":"application/json"},cf:{cacheTtl:0}});
   if(!upstream.ok)throw new Error("feed_unavailable");
-  const body=await upstream.text(),parsed=JSON.parse(body);
+  const parsed=JSON.parse(await upstream.text());
+  const normalized=normalizeEditorialFeed(parsed);
+  const body=JSON.stringify(normalized);
   try{await caches.default.put(key,new Response(body,{headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"public, max-age="+CACHE_TTL,"X-Content-Type-Options":"nosniff"}}));}catch(e){}
-  return parsed;
+  return normalized;
  }catch(e){
-  try{const cached=await caches.default.match(key);if(cached)return JSON.parse(await cached.text());}catch(cacheError){}
-  return JSON.parse(POSTS);
+  try{const cached=await caches.default.match(key);if(cached)return normalizeEditorialFeed(JSON.parse(await cached.text()));}catch(cacheError){}
+  return normalizeEditorialFeed(JSON.parse(POSTS));
  }
 }
 async function marketData(origin){
