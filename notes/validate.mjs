@@ -75,10 +75,10 @@ for (const marker of workerMarkers) assert.ok(worker.includes(marker), `Pages Wo
 
 const radioMarkers = [
   'https://de1.api.radio-browser.info',
-  'hidebroken:"true"',
-  'limit:"24"',
-  'is_https:"true"',
-  'hls:"0"',
+  'hidebroken: "true"',
+  'limit: "24"',
+  'is_https: "true"',
+  'hls: "0"',
   'Number(station.hls) !== 1',
   'startsWith("https://")',
   'play.addEventListener("click"',
