@@ -8,6 +8,7 @@ This folder is the source of truth for the standalone CEO Notes site at https://
 - Cloudflare Pages Worker source: `_worker.js`.
 - The Worker serves the site, proxies the live feed, caches the last successful feed for up to 24 hours, and falls back to the static published-post snapshot if both the live feed and cache are unavailable.
 - World clocks use the browser's built-in `Intl.DateTimeFormat` timezone database. They require no external API, key, or subscription.
+- Free RSS, robots.txt, and sitemap.xml endpoints are served by the Pages Worker for feed readers and search engines.
 - No paid analytics, stock-data, translation, image, or automation API is required by the site itself.
 
 ## Editorial and publishing flow
