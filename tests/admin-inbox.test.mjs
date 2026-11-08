@@ -9,7 +9,7 @@ class FakeDB {
     this.rows = {
       customers: [{ id: "c1", name: "Synthetic", status: "new" }],
       opportunities: [{ id: "o1", title: "Synthetic opportunity", status: "new" }],
-      listings: [{ id: "l1", title: "Synthetic listing", status: "pending" }]
+      listings: [{ id: "l1", title: "Synthetic listing", status: "pending" }],\n      orders: [{ id: "ord1", order_type: "coffee", customer_name: "Synthetic order", status: "pending" }]
     };
   }
   prepare(sql) {
@@ -18,7 +18,7 @@ class FakeDB {
       all: async () => {
         if (sql.includes("FROM customers")) return { results: this.rows.customers };
         if (sql.includes("FROM opportunities")) return { results: this.rows.opportunities };
-        if (sql.includes("FROM listings")) return { results: this.rows.listings };
+        if (sql.includes("FROM listings")) return { results: this.rows.listings };\n        if (sql.includes("FROM orders")) return { results: this.rows.orders };
         return { results: [] };
       },
       bind: (...values) => ({
@@ -93,4 +93,13 @@ test("returns 404 when a record is not found", async () => {
     env: { DB: new FakeDB(), ADMIN_TOKEN: token }
   });
   assert.equal(response.status, 404);
+});\n
+test("keeps legacy orders read-only through the generic inbox endpoint", async () => {
+  const db = new FakeDB();
+  const response = await onRequest({
+    request: request("PATCH", { type: "order", id: "ord1", status: "confirmed" }),
+    env: { DB: db, ADMIN_TOKEN: token }
+  });
+  assert.equal(response.status, 400);
+  assert.equal(db.calls.some(sql => typeof sql === "string" && sql.startsWith("UPDATE orders")), false);
 });
