@@ -15,7 +15,7 @@ Scope: CEO Notes only. Keep this code and its publishing data separate from Roya
 - Independent Cloudflare Pages project: ceo-notes.pages.dev; production branch label: ceo-notes-site.
 - Existing site includes article feed, per-post routes, search, sharing, RSS, sitemap/robots, currency/gold reference data, world clocks, and a Cloudflare Worker API.
 - The isolated ceo-notes-site branch contains DAY25, DAY26, and DAY27 marked Published. Do not use the Royal Egypt Group main-branch archive as the CEO Notes source of truth.
-- Primary Make publisher scenario `8438190`: latest read-only check at 2026-11-08 20:50 Africa/Cairo returned `status=paused`, `isActive=true`, configured daily time 19:30 Cairo, and a listed next execution of 17:30 UTC (already passed). No Nov 8 run was found. Last run: 2026-11-07 21:41:52 UTC, success, four operations, with one Facebook module invoked; final receipt stage was not shown as executed. Legacy scenario `8419318` remains paused and inactive (`isActive=false`). No scenario state or schedule was changed.
+- Primary Make publisher scenario `8438190`: repeated read-only check on 2026-11-08 returned `status=paused`, `isActive=true`, configured daily time 19:30 Cairo, and a listed next execution of 17:30 UTC (already passed). No Nov 8 run was found. Last run: 2026-11-07 21:41:52 UTC, success, four operations; execution inspection shows modules 1–4 ran, including the CEO Facebook module, while the Royal Egypt Properties and final receipt modules did not run. Module input/output drill-down returned no stored records, so the resulting Facebook post ID and final receipt cannot be independently confirmed from Make. Legacy scenario `8419318` remains paused and inactive (`isActive=false`). No scenario state or schedule was changed.
 - Radio production deployment: Cloudflare Pages deployment `b8636969`, commit `1460d24a3167341ffd429aadd1d65f9e19772fee`.
 - Editorial production deployment: Cloudflare Pages deployment `15621b34`, commit `8993671de94319e26fd56bfe8e54c5286c71fb62`.
 - Market freshness production deployment: Cloudflare Pages deployment `5cb38832`, commit `f538a59d0777584e3135077aca79482de43da474`.
@@ -36,6 +36,11 @@ Scope: CEO Notes only. Keep this code and its publishing data separate from Roya
 - [ ] Resolve why scenario 8438190 reports paused despite `isActive=true`; confirm whether it should resume before changing any state.
 - [ ] Verify a complete successful run across both Facebook destinations and the final receipt handler; the latest four-operation run does not establish this.
 - [ ] Verify the first real receipt after an explicitly approved complete run.
+- [x] Read the deployed Cloudflare publisher Worker and the current Make module mappings without changing production state.
+- [x] Confirm the current feed contains Published Days 25–27 and the public KV inventory contains only the expected feed, backup records, and image keys for Days 26–27.
+- [ ] Repair the partial-publish failure mode: the current Worker receipt endpoint requires both Facebook IDs in one request, while Make records the receipt only after both Facebook actions. If the first page succeeds and the second fails, the first post can remain unreceipted and the existing-day gate can block a normal retry.
+- [ ] Add independently idempotent receipts and recovery for each destination (CEO Notes first, Royal Egypt Properties second); test success/failure permutations in an isolated environment before changing production.
+- [ ] Do not treat the previous four-operation success as proof of a complete two-page publish: inspection shows only modules 1–4 ran; modules 5 and 6 did not run in that execution.
 - [ ] Resolve the unnumbered historical posts: the 14 July post between Days 8 and 10 may be Day 9, but it is not explicitly labelled; Day 18 and Day 24 remain unconfirmed. The repeated Day 6 must be reviewed before any historical import.
 - [ ] Decide whether Days 1–24 should be imported into the website; keep them as Facebook-only history for now, because the website's current series starts at Day 25 and several older entries are unnumbered or ambiguous.
 
@@ -82,7 +87,7 @@ Scope: CEO Notes only. Keep this code and its publishing data separate from Roya
 - [ ] Build an isolated Cloudflare-native prototype and test partial failures without publishing to production pages.
 - [ ] Verify secure Facebook authorization and required permissions through an approved connection.
 - [ ] Require human approval before external social publishing.
-- Keep the current Make publisher active on its existing schedule until the Cloudflare-native replacement passes parity tests and a separate cutover is approved.
+- Do not change or resume the current Make publisher until its paused/active state is explained and the partial-publish recovery path is repaired and tested; the observed scenario 8438190 state is paused with isActive=true.
 
 ### P6 — Secure editorial dashboard <design documented 2026-11-08>
 - [x] Document the private editor, translation review, approval states, server-side authorization, receipts, and audit requirements in `notes/EDITORIAL-DASHBOARD.md`.
