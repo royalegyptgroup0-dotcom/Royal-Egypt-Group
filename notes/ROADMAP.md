@@ -76,11 +76,16 @@ Scope: CEO Notes only. Keep this code and its publishing data separate from Roya
 - Server-side authorization only; no secrets in frontend code.
 - No direct publishing action without visible confirmation and an audit receipt.
 
-### P7 — Reliability and continuity
-- Automated backups and restore tests.
-- Feed, sitemap, RSS, and route health checks.
-- Duplicate-content, broken-image, and broken-link checks.
-- Deployment previews and rollback notes for every release.
+### P7 — Reliability and continuity <in progress 2026-11-08>
+- [x] Add daily Cloudflare KV snapshots for the canonical feed and every stored image.
+- [x] Schedule backups daily at 02:00 UTC (04:00 Cairo), with 30-day retention.
+- [x] Create a baseline snapshot for 2026-11-08 covering Days 25–27 and the two stored image assets.
+- [x] Read back the backup feed, manifest, and image assets; SHA-256 checks match the live source values.
+- [x] Confirm the publisher Worker health endpoint and live feed remain available after the backup deployment.
+- [ ] Verify the first scheduled backup run and exercise a restore in an isolated namespace before any live restore.
+- [ ] Add automated feed, sitemap, RSS, and article-route health checks.
+- [ ] Add duplicate-content, broken-image, and broken-link checks.
+- [ ] Maintain deployment previews and rollback notes for every release.
 
 ## Release checklist — radio release 2026-11-08
 - [x] Verify the radio feature on a non-production Cloudflare Preview deployment.
@@ -104,4 +109,4 @@ Scope: CEO Notes only. Keep this code and its publishing data separate from Roya
 - [ ] Interactive filter behavior, keyboard navigation, and responsive layout verified in a real browser.
 
 ## Current focus
-P0 — verify the first publishing receipt on the next scheduled run, then complete the historical archive reconciliation without importing unverified content.
+P0/P7 — verify the first publishing receipt and the first scheduled backup, then complete historical archive reconciliation without importing unverified content.
