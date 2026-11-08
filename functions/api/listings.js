@@ -12,7 +12,7 @@ const SECURITY_HEADERS = {
 
 function allowedOrigin(origin) {
   return origin === ALLOWED_ORIGIN ||
-    /^https:\/\/[a-z0-9-]+\.royalegyptgroup-vy7\\.pages\\.dev$/i.test(origin || "");
+    /^https:\/\/[a-z0-9-]+\.royalegyptgroup-vy7\.pages\.dev$/i.test(origin || "");
 }
 
 function json(data, status = 200, origin = "") {
