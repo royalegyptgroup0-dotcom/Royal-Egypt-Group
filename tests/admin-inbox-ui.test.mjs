@@ -7,7 +7,7 @@ test("owner inbox includes a protected read-only orders tab", async () => {
   assert.match(html, /data-tab="orders"/);
   assert.match(html, /id="ordersCount"/);
   assert.match(html, /else if\(activeTab==="orders"\)/);
-  assert.match(html, /data\.orders\|\|\[\]/);
+  assert.match(html, /orders:d\.orders\|\|\[\]/);
   assert.match(html, /item\.order_type==="coffee"/);
   assert.doesNotMatch(html, /localStorage|innerHTML/);
 });
