@@ -38,7 +38,8 @@ const htmlMarkers = [
   'selectedPostDay',
   'card.id = "post-"',
   'id="ceo-radio"',
-  'src="/radio.js"'
+  'src="/radio.js"',
+  'The United States Of America'
 ];
 for (const marker of htmlMarkers) assert.ok(html.includes(marker), `homepage is missing: ${marker}`);
 
@@ -58,6 +59,10 @@ const workerMarkers = [
   'url.pathname==="/rss.xml"',
   'url.pathname==="/sitemap.xml"',
   'url.pathname==="/robots.txt"',
+  'url.pathname==="/radio.css"',
+  'url.pathname==="/radio.js"',
+  'const RADIO_CSS=',
+  'const RADIO_JS=',
   'const articleMatch=url.pathname.match(',
   'function articleHtml(post)',
   'ceo-notes.pages.dev/post/',
@@ -70,9 +75,11 @@ for (const marker of workerMarkers) assert.ok(worker.includes(marker), `Pages Wo
 
 const radioMarkers = [
   'https://de1.api.radio-browser.info',
-  'hidebroken:"true"',
-  'limit:"24"',
-  'is_https:"true"',
+  'hidebroken: "true"',
+  'limit: "24"',
+  'is_https: "true"',
+  'hls: "0"',
+  'Number(station.hls) !== 1',
   'startsWith("https://")',
   'play.addEventListener("click"',
   'audio.play()',
