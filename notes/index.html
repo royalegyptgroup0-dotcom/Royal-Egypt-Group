@@ -88,6 +88,7 @@
     @media(max-width:420px){.navlinks a:last-child{display:none}.brand-name small{font-size:9px}}
     @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
   </style>
+  <link rel="stylesheet" href="/radio.css">
 </head>
 <body>
   <header class="topbar">
@@ -141,6 +142,34 @@
         <div class="clock"><div class="clock-city">نيويورك</div><div class="clock-time">--:--:--</div><div class="clock-zone">America/New_York</div></div>
         <div class="clock"><div class="clock-city">موسكو</div><div class="clock-time">--:--:--</div><div class="clock-zone">Europe/Moscow</div></div>
         <div class="clock"><div class="clock-city">دبي</div><div class="clock-time">--:--:--</div><div class="clock-zone">Asia/Dubai</div></div>
+      </div>
+    </section>
+
+    <section class="wrap radio-section" id="radio" aria-labelledby="radio-title">
+      <div class="radio-panel" id="ceo-radio">
+        <div class="radio-head">
+          <div><h2 id="radio-title">راديو CEO Notes</h2><p>اكتشف محطات إذاعية مجانية من مصر والعالم، واستمع مباشرة من مصدر البث.</p></div>
+          <span class="radio-free">مجاني · بدون تسجيل</span>
+        </div>
+        <form class="radio-controls" id="radio-form">
+          <input class="radio-input" id="radio-search" type="search" maxlength="100" placeholder="ابحث باسم محطة إذاعية…" aria-label="ابحث عن محطة إذاعية">
+          <select class="radio-country" id="radio-country" aria-label="اختر الدولة"><option value="">كل الدول</option><option value="Egypt">مصر</option><option value="United Arab Emirates">الإمارات</option><option value="Saudi Arabia">السعودية</option><option value="United Kingdom">بريطانيا</option><option value="United States">الولايات المتحدة</option></select>
+          <button class="radio-search-btn" type="submit">ابحث عن محطات</button>
+        </form>
+        <div class="radio-presets" aria-label="تصنيفات الراديو">
+          <button class="radio-filter" type="button" data-radio-tag="" aria-pressed="true">الأكثر استماعًا</button>
+          <button class="radio-filter" type="button" data-radio-tag="arabic" aria-pressed="false">عربي</button>
+          <button class="radio-filter" type="button" data-radio-tag="news" aria-pressed="false">أخبار</button>
+          <button class="radio-filter" type="button" data-radio-tag="jazz" aria-pressed="false">جاز</button>
+          <button class="radio-filter" type="button" data-radio-tag="pop" aria-pressed="false">موسيقى</button>
+        </div>
+        <p class="radio-status" id="radio-status" role="status" aria-live="polite">اختر تصنيفًا أو ابحث عن محطة لبدء الاستماع.</p>
+        <div class="radio-results" id="radio-results"><div class="radio-empty">المحطات ستظهر هنا بعد البحث.</div></div>
+        <div class="radio-player">
+          <div class="radio-now"><strong>يعمل الآن</strong><span id="radio-now-name">لم يتم اختيار محطة</span><span id="radio-now-country">اختر محطة من القائمة</span></div>
+          <audio id="radio-audio" controls preload="none" aria-label="مشغل الراديو"></audio>
+        </div>
+        <p class="radio-disclaimer">المحطات وروابط البث مقدمة من دليل Radio Browser المفتوح. الصوت يأتي مباشرة من خوادم المحطات؛ لا يستضيف CEO Notes البث ولا يسجله أو يعيد توزيعه. قد تتوقف بعض المحطات أو تقيّد الاستماع حسب الدولة. لأمان الموقع، نعرض روابط البث الآمنة HTTPS فقط. <a href="https://www.radio-browser.info/" target="_blank" rel="noopener noreferrer" style="color:var(--gold2)">المصدر والترخيص</a>.</p>
       </div>
     </section>
 
@@ -400,5 +429,6 @@
     })();
   </script>
 <!-- CEO Notes live feed: Cloudflare Workers AI + KV -->
+  <script src="/radio.js" defer></script>
 </body>
 </html>
