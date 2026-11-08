@@ -41,6 +41,8 @@ const json = (data, status = 200) => new Response(JSON.stringify(data), {
 
 function allowedOrigin(origin) {
   return origin === "https://royalegyptgroup-vy7.pages.dev" ||
+    origin === "https://royalegyptgroup.com" ||
+    origin === "https://www.royalegyptgroup.com" ||
     /^https:\/\/[a-z0-9-]+\.royalegyptgroup-vy7\.pages\.dev$/i.test(origin || "");
 }
 
