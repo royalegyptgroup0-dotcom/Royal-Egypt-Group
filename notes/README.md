@@ -6,7 +6,7 @@ This folder is the source of truth for the standalone CEO Notes site at https://
 - Static editorial UI: `index.html`.
 - Public fallback content: `posts.json`.
 - Cloudflare Pages Worker source: `_worker.js`.
-- The Worker serves the site, proxies the live feed, and falls back to the static published-post snapshot if the live feed is unavailable.
+- The Worker serves the site, proxies the live feed, caches the last successful feed for up to 24 hours, and falls back to the static published-post snapshot if both the live feed and cache are unavailable.
 - World clocks use the browser's built-in `Intl.DateTimeFormat` timezone database. They require no external API, key, or subscription.
 - No paid analytics, stock-data, translation, image, or automation API is required by the site itself.
 
