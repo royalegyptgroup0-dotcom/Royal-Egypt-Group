@@ -22,7 +22,7 @@ Scope: CEO Notes only. Keep this code and its publishing data separate from Roya
 ## Milestones
 
 ### P0 — Content integrity and publishing safety <in progress 2026-11-08>
-- [x] Reconcile the live website feed (Days 25–27) against the CEO Facebook Page history (32 posts, with numbered Days 1–27 plus unnumbered items and a repeated Day 6).
+- [x] Reconcile the live website feed (Days 25–27) against the CEO Facebook Page history (32 posts; explicit day labels cover Days 1–8, 10–17, and 19–27, with Day 6 repeated and several unnumbered items).
 - [x] Confirm the latest published website articles (Days 25–27) match the corresponding CEO Facebook posts.
 - [x] Audit Royal Egypt Properties history (26 posts); no CEO Notes-series post was present at audit time.
 - [x] Identify the separate inactive 30-draft bank (Days 25–54). Its Day 26 and Day 27 titles differ from the published versions; it remains untouched and is not treated as canonical.
@@ -32,8 +32,8 @@ Scope: CEO Notes only. Keep this code and its publishing data separate from Roya
 - [x] Add a final Make module to record the receipt only after both Facebook posts succeed.
 - [x] Preserve the active daily schedule (19:30 Cairo); no manual publishing run was performed.
 - [ ] Verify the first real receipt after the next scheduled run.
-- [ ] Reconcile unnumbered historical posts and the repeated Day 6.
-- [ ] Decide whether Days 1–24 should be imported into the website; do not migrate them until their canonical article text and images are verified.
+- [ ] Resolve the unnumbered historical posts: the 14 July post between Days 8 and 10 may be Day 9, but it is not explicitly labelled; Day 18 and Day 24 remain unconfirmed. The repeated Day 6 must be reviewed before any historical import.
+- [ ] Decide whether Days 1–24 should be imported into the website; keep them as Facebook-only history for now, because the website's current series starts at Day 25 and several older entries are unnumbered or ambiguous.
 
 ### P1 — Free Radio module <completed 2026-11-08>
 - [x] Add a responsive radio directory/player to the blog and serve it through the Pages Worker.
