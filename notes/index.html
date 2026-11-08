@@ -197,22 +197,32 @@
         filtered.forEach(post => list.append(makePost(post)));
       }
       search.addEventListener("input",render);
-      fetch("/feed",{cache:"no-store"}).catch(() => fetch((location.pathname.endsWith("/") ? location.pathname : location.pathname + "/") + "posts.json",{cache:"no-store"}))
-        .then(response => { if(!response.ok) throw new Error("posts_unavailable"); return response.json(); })
-        .then(data => {
-          const items = Array.isArray(data) ? data : (Array.isArray(data.posts) ? data.posts : []);
-          posts = items.filter(item => item && item.status !== "Draft" && item.status !== "Reserved")
-            .sort((a,b) => Number(b.day || 0) - Number(a.day || 0));
-          render();
-        })
-        .catch(() => {
-          list.replaceChildren();
-          const empty = node("div","empty");
-          empty.append(node("strong","","تعذر تحميل المقالات حاليًا"));
-          empty.append(node("span","","حاول تحديث الصفحة بعد قليل."));
-          list.append(empty);
-          count.textContent = "المحتوى غير متاح مؤقتًا";
-        });
+      async function loadPosts(){
+        const fallbackUrl = (location.pathname.endsWith("/") ? location.pathname : location.pathname + "/") + "posts.json";
+        let firstError = null;
+        for(const url of ["/feed",fallbackUrl]){
+          try{
+            const response = await fetch(url,{cache:"no-store",headers:{"Accept":"application/json"}});
+            if(!response.ok) throw new Error("HTTP " + response.status);
+            const data = await response.json();
+            const items = Array.isArray(data) ? data : (Array.isArray(data.posts) ? data.posts : []);
+            if(!Array.isArray(items)) throw new Error("invalid_posts_format");
+            posts = items.filter(item => item && item.status !== "Draft" && item.status !== "Reserved")
+              .sort((a,b) => Number(b.day || 0) - Number(a.day || 0));
+            render();
+            return;
+          }catch(error){
+            if(!firstError) firstError = error;
+          }
+        }
+        list.replaceChildren();
+        const empty = node("div","empty");
+        empty.append(node("strong","","تعذر تحميل المقالات حاليًا"));
+        empty.append(node("span","","حاول تحديث الصفحة بعد قليل."));
+        list.append(empty);
+        count.textContent = "المحتوى غير متاح مؤقتًا";
+      }
+      loadPosts();
     })();
   </script>
 <!-- CEO Notes live feed: Cloudflare Workers AI + KV -->
