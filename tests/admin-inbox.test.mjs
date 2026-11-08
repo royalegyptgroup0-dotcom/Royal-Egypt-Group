@@ -9,7 +9,8 @@ class FakeDB {
     this.rows = {
       customers: [{ id: "c1", name: "Synthetic", status: "new" }],
       opportunities: [{ id: "o1", title: "Synthetic opportunity", status: "new" }],
-      listings: [{ id: "l1", title: "Synthetic listing", status: "pending" }],\n      orders: [{ id: "ord1", order_type: "coffee", customer_name: "Synthetic order", status: "pending" }]
+      listings: [{ id: "l1", title: "Synthetic listing", status: "pending" }],
+      orders: [{ id: "ord1", order_type: "coffee", customer_name: "Synthetic order", status: "pending" }]
     };
   }
   prepare(sql) {
@@ -18,7 +19,8 @@ class FakeDB {
       all: async () => {
         if (sql.includes("FROM customers")) return { results: this.rows.customers };
         if (sql.includes("FROM opportunities")) return { results: this.rows.opportunities };
-        if (sql.includes("FROM listings")) return { results: this.rows.listings };\n        if (sql.includes("FROM orders")) return { results: this.rows.orders };
+        if (sql.includes("FROM listings")) return { results: this.rows.listings };
+        if (sql.includes("FROM orders")) return { results: this.rows.orders };
         return { results: [] };
       },
       bind: (...values) => ({
@@ -59,6 +61,8 @@ test("returns customers, opportunities and listings to an authenticated owner", 
   assert.equal(result.opportunities.length, 1);
   assert.equal(result.listings.length, 1);
   assert.equal(result.listings[0].status, "pending");
+  assert.equal(result.orders.length, 1);
+  assert.equal(result.orders[0].order_type, "coffee");
 });
 
 test("updates an allowlisted customer status", async () => {
@@ -93,7 +97,8 @@ test("returns 404 when a record is not found", async () => {
     env: { DB: new FakeDB(), ADMIN_TOKEN: token }
   });
   assert.equal(response.status, 404);
-});\n
+});
+
 test("keeps legacy orders read-only through the generic inbox endpoint", async () => {
   const db = new FakeDB();
   const response = await onRequest({
