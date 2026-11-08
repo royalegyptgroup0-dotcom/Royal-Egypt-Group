@@ -4,7 +4,11 @@ Status: design only; no cutover is authorized by this document.
 
 ## Current production flow
 
-The current Make publisher remains active on its existing daily schedule (19:30 Cairo). Its verified sequence is:
+The primary Make publisher is scenario `8438190` (“CEO Notes | AI Editorial + Image + Facebook + Live Feed 19:30”). At the latest read-only check on 2026-11-08 20:50 Africa/Cairo, Make reported `status=paused` while its separate `isActive` flag was `true`; its configured daily time is 19:30 Africa/Cairo and the listed next execution time (17:30 UTC) had already passed. No run was recorded for 2026-11-08. Its last recorded run was 2026-11-07 21:41:52 UTC, marked success with four operations, including one successful Facebook module invocation. The final receipt stage was not shown as executed in that run, so a complete receipt is not verified.
+
+The legacy scenario `8419318` (“CEO Notes | Daily Publisher 19:30”) remains paused and inactive (`isActive=false`). Do not activate it.
+
+The primary scenario's configured flow is:
 
 1. Generate the next article and image.
 2. Save the article to the canonical CEO Notes feed.
@@ -12,7 +16,7 @@ The current Make publisher remains active on its existing daily schedule (19:30 
 4. Publish to Royal Egypt Properties after the CEO Page post succeeds.
 5. Write both Facebook post IDs and timestamps back to the canonical feed as a publishing receipt.
 
-The current Make flow must remain active until the Cloudflare-native replacement passes parity tests and the owner separately approves cutover.
+Do not change the current scenario's pause/active state, run it manually, or alter its schedule as part of this migration. The Cloudflare-native replacement must pass parity tests before any separate cutover decision.
 
 ## Target Cloudflare-native design
 
@@ -65,6 +69,8 @@ The current Make flow must remain active until the Cloudflare-native replacement
 - [ ] Scheduled execution respects 19:30 Africa/Cairo across daylight-saving changes.
 - [ ] Human approval is required before any external social post.
 - [ ] Rollback to the existing Make publisher is documented and tested.
+- [ ] Reconcile the primary scenario's current paused state and confirm whether its 19:30 schedule should resume; do not change it without a separate explicit instruction.
+- [ ] Verify both social post IDs and timestamps are written to the canonical feed after a controlled, approved run.
 - [ ] Owner explicitly approves the final cutover.
 
 ## Cutover rule
