@@ -15,17 +15,25 @@ Scope: CEO Notes only. Keep this code and its publishing data separate from Roya
 - Independent Cloudflare Pages project: ceo-notes.pages.dev; production branch label: ceo-notes-site.
 - Existing site includes article feed, per-post routes, search, sharing, RSS, sitemap/robots, currency/gold reference data, world clocks, and a Cloudflare Worker API.
 - The isolated ceo-notes-site branch contains DAY25, DAY26, and DAY27 marked Published. Do not use the Royal Egypt Group main-branch archive as the CEO Notes source of truth.
-- The existing Make publisher is protected; no run or activation is authorized by this roadmap.
+- Current Make publisher scenario `8438190` remains active on its existing daily schedule. The user explicitly authorized the P0 safety-filter and receipt additions in this work session; do not manually run it or change its schedule.
 - Radio production deployment: Cloudflare Pages deployment `b8636969`, commit `1460d24a3167341ffd429aadd1d65f9e19772fee`.
 - Editorial production deployment: Cloudflare Pages deployment `15621b34`, commit `8993671de94319e26fd56bfe8e54c5286c71fb62`.
 
 ## Milestones
 
-### P0 — Content integrity and publishing safety
-- Reconcile the blog feed against existing Facebook history without duplicate posts.
-- Verify publisher mappings and failure handling with isolated test data only.
-- Add duplicate prevention and publication receipts before considering migration.
-- Keep the current publisher untouched until an alternative passes end-to-end parity tests.
+### P0 — Content integrity and publishing safety <in progress 2026-11-08>
+- [x] Reconcile the live website feed (Days 25–27) against the CEO Facebook Page history (32 posts, with numbered Days 1–27 plus unnumbered items and a repeated Day 6).
+- [x] Confirm the latest published website articles (Days 25–27) match the corresponding CEO Facebook posts.
+- [x] Audit Royal Egypt Properties history (26 posts); no CEO Notes-series post was present at audit time.
+- [x] Identify the separate inactive 30-draft bank (Days 25–54). Its Day 26 and Day 27 titles differ from the published versions; it remains untouched and is not treated as canonical.
+- [x] Verify the current publisher flow is website feed first, CEO Facebook second, Royal Egypt Properties third.
+- [x] Add a gate that blocks social publishing when the canonical feed reports that the day already exists.
+- [x] Add a receipt handler to the Cloudflare publisher Worker to persist both Facebook post IDs and timestamps in the canonical feed.
+- [x] Add a final Make module to record the receipt only after both Facebook posts succeed.
+- [x] Preserve the active daily schedule (19:30 Cairo); no manual publishing run was performed.
+- [ ] Verify the first real receipt after the next scheduled run.
+- [ ] Reconcile unnumbered historical posts and the repeated Day 6.
+- [ ] Decide whether Days 1–24 should be imported into the website; do not migrate them until their canonical article text and images are verified.
 
 ### P1 — Free Radio module <completed 2026-11-08>
 - [x] Add a responsive radio directory/player to the blog and serve it through the Pages Worker.
@@ -61,7 +69,7 @@ Scope: CEO Notes only. Keep this code and its publishing data separate from Roya
 - Design a Cloudflare-native workflow to replace Make only after parity tests.
 - Use bounded scheduled jobs, idempotency keys, retries, and an audit trail.
 - Require human approval before external social publishing.
-- Keep the old scenario inactive until the replacement is proven and separately approved.
+- Keep the current Make publisher active on its existing schedule until the Cloudflare-native replacement passes parity tests and a separate cutover is approved.
 
 ### P6 — Secure editorial dashboard
 - Private authenticated editor for drafts, review, scheduling proposals, and archive corrections.
@@ -96,4 +104,4 @@ Scope: CEO Notes only. Keep this code and its publishing data separate from Roya
 - [ ] Interactive filter behavior, keyboard navigation, and responsive layout verified in a real browser.
 
 ## Current focus
-P0 — content integrity and publishing safety, beginning with a read-only reconciliation of the canonical feed and public publishing history.
+P0 — verify the first publishing receipt on the next scheduled run, then complete the historical archive reconciliation without importing unverified content.
