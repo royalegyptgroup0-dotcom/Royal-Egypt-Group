@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { Script } from "node:vm";
 import { readFile } from "node:fs/promises";
 
 const [html, worker, rawFeed, radio] = await Promise.all([
@@ -54,6 +55,10 @@ const htmlMarkers = [
   'article:published_time'
 ];
 for (const marker of htmlMarkers) assert.ok(html.includes(marker), `homepage is missing: ${marker}`);
+
+const inlineScripts = [...html.matchAll(/<script\\b(?![^>]*\\bsrc=)[^>]*>([\\s\\S]*?)<\\/script>/gi)];
+assert.ok(inlineScripts.length > 0, "homepage must include its application script");
+inlineScripts.forEach((match, index) => new Script(match[1], { filename: `ceo-notes-inline-${index + 1}.js` }));
 
 for (const zone of ["Africa/Cairo", "Europe/London", "America/New_York", "Europe/Moscow", "Asia/Dubai"]) {
   assert.ok(html.includes(zone), `world clock is missing timezone: ${zone}`);
