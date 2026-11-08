@@ -14,6 +14,7 @@ A read-only inspection of the deployed Worker and Make module configurations fou
 
 - The Make flow writes the article to the canonical feed before the social actions.
 - The feed write returns `alreadyPublished=true` for an existing published day, and the Make filter intentionally blocks the social route in that case.
+- The deployed Worker’s cold-start fallback URL points to the repository `main` branch rather than the isolated `ceo-notes-site` branch. A read-only comparison on 2026-11-08 found the same Days 25–27 article bodies and titles in both branches, but the `main` copy lacks the category/tag metadata present on `ceo-notes-site`. If the Worker KV feed is ever missing or invalid, fallback seeding can therefore restore an older metadata shape. Correct the fallback source in a tested release before relying on it for recovery.
 - The Worker receipt handler currently accepts `receiptOnly` only when both the CEO Page post ID and Royal Egypt Properties post ID are present in the same request.
 - Make calls that receipt handler only after both Facebook modules succeed.
 - Therefore, if the CEO Page post succeeds but the Royal Egypt Properties post fails, the CEO post can remain without a stored receipt. A normal retry for the same day is then blocked by the existing-day gate, while blindly replaying a Facebook action risks a duplicate.
