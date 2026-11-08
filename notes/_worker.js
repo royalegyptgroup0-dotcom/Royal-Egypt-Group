@@ -9,7 +9,7 @@ async function latestFeed(origin){
   const upstream=await fetch(UPSTREAM,{headers:{"Accept":"application/json"},cf:{cacheTtl:0}});
   if(!upstream.ok)throw new Error("feed_unavailable");
   const body=await upstream.text(),parsed=JSON.parse(body);
-  try{await caches.default.put(key,new Response(body,{headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"public, max-age="+CACHE_TTL,"X-Content-Type-Options":"nosniff"}));}catch(e){}
+  try{await caches.default.put(key,new Response(body,{headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"public, max-age="+CACHE_TTL,"X-Content-Type-Options":"nosniff"}}));}catch(e){}
   return parsed;
  }catch(e){
   try{const cached=await caches.default.match(key);if(cached)return JSON.parse(await cached.text());}catch(cacheError){}
