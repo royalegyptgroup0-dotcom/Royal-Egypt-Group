@@ -10,6 +10,8 @@ database_id = "fec37fa6-9406-4bb9-aba1-25f03a7cb2ed"
 [ai]
 binding = "AI"
 
+# Preview uses the dedicated D1 database in the current Cloudflare account.
+# Do not use the legacy account's test database ID here.
 [[env.preview.d1_databases]]
 binding = "DB"
 database_name = "royal-eg-listings-preview"
