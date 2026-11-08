@@ -25,5 +25,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Check radio JavaScript syntax
+        run: node --check notes/radio.js
       - name: Validate CEO Notes content and site
         run: node notes/validate.mjs
