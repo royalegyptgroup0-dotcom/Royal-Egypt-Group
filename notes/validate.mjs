@@ -36,6 +36,9 @@ for (const marker of [
   'caches.default.match',
   'url.pathname==="/rss.xml"',
   'url.pathname==="/sitemap.xml"',
+  'url.pathname.match(/^\\/post\\/(\\d+)\\/?$/)',
+  'function articleHtml(post)',
+  'ceo-notes.pages.dev/post/',
   'url.pathname==="/robots.txt"',
   'card.id = "post-"'
 ]) assert.ok(html.includes(marker), `homepage is missing: ${marker}`);
