@@ -6,6 +6,7 @@ test("Coffee and Transportation pages collect expressions of interest without im
   for (const page of ["coffee.html", "transportation.html"]) {
     const html = await readFile(new URL("../" + page, import.meta.url), "utf8");
     assert.match(html, /id="groupContactForm"/);
+    assert.match(html, /data-interest-sector="Royal Egypt (Coffee|Transportation)"/);
     assert.match(html, /name="request_type" value="customer"/);
     assert.match(html, /name="consent" value="yes" required/);
     assert.match(html, /name="website"/);
