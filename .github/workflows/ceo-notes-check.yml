@@ -34,3 +34,5 @@ jobs:
         run: node scripts/build-ceo-notes-worker.mjs
       - name: Validate CEO Notes content and site
         run: node notes/validate.mjs
+      - name: Test market freshness and stale fallback
+        run: node notes/test-market-stale.mjs
