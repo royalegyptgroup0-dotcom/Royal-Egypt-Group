@@ -15,7 +15,7 @@ Scope: CEO Notes only. Keep this code and its publishing data separate from Roya
 - Independent Cloudflare Pages project: ceo-notes.pages.dev; production branch label: ceo-notes-site.
 - Existing site includes article feed, per-post routes, search, sharing, RSS, sitemap/robots, currency/gold reference data, world clocks, and a Cloudflare Worker API.
 - The isolated ceo-notes-site branch contains DAY25, DAY26, and DAY27 marked Published. Do not use the Royal Egypt Group main-branch archive as the CEO Notes source of truth.
-- Current Make publisher scenario `8438190` remains active on its existing daily schedule. The user explicitly authorized the P0 safety-filter and receipt additions in this work session; do not manually run it or change its schedule.
+- Primary Make publisher scenario `8438190`: latest read-only check at 2026-11-08 20:50 Africa/Cairo returned `status=paused`, `isActive=true`, configured daily time 19:30 Cairo, and a listed next execution of 17:30 UTC (already passed). No Nov 8 run was found. Last run: 2026-11-07 21:41:52 UTC, success, four operations, with one Facebook module invoked; final receipt stage was not shown as executed. Legacy scenario `8419318` remains paused and inactive (`isActive=false`). No scenario state or schedule was changed.
 - Radio production deployment: Cloudflare Pages deployment `b8636969`, commit `1460d24a3167341ffd429aadd1d65f9e19772fee`.
 - Editorial production deployment: Cloudflare Pages deployment `15621b34`, commit `8993671de94319e26fd56bfe8e54c5286c71fb62`.
 - Market freshness production deployment: Cloudflare Pages deployment `5cb38832`, commit `f538a59d0777584e3135077aca79482de43da474`.
@@ -31,8 +31,11 @@ Scope: CEO Notes only. Keep this code and its publishing data separate from Roya
 - [x] Add a gate that blocks social publishing when the canonical feed reports that the day already exists.
 - [x] Add a receipt handler to the Cloudflare publisher Worker to persist both Facebook post IDs and timestamps in the canonical feed.
 - [x] Add a final Make module to record the receipt only after both Facebook posts succeed.
-- [x] Preserve the active daily schedule (19:30 Cairo); no manual publishing run was performed.
-- [ ] Verify the first real receipt after the next scheduled run.
+- [x] Preserve the configured daily time (19:30 Cairo) without changing the schedule.
+- [x] Read-only audit of Make state and recent executions completed on 2026-11-08.
+- [ ] Resolve why scenario 8438190 reports paused despite `isActive=true`; confirm whether it should resume before changing any state.
+- [ ] Verify a complete successful run across both Facebook destinations and the final receipt handler; the latest four-operation run does not establish this.
+- [ ] Verify the first real receipt after an explicitly approved complete run.
 - [ ] Resolve the unnumbered historical posts: the 14 July post between Days 8 and 10 may be Day 9, but it is not explicitly labelled; Day 18 and Day 24 remain unconfirmed. The repeated Day 6 must be reviewed before any historical import.
 - [ ] Decide whether Days 1–24 should be imported into the website; keep them as Facebook-only history for now, because the website's current series starts at Day 25 and several older entries are unnumbered or ambiguous.
 
