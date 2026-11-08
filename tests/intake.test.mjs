@@ -268,4 +268,18 @@ test("accepts the current Pages Preview hostname", async () => {
   );
   assert.equal(response.status, 202);
   assert.equal(db.records.size, 1);
+});\n
+test("accepts apex and www custom-domain origins for website intake", async () => {
+  for (const customOrigin of ["https://royalegyptgroup.com", "https://www.royalegyptgroup.com"]) {
+    const db = new FakeDB();
+    const response = await withFetch(async () => new Response("ok", { status: 200 }), () =>
+      onRequest({
+        request: makeRequest(validPayload, customOrigin, "198.51.100.22"),
+        env: { DB: db, MAKE_INTAKE_WEBHOOK_URL: webhook }
+      })
+    );
+    assert.equal(response.status, 202);
+    assert.equal(response.headers.get("access-control-allow-origin"), customOrigin);
+    assert.equal(db.records.size, 1);
+  }
 });
