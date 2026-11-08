@@ -52,6 +52,7 @@
     .market-unit{font-size:10px;color:var(--muted);text-align:right}
     .market-note{font-size:10px;color:#928d83;margin:12px 0 0}
     .market-updated{font-size:10px;color:var(--muted);text-align:left}
+    .market-updated.is-stale{color:#e7b56a;font-weight:650}
     .world-clock{padding:0 0 48px}
     .clock-heading{display:flex;align-items:end;justify-content:space-between;gap:14px;margin-bottom:15px}
     .clock-heading h2{font-size:19px;margin:0}
@@ -274,11 +275,13 @@
           }
           if(!cards.length) throw new Error("empty_market_data");
           marketBoard.replaceChildren(...cards);
-          marketUpdated.textContent="تاريخ البيانات: "+String(data.date || "غير متاح");
+          const checked=data.fetchedAt?new Date(data.fetchedAt).toLocaleString("ar-EG",{dateStyle:"short",timeStyle:"short"}):"غير معروف";
+          marketUpdated.classList.toggle("is-stale",Boolean(data.stale));
+          marketUpdated.textContent=data.stale?"بيانات قديمة — آخر تحديث: "+checked+" — تاريخ المصدر: "+String(data.date||"غير متاح"):"تاريخ المصدر: "+String(data.date||"غير متاح")+" — آخر تحديث: "+checked;
         }catch(error){
           marketBoard.replaceChildren();
           marketBoard.append(node("div","empty","تعذر تحميل المؤشرات حاليًا. حاول مرة أخرى لاحقًا."));
-          marketUpdated.textContent="البيانات غير متاحة مؤقتًا";
+          marketUpdated.classList.add("is-stale");marketUpdated.textContent="لا توجد بيانات حديثة أو محفوظة حاليًا";
         }
       }
       loadMarkets();
