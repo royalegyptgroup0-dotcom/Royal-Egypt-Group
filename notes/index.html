@@ -13,6 +13,13 @@
   <meta property="og:title" content="CEO Notes | ملاحظات يومية في الإدارة والقيادة">
   <meta property="og:description" content="أفكار عملية عن القيادة والإدارة والعمل الذكي.">
   <meta property="og:url" content="https://ceo-notes.pages.dev/">
+  <meta property="og:image" content="">
+  <meta property="article:published_time" content="">
+  <meta property="article:section" content="">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="CEO Notes | ملاحظات يومية في الإدارة والقيادة">
+  <meta name="twitter:description" content="أفكار عملية عن القيادة والإدارة والعمل الذكي.">
+  <meta name="twitter:image" content="">
   <style>
     :root{color-scheme:dark;--bg:#090a0b;--panel:#121416;--panel2:#191b1d;--gold:#c8a568;--gold2:#e5cc98;--ink:#f7f3eb;--muted:#aaa59a;--line:#ffffff20;--max:1080px}
     *{box-sizing:border-box}
@@ -55,11 +62,21 @@
     .clock-time{font-size:clamp(17px,2.5vw,25px);font-weight:700;letter-spacing:.5px;direction:ltr;text-align:right;font-variant-numeric:tabular-nums}
     .clock-date{font-size:10px;color:var(--muted);direction:ltr;text-align:right}
     .clock-zone{font-size:9px;color:#8d8980;margin-top:3px}
-    .toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 25px}
+    .toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 15px}
     .section-title{margin:0;font-size:23px}
     .count{color:var(--muted);font-size:12px}
+    .archive-tools{display:flex;align-items:center;gap:9px;width:min(520px,100%)}
     .search{width:min(330px,100%);background:#101214;border:1px solid var(--line);border-radius:9px;padding:11px 14px;color:var(--ink);outline:none}
+    .archive-tools .search{width:auto;min-width:0;flex:1}
     .search:focus{border-color:var(--gold)}
+    .category-select{min-width:155px;background:#101214;border:1px solid var(--line);border-radius:9px;padding:11px 13px;color:var(--ink);font:inherit;font-size:12px}
+    .category-select:focus-visible,.tag-filter:focus-visible,.topic-tag:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+    .tag-filters{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 22px}
+    .tag-filter{border:1px solid #ffffff24;background:#101214;color:#c9c4b9;border-radius:30px;padding:6px 11px;font:inherit;font-size:10px;cursor:pointer}
+    .tag-filter[aria-pressed="true"]{border-color:#c8a568;background:#c8a56820;color:var(--gold2)}
+    .post-category{display:inline-flex;align-items:center;border:1px solid #c8a56855;border-radius:30px;padding:3px 9px;color:var(--gold2);font-size:10px;white-space:nowrap}
+    .topic-tags{display:flex;flex-wrap:wrap;gap:6px}
+    .topic-tag{display:inline-flex;border:1px solid #c8a56835;border-radius:30px;padding:3px 8px;color:#d6c39d;background:#c8a5680d;font-size:10px}
     .posts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;padding-bottom:75px}
     .post{background:linear-gradient(145deg,#17191b,#101214);border:1px solid var(--line);border-radius:17px;padding:23px;min-width:0}
     .post-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
@@ -85,6 +102,7 @@
     footer{padding:22px 0;color:#817d75;font-size:11px;border-top:1px solid var(--line)}
     .footer-row{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
     @media(max-width:700px){.market-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.clocks{grid-template-columns:repeat(2,minmax(0,1fr))}.clock:last-child{grid-column:1/-1}.nav{min-height:68px}.navlinks{gap:13px;font-size:11px}.mark{width:39px;height:39px}.brand-name strong{font-size:13px}.hero{padding:56px 0 44px}.hero p{font-size:14px}.toolbar{align-items:stretch;flex-direction:column}.search{width:100%}.posts{grid-template-columns:1fr}.post{padding:19px}.post h3{font-size:18px}}
+    @media(max-width:700px){.archive-tools{width:100%;align-items:stretch;flex-direction:column}.archive-tools .search,.category-select{width:100%}.tag-filters{margin-bottom:18px}}
     @media(max-width:420px){.navlinks a:last-child{display:none}.brand-name small{font-size:9px}}
     @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
   </style>
@@ -175,12 +193,20 @@
     </section>
 
     <section class="wrap" id="latest">
-      <div class="toolbar">
-        <div>
-          <h2 class="section-title">أحدث الملاحظات</h2>
-          <div class="count" id="count" aria-live="polite">جارٍ تحميل المقالات…</div>
+      <div id="archive-controls">
+        <div class="toolbar">
+          <div>
+            <h2 class="section-title">أحدث الملاحظات</h2>
+            <div class="count" id="count" aria-live="polite">جارٍ تحميل المقالات…</div>
+          </div>
+          <div class="archive-tools">
+            <input class="search" id="search" type="search" placeholder="ابحث في العناوين والمقالات…" aria-label="ابحث في المقالات">
+            <select class="category-select" id="category-filter" aria-label="تصفية المقالات حسب القسم">
+              <option value="">كل الأقسام</option>
+            </select>
+          </div>
         </div>
-        <input class="search" id="search" type="search" placeholder="ابحث في العناوين والمقالات…" aria-label="ابحث في المقالات">
+        <div class="tag-filters" id="tag-filters" aria-label="تصفية المقالات حسب الموضوع"></div>
       </div>
       <div class="posts" id="posts" aria-live="polite">
         <div class="empty"><strong>لحظة واحدة…</strong>بنجهز أحدث الملاحظات للعرض.</div>
@@ -208,6 +234,9 @@
       "use strict";
       const list = document.getElementById("posts");
       const search = document.getElementById("search");
+      const categoryFilter = document.getElementById("category-filter");
+      const tagFilters = document.getElementById("tag-filters");
+      const archiveControls = document.getElementById("archive-controls");
       const count = document.getElementById("count");
       const marketBoard = document.getElementById("market-board");
       const marketUpdated = document.getElementById("market-updated");
@@ -283,8 +312,10 @@
       updateWorldClocks();
       window.setInterval(updateWorldClocks,1000);
       let posts = [];
+      let activeTag = "";
       const selectedPostMatch = location.pathname.match(/^\/post\/(\d+)\/?$/);
       const selectedPostDay = selectedPostMatch ? Number(selectedPostMatch[1]) : null;
+      if(selectedPostDay) archiveControls.hidden = true;
 
       function node(tag, className, value){
         const el = document.createElement(tag);
@@ -297,6 +328,7 @@
         if(post.day !== undefined) card.id = "post-" + String(post.day);
         const top = node("div","post-top");
         top.append(node("span","day","CEO NOTES · DAY " + post.day));
+        if(post.category) top.append(node("span","post-category",post.category));
         if(post.publishedAt) top.append(node("time","date",post.publishedAt));
         card.append(top);
         if(post.imageUrl){
@@ -333,6 +365,12 @@
           block.append(node("span","",post.discussionQuestion));
           detail.append(block);
         }
+        const topicTags = Array.isArray(post.tags) ? post.tags : [];
+        if(topicTags.length){
+          const topicList = node("div","topic-tags");
+          topicTags.forEach(tag => topicList.append(node("span","topic-tag",tag)));
+          detail.append(topicList);
+        }
         const tags = Array.isArray(post.hashtags) ? post.hashtags : String(post.hashtags || "").split(/\s+/).filter(Boolean);
         if(tags.length){
           const tagList = node("div","hashtags");
@@ -365,11 +403,44 @@
         card.append(actions);
         return card;
       }
+      function renderFilters(){
+        const currentCategory = categoryFilter.value;
+        const categories = [...new Set(posts.map(post => post.category).filter(Boolean))]
+          .sort((a,b) => a.localeCompare(b,"ar"));
+        categoryFilter.replaceChildren(node("option","","كل الأقسام"));
+        categories.forEach(category => {
+          const option = node("option","",category);
+          option.value = category;
+          categoryFilter.append(option);
+        });
+        categoryFilter.value = categories.includes(currentCategory) ? currentCategory : "";
+
+        const tags = [...new Set(posts.flatMap(post => Array.isArray(post.tags) ? post.tags : []))]
+          .filter(Boolean)
+          .sort((a,b) => a.localeCompare(b,"ar"));
+        tagFilters.replaceChildren();
+        const all = node("button","tag-filter","كل الوسوم");
+        all.type = "button";
+        all.setAttribute("aria-pressed",String(!activeTag));
+        all.addEventListener("click",() => { activeTag = ""; renderFilters(); render(); });
+        tagFilters.append(all);
+        tags.forEach(tag => {
+          const button = node("button","tag-filter",tag);
+          button.type = "button";
+          button.setAttribute("aria-pressed",String(activeTag === tag));
+          button.addEventListener("click",() => { activeTag = tag; renderFilters(); render(); });
+          tagFilters.append(button);
+        });
+      }
       function render(){
         const q = search.value.trim().toLocaleLowerCase("ar");
+        const selectedCategory = categoryFilter.value;
         const filtered = posts.filter(post => {
           if(selectedPostDay && Number(post.day) !== selectedPostDay) return false;
-          const haystack = [post.day,post.title,post.article,post.ideaOfTheDay,post.ceoChallenge,post.discussionQuestion,post.hashtags].join(" ").toLocaleLowerCase("ar");
+          if(selectedCategory && post.category !== selectedCategory) return false;
+          const tags = Array.isArray(post.tags) ? post.tags : [];
+          if(activeTag && !tags.includes(activeTag)) return false;
+          const haystack = [post.day,post.title,post.article,post.ideaOfTheDay,post.ceoChallenge,post.discussionQuestion,post.category,post.tags,post.hashtags].join(" ").toLocaleLowerCase("ar");
           return haystack.includes(q);
         });
         count.textContent = filtered.length + " مقال منشور";
@@ -384,6 +455,7 @@
         filtered.forEach(post => list.append(makePost(post)));
       }
       search.addEventListener("input",render);
+      categoryFilter.addEventListener("change",render);
       async function loadPosts(){
         const fallbackUrl = (location.pathname.endsWith("/") ? location.pathname : location.pathname + "/") + "posts.json";
         let firstError = null;
@@ -396,6 +468,7 @@
             if(!Array.isArray(items)) throw new Error("invalid_posts_format");
             posts = items.filter(item => item && item.status !== "Draft" && item.status !== "Reserved")
               .sort((a,b) => Number(b.day || 0) - Number(a.day || 0));
+            renderFilters();
             if(selectedPostDay){
               const selected = posts.find(post => Number(post.day) === selectedPostDay);
               if(selected){
@@ -411,6 +484,17 @@
                 if(ogDescription) ogDescription.content = description;
                 const ogUrl = document.querySelector('meta[property="og:url"]');
                 if(ogUrl) ogUrl.content = canonical ? canonical.href : location.href;
+                const imageUrl = typeof selected.imageUrl === "string" && selected.imageUrl.startsWith("https://") ? selected.imageUrl : "";
+                const ogImage = document.querySelector('meta[property="og:image"]');
+                if(ogImage) ogImage.content = imageUrl;
+                const twitterTitle = document.querySelector('meta[name="twitter:title"]');
+                if(twitterTitle) twitterTitle.content = document.title;
+                const twitterDescription = document.querySelector('meta[name="twitter:description"]');
+                if(twitterDescription) twitterDescription.content = description;
+                const twitterImage = document.querySelector('meta[name="twitter:image"]');
+                if(twitterImage) twitterImage.content = imageUrl;
+                const twitterCard = document.querySelector('meta[name="twitter:card"]');
+                if(twitterCard) twitterCard.content = imageUrl ? "summary_large_image" : "summary";
               }
             }
             render();
