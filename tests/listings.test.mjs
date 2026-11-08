@@ -222,7 +222,8 @@ test("rejects oversized streaming bodies even when Content-Length is absent", as
   const response = await onRequest({ request, env: { DB: db } });
   assert.equal(response.status, 413);
   assert.equal(db.records.length, 0);
-});\n
+});
+
 test("accepts apex and www custom-domain origins for listing submissions", async () => {
   for (const origin of ["https://royalegyptgroup.com", "https://www.royalegyptgroup.com"]) {
     const db = new FakeDB();
