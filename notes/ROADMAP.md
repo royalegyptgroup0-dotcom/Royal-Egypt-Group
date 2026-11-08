@@ -16,7 +16,8 @@ Scope: CEO Notes only. Keep this code and its publishing data separate from Roya
 - Existing site includes article feed, per-post routes, search, sharing, RSS, sitemap/robots, currency/gold reference data, world clocks, and a Cloudflare Worker API.
 - The isolated ceo-notes-site branch contains DAY25, DAY26, and DAY27 marked Published. Do not use the Royal Egypt Group main-branch archive as the CEO Notes source of truth.
 - The existing Make publisher is protected; no run or activation is authorized by this roadmap.
-- Production deployment: Cloudflare Pages deployment `b8636969` on 2026-11-08, commit `1460d24a3167341ffd429aadd1d65f9e19772fee`.
+- Radio production deployment: Cloudflare Pages deployment `b8636969`, commit `1460d24a3167341ffd429aadd1d65f9e19772fee`.
+- Editorial production deployment: Cloudflare Pages deployment `15621b34`, commit `8993671de94319e26fd56bfe8e54c5286c71fb62`.
 
 ## Milestones
 
@@ -36,10 +37,15 @@ Scope: CEO Notes only. Keep this code and its publishing data separate from Roya
 - [x] Deploy the feature to production.
 - [ ] Complete interactive browser playback and real mobile/desktop visual checks when browser-test capacity is available.
 
-### P2 — Editorial experience
-- Improve archive navigation, categories, tags, and article search.
-- Add stable article metadata and social-preview checks.
-- Preserve existing article URLs and RSS compatibility.
+### P2 — Editorial experience <completed 2026-11-08>
+- [x] Add archive category filters and topic-tag filters alongside full-text search.
+- [x] Add editorial category and tag metadata to published posts without changing article text or status.
+- [x] Enrich live and cached feeds with local editorial metadata when the upstream feed omits it.
+- [x] Include categories and tags in RSS items.
+- [x] Add per-article Open Graph and Twitter metadata, including section and image.
+- [x] Preserve existing article URLs, feed output, sitemap, and RSS compatibility.
+- [x] Add a Worker source-sync script and CI checks for Worker syntax and source consistency.
+- [ ] Complete interactive browser, keyboard, and mobile visual checks when browser-test capacity is available.
 
 ### P3 — Multilingual publishing
 - Arabic first, then English and Russian.
@@ -79,5 +85,15 @@ Scope: CEO Notes only. Keep this code and its publishing data separate from Roya
 - [x] Deploy production Worker and verify the live domain serves radio assets.
 - [ ] Re-test interactive audio playback when TinyFish browser wallet is funded.
 
+## Editorial release checklist — 2026-11-08
+- [x] Category and tag metadata present on the published archive.
+- [x] Live feed returns normalized categories and tags.
+- [x] RSS emits editorial categories and topic tags.
+- [x] Article detail pages expose article section, publication time, and social images.
+- [x] Worker bundle synchronization and syntax checks pass.
+- [x] Cloudflare Preview validated before production.
+- [x] Production deployment verified on the canonical domain.
+- [ ] Interactive filter behavior, keyboard navigation, and responsive layout verified in a real browser.
+
 ## Current focus
-P2 — editorial experience: archive navigation, categories, tags, and improved search.
+P0 — content integrity and publishing safety, beginning with a read-only reconciliation of the canonical feed and public publishing history.
