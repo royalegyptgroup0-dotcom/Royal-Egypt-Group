@@ -5,8 +5,17 @@ export default {async fetch(request){
  const url=new URL(request.url);
  if(request.method!=="GET"&&request.method!=="HEAD") return new Response("Method Not Allowed",{status:405});
  if(url.pathname==="/feed"){
-  try{const upstream=await fetch(UPSTREAM,{headers:{"Accept":"application/json"},cf:{cacheTtl:0}});if(!upstream.ok)throw new Error("feed_unavailable");return new Response(await upstream.text(),{headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}})}
-  catch{return new Response(POSTS,{headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}})}
+  const cacheKey=new Request(new URL("/__ceo_notes_feed_cache",url.origin),{method:"GET"});
+  try{
+   const upstream=await fetch(UPSTREAM,{headers:{"Accept":"application/json"},cf:{cacheTtl:0}});
+   if(!upstream.ok)throw new Error("feed_unavailable");
+   const body=await upstream.text();
+   try{await caches.default.put(cacheKey,new Response(body,{headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"public, max-age=86400","X-Content-Type-Options":"nosniff"}}));}catch(e){}
+   return new Response(body,{headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});
+  }catch(e){
+   try{const cached=await caches.default.match(cacheKey);if(cached)return new Response(await cached.text(),{headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});}catch(cacheError){}
+   return new Response(POSTS,{headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});
+  }
  }
  if(url.pathname==="/"||url.pathname==="/index.html")return new Response(request.method==="HEAD"?null:HTML,{headers:{"Content-Type":"text/html; charset=utf-8","Cache-Control":"public, max-age=60, s-maxage=300","X-Content-Type-Options":"nosniff","Referrer-Policy":"strict-origin-when-cross-origin","X-Frame-Options":"DENY"}});
  if(url.pathname==="/posts.json")return new Response(POSTS,{headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});
