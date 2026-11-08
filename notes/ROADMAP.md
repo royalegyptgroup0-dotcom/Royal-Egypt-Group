@@ -16,6 +16,7 @@ Scope: CEO Notes only. Keep this code and its publishing data separate from Roya
 - Existing site includes article feed, per-post routes, search, sharing, RSS, sitemap/robots, currency/gold reference data, world clocks, and a Cloudflare Worker API.
 - The isolated ceo-notes-site branch contains DAY25, DAY26, and DAY27 marked Published. Do not use the Royal Egypt Group main-branch archive as the CEO Notes source of truth.
 - The existing Make publisher is protected; no run or activation is authorized by this roadmap.
+- Production deployment: Cloudflare Pages deployment `b8636969` on 2026-11-08, commit `1460d24a3167341ffd429aadd1d65f9e19772fee`.
 
 ## Milestones
 
@@ -25,12 +26,15 @@ Scope: CEO Notes only. Keep this code and its publishing data separate from Roya
 - Add duplicate prevention and publication receipts before considering migration.
 - Keep the current publisher untouched until an alternative passes end-to-end parity tests.
 
-### P1 — Free Radio module
-- Add a responsive radio directory/player to the blog.
-- Use Radio Browser's public-domain station metadata API; play only HTTPS streams directly in the visitor's browser.
-- No autoplay, account, cookies, audio hosting, proxying, or recording.
-- Show source attribution and explain that stations control availability, rights, and broadcast content.
-- Treat HTTP-only streams as unsupported on the HTTPS blog.
+### P1 — Free Radio module <completed 2026-11-08>
+- [x] Add a responsive radio directory/player to the blog and serve it through the Pages Worker.
+- [x] Use Radio Browser's public-domain station metadata API; play only HTTPS streams directly in the visitor's browser.
+- [x] No autoplay, account, cookies, audio hosting, proxying, or recording.
+- [x] Show source attribution and explain that stations control availability, rights, and broadcast content.
+- [x] Exclude HLS-only streams that are not reliably supported by native browser audio.
+- [x] Verify API availability, permissive CORS response, and a sample HTTPS audio stream from a Cloudflare Preview probe.
+- [x] Deploy the feature to production.
+- [ ] Complete interactive browser playback and real mobile/desktop visual checks when browser-test capacity is available.
 
 ### P2 — Editorial experience
 - Improve archive navigation, categories, tags, and article search.
@@ -64,11 +68,16 @@ Scope: CEO Notes only. Keep this code and its publishing data separate from Roya
 - Duplicate-content, broken-image, and broken-link checks.
 - Deployment previews and rollback notes for every release.
 
-## Release checklist
-- [ ] Verify the radio feature on a non-production preview.
-- [ ] Test mobile and desktop layouts.
-- [ ] Test keyboard accessibility and screen-reader labels.
-- [ ] Confirm no autoplay and no third-party audio proxy.
-- [ ] Confirm article feed and /post/{day} routes still work.
-- [ ] Confirm RSS, sitemap, and robots output remain intact.
-- [ ] Obtain separate approval before production deployment or publisher changes.
+## Release checklist — radio release 2026-11-08
+- [x] Verify the radio feature on a non-production Cloudflare Preview deployment.
+- [ ] Complete interactive mobile and desktop visual checks.
+- [ ] Complete keyboard accessibility and screen-reader checks in a browser.
+- [x] Confirm no autoplay and no third-party audio proxy.
+- [x] Confirm article feed and /post/{day} routes still work.
+- [x] Confirm RSS, sitemap, and robots output remain intact.
+- [x] Obtain explicit user authorization before production deployment.
+- [x] Deploy production Worker and verify the live domain serves radio assets.
+- [ ] Re-test interactive audio playback when TinyFish browser wallet is funded.
+
+## Current focus
+P2 — editorial experience: archive navigation, categories, tags, and improved search.
