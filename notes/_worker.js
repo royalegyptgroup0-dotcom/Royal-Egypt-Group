@@ -38,22 +38,33 @@ async function latestFeed(origin){
 }
 async function marketData(origin){
  const key=cacheKey(origin,"/__ceo_notes_markets_cache");
+ let staleData=null;
  try{
   const cached=await caches.default.match(key);
-  if(cached)return JSON.parse(await cached.text());
+  if(cached){
+   const candidate=JSON.parse(await cached.text());
+   const fetchedAt=Date.parse(candidate.fetchedAt||""),age=Date.now()-fetchedAt;
+   if(Number.isFinite(age)&&age>=0&&age<=21600000)return {...candidate,stale:false};
+   if(Number.isFinite(age)&&age>21600000&&age<=259200000)staleData=candidate;
+  }
  }catch(e){}
- const urls=[
-  "https://api.frankfurter.dev/v2/rates?base=USD&quotes=EGP,EUR,GBP,RUB,AED,SAR",
-  "https://api.frankfurter.dev/v2/rates?base=XAU&quotes=USD,EGP"
- ];
- const responses=await Promise.all(urls.map(url=>fetch(url,{headers:{"Accept":"application/json"},cf:{cacheTtl:21600}})));
- if(responses.some(response=>!response.ok))throw new Error("reference_rates_unavailable");
- const [fx,gold]=await Promise.all(responses.map(response=>response.json()));
- if(!Array.isArray(fx)||!fx.length||!Array.isArray(gold)||!gold.length)throw new Error("reference_rates_empty");
- const date=[...fx,...gold].map(item=>item.date).filter(Boolean).sort().at(-1)||"";
- const data={date,fx,gold,source:"Frankfurter",frequency:"daily_reference"};
- try{await caches.default.put(key,new Response(JSON.stringify(data),{headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"public, max-age=21600","X-Content-Type-Options":"nosniff"}}));}catch(e){}
- return data;
+ try{
+  const urls=[
+   "https://api.frankfurter.dev/v2/rates?base=USD&quotes=EGP,EUR,GBP,RUB,AED,SAR",
+   "https://api.frankfurter.dev/v2/rates?base=XAU&quotes=USD,EGP"
+  ];
+  const responses=await Promise.all(urls.map(url=>fetch(url,{headers:{"Accept":"application/json"},cf:{cacheTtl:21600}})));
+  if(responses.some(response=>!response.ok))throw new Error("reference_rates_unavailable");
+  const [fx,gold]=await Promise.all(responses.map(response=>response.json()));
+  if(!Array.isArray(fx)||!fx.length||!Array.isArray(gold)||!gold.length)throw new Error("reference_rates_empty");
+  const date=[...fx,...gold].map(item=>item.date).filter(Boolean).sort().at(-1)||"";
+  const data={date,fx,gold,source:"Frankfurter",frequency:"daily_reference",fetchedAt:new Date().toISOString(),stale:false};
+  try{await caches.default.put(key,new Response(JSON.stringify(data),{headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"public, max-age=259200","X-Content-Type-Options":"nosniff"}}));}catch(e){}
+  return data;
+ }catch(error){
+  if(staleData)return {...staleData,stale:true,staleReason:"provider_unavailable",checkedAt:new Date().toISOString()};
+  throw new Error("reference_rates_unavailable");
+ }
 }
 function xml(value){return String(value??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;");}
 function rss(feed){
