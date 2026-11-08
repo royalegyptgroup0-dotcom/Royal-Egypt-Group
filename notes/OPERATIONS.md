@@ -6,9 +6,19 @@ Canonical Git branch: `ceo-notes-site`
 
 ## Publishing pipeline
 
-The current Make publisher remains active on its existing daily schedule: 19:30 Africa/Cairo.
+Primary Make publisher scenario: `8438190` (“CEO Notes | AI Editorial + Image + Facebook + Live Feed 19:30”).
 
-Verified sequence:
+Latest read-only state check: 2026-11-08 20:50 Africa/Cairo:
+- Make status: `paused`; separate `isActive` flag: `true`.
+- Configured schedule: daily at 19:30 Africa/Cairo.
+- Listed next execution: 2026-11-08 17:30 UTC (already passed at the time of inspection).
+- No execution was listed for 2026-11-08.
+- Last run: 2026-11-07 21:41:52 UTC, marked success with four operations; Facebook module 3 was invoked successfully, but the final receipt stage was not shown as executed. Do not infer that both Facebook destinations or the feed receipt were completed.
+- Legacy scenario `8419318` is paused and inactive (`isActive=false`).
+
+Do not manually run, activate, resume, or reschedule either publisher while investigating. Resolve the paused state and receipt gap before a separately approved cutover or schedule change.
+
+Configured publishing sequence:
 1. Generate the article and image.
 2. Save the new article to the canonical website feed.
 3. Publish to the CEO Facebook Page only if the feed confirms the day is new.
