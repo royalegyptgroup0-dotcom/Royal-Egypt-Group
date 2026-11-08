@@ -1,35 +1,35 @@
-# CEO Notes — isolated blog route
+# CEO Notes — standalone editorial site
 
-This folder contains the standalone CEO Notes editorial section at `/notes/`.
+This folder is the source of truth for the standalone CEO Notes site at https://ceo-notes.pages.dev/.
 
-## Separation
-- This route has its own HTML, CSS, and published-post feed.
-- It does not use Royal Egypt business listings, forms, lead data, or databases.
-- It does not modify the group homepage, navigation, shared styles, Workers, or D1 databases.
-- Only approved/published posts belong in `posts.json`. Drafts must never be exposed publicly.
+## Free-first architecture
+- Static editorial UI: `index.html`.
+- Public fallback content: `posts.json`.
+- Cloudflare Pages Worker source: `_worker.js`.
+- The Worker serves the site, proxies the live feed, caches the last successful feed for up to 24 hours, and falls back to the static published-post snapshot if both the live feed and cache are unavailable.
+- World clocks use the browser's built-in `Intl.DateTimeFormat` timezone database. They require no external API, key, or subscription.
+- The currency and gold reference board uses the free, no-key Frankfurter API and caches the daily data at the edge. It is reference data, not intraday trading quotes or local retail prices.
+- Free RSS, robots.txt, and sitemap.xml endpoints are served by the Pages Worker for feed readers and search engines.
+- Every published article has a stable `/post/{day}` URL with server-rendered article-specific title and description metadata. These URLs are included in the sitemap and RSS feed.
+- No paid analytics, stock-data, translation, image, or automation API is required by the site itself.
 
-## Published-post feed
-`posts.json` contains:
+## Editorial and publishing flow
+The approved sequence is strictly serial:
+1. Generate the article and its image.
+2. Save/publish the approved article to the CEO Notes website feed first.
+3. Publish the same article to the CEO Notes Facebook Page.
+4. Only after that succeeds, republish it to Royal Egypt Properties.
 
-```json
-{
-  "version": 1,
-  "posts": [
-    {
-      "day": 25,
-      "title": "Post title",
-      "article": "Full article text",
-      "ideaOfTheDay": "One-line takeaway",
-      "ceoChallenge": "Practical action",
-      "discussionQuestion": "Question for readers",
-      "hashtags": ["#CEO_Notes", "#CEO_Challenge"],
-      "publishedAt": "2026-11-07"
-    }
-  ]
-}
-```
+The currently active scheduled workflow executes the site-feed step before the two Facebook Page steps, and the second Facebook step follows the first. The workflow must not run the two Facebook publications in parallel.
 
-The page reads this file at runtime and displays only published records. The publisher must append/update a post only after the Facebook publication succeeds, then mark the corresponding Google Sheets row as Published. The automation must not publish a Draft twice; use the row reservation step and sequential scenario execution.
+## Public content rules
+- Only approved/published posts may be included in the public feed or fallback snapshot.
+- Never expose drafts, reserved posts, private notes, credentials, or customer data.
+- Keep the original article and image on CEO Notes; social posts link back to the website.
+- If a later social publication fails, retain the website article and record/retry only the failed social step. Do not duplicate a successful post.
 
 ## Deployment
-Cloudflare Pages serves this directory as a static route. Preview deployments are enabled for branches. Merge to the production branch only after the preview route and the daily publishing workflow are verified.
+- The standalone Pages project is `ceo-notes`, using the `ceo-notes-site` branch.
+- Keep the main Royal Egypt Group production branch untouched while developing.
+- Deploy the Worker and the HTML/feed snapshot together. Verify the deployment status before calling it live.
+- All changes should remain compatible with free Cloudflare Pages/Workers limits. Do not enable paid services or incur usage charges without explicit approval.
