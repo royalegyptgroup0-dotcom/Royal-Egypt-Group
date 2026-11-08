@@ -6,6 +6,7 @@ on:
     paths:
       - "notes/**"
       - ".github/workflows/ceo-notes-check.yml"
+      - "scripts/build-ceo-notes-worker.mjs"
   pull_request:
     paths:
       - "notes/**"
@@ -27,5 +28,9 @@ jobs:
           node-version: 22
       - name: Check radio JavaScript syntax
         run: node --check notes/radio.js
+      - name: Check Pages Worker JavaScript syntax
+        run: node --check --input-type=module < notes/_worker.js
+      - name: Verify Worker bundle synchronization
+        run: node scripts/build-ceo-notes-worker.mjs
       - name: Validate CEO Notes content and site
         run: node notes/validate.mjs
