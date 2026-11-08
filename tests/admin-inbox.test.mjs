@@ -9,7 +9,8 @@ class FakeDB {
     this.rows = {
       customers: [{ id: "c1", name: "Synthetic", status: "new" }],
       opportunities: [{ id: "o1", title: "Synthetic opportunity", status: "new" }],
-      listings: [{ id: "l1", title: "Synthetic listing", status: "pending" }]
+      listings: [{ id: "l1", title: "Synthetic listing", status: "pending" }],
+      orders: [{ id: "ord1", order_type: "coffee", customer_name: "Synthetic order", status: "pending" }]
     };
   }
   prepare(sql) {
@@ -19,6 +20,7 @@ class FakeDB {
         if (sql.includes("FROM customers")) return { results: this.rows.customers };
         if (sql.includes("FROM opportunities")) return { results: this.rows.opportunities };
         if (sql.includes("FROM listings")) return { results: this.rows.listings };
+        if (sql.includes("FROM orders")) return { results: this.rows.orders };
         return { results: [] };
       },
       bind: (...values) => ({
@@ -51,14 +53,20 @@ test("rejects incorrect admin token", async () => {
   assert.equal(response.status, 401);
 });
 
-test("returns customers, opportunities and listings to an authenticated owner", async () => {
-  const response = await onRequest({ request: request("GET"), env: { DB: new FakeDB(), ADMIN_TOKEN: token } });
+test("returns customers, opportunities, listings and orders to an authenticated owner", async () => {
+  const db = new FakeDB();
+  const response = await onRequest({ request: request("GET"), env: { DB: db, ADMIN_TOKEN: token } });
   assert.equal(response.status, 200);
   const result = await response.json();
   assert.equal(result.customers.length, 1);
   assert.equal(result.opportunities.length, 1);
   assert.equal(result.listings.length, 1);
   assert.equal(result.listings[0].status, "pending");
+  assert.equal(result.orders.length, 1);
+  assert.equal(result.orders[0].order_type, "coffee");
+  const ordersQuery = db.calls.find(sql => typeof sql === "string" && sql.includes("FROM orders"));
+  assert.match(ordersQuery, /LIMIT 100/);
+  assert.doesNotMatch(ordersQuery, /SELECT \*/);
 });
 
 test("updates an allowlisted customer status", async () => {
@@ -93,4 +101,14 @@ test("returns 404 when a record is not found", async () => {
     env: { DB: new FakeDB(), ADMIN_TOKEN: token }
   });
   assert.equal(response.status, 404);
+});
+
+test("keeps legacy orders read-only through the generic inbox endpoint", async () => {
+  const db = new FakeDB();
+  const response = await onRequest({
+    request: request("PATCH", { type: "order", id: "ord1", status: "confirmed" }),
+    env: { DB: db, ADMIN_TOKEN: token }
+  });
+  assert.equal(response.status, 400);
+  assert.equal(db.calls.some(sql => typeof sql === "string" && sql.startsWith("UPDATE orders")), false);
 });
