@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const [html, worker, rawFeed] = await Promise.all([
+const [html, worker, rawFeed, radio] = await Promise.all([
   readFile(new URL("./index.html", import.meta.url), "utf8"),
   readFile(new URL("./_worker.js", import.meta.url), "utf8"),
-  readFile(new URL("./posts.json", import.meta.url), "utf8")
+  readFile(new URL("./posts.json", import.meta.url), "utf8"),
+  readFile(new URL("./radio.js", import.meta.url), "utf8")
 ]);
 
 const feed = JSON.parse(rawFeed);
@@ -35,13 +36,16 @@ const htmlMarkers = [
   'navigator.share',
   'titleLink.href = "/post/"',
   'selectedPostDay',
-  'card.id = "post-"'
+  'card.id = "post-"',
+  'id="ceo-radio"',
+  'src="/radio.js"'
 ];
 for (const marker of htmlMarkers) assert.ok(html.includes(marker), `homepage is missing: ${marker}`);
 
 for (const zone of ["Africa/Cairo", "Europe/London", "America/New_York", "Europe/Moscow", "Asia/Dubai"]) {
   assert.ok(html.includes(zone), `world clock is missing timezone: ${zone}`);
 }
+assert.ok(!/\bautoplay\b/i.test(html), "radio must never autoplay");
 
 const workerMarkers = [
   'const HTML=',
@@ -64,4 +68,19 @@ const workerMarkers = [
 ];
 for (const marker of workerMarkers) assert.ok(worker.includes(marker), `Pages Worker is missing: ${marker}`);
 
-console.log(`CEO Notes checks passed: ${feed.posts.length} published posts, 5 world clocks, article routes, RSS, sitemap, robots, and resilient feed.`);
+const radioMarkers = [
+  'https://de1.api.radio-browser.info',
+  'hidebroken:"true"',
+  'limit:"24"',
+  'is_https:"true"',
+  'startsWith("https://")',
+  'play.addEventListener("click"',
+  'audio.play()',
+  'AbortController',
+  'replaceChildren',
+  'textContent'
+];
+for (const marker of radioMarkers) assert.ok(radio.includes(marker), `radio module is missing: ${marker}`);
+assert.ok(!/\.innerHTML\s*=/.test(radio), "radio rendering must not use unsafe innerHTML");
+
+console.log(`CEO Notes checks passed: ${feed.posts.length} published posts, article routes, RSS, sitemap, robots, world clocks, and HTTPS radio safeguards.`);
