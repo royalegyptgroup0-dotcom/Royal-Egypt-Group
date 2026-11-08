@@ -44,6 +44,9 @@ Scope: CEO Notes only. Keep this code and its publishing data separate from Roya
 - [ ] Resolve the unnumbered historical posts: the 14 July post between Days 8 and 10 may be Day 9, but it is not explicitly labelled; Day 18 and Day 24 remain unconfirmed. The repeated Day 6 must be reviewed before any historical import.
 - [ ] Decide whether Days 1–24 should be imported into the website; keep them as Facebook-only history for now, because the website's current series starts at Day 25 and several older entries are unnumbered or ambiguous.
 
+- [x] Compare the publisher Worker's cold-start feed source (`main`) with the canonical `ceo-notes-site` archive: Days 25–27 titles and article bodies match, but `main` lacks the category/tag metadata added on the canonical branch.
+- [ ] Change the Worker cold-start feed source to the canonical `ceo-notes-site` branch in a tested release; validate recovery from an empty/invalid KV feed without touching production data.
+
 ### P1 — Free Radio module <completed 2026-11-08>
 - [x] Add a responsive radio directory/player to the blog and serve it through the Pages Worker.
 - [x] Use Radio Browser's public-domain station metadata API; play only HTTPS streams directly in the visitor's browser.
