@@ -18,6 +18,7 @@ Scope: CEO Notes only. Keep this code and its publishing data separate from Roya
 - Current Make publisher scenario `8438190` remains active on its existing daily schedule. The user explicitly authorized the P0 safety-filter and receipt additions in this work session; do not manually run it or change its schedule.
 - Radio production deployment: Cloudflare Pages deployment `b8636969`, commit `1460d24a3167341ffd429aadd1d65f9e19772fee`.
 - Editorial production deployment: Cloudflare Pages deployment `15621b34`, commit `8993671de94319e26fd56bfe8e54c5286c71fb62`.
+- Market freshness production deployment: Cloudflare Pages deployment `5cb38832`, commit `f538a59d0777584e3135077aca79482de43da474`.
 
 ## Milestones
 
@@ -55,14 +56,22 @@ Scope: CEO Notes only. Keep this code and its publishing data separate from Roya
 - [x] Add a Worker source-sync script and CI checks for Worker syntax and source consistency.
 - [ ] Complete interactive browser, keyboard, and mobile visual checks when browser-test capacity is available.
 
-### P3 — Multilingual publishing
-- Arabic first, then English and Russian.
-- Keep one canonical article record with language variants and explicit publication status.
-- Require editorial review before translated content is published.
+### P3 — Multilingual publishing <in progress 2026-11-08>
+- Arabic remains the public source language; English and Russian are being prepared as reviewed variants.
+- [x] Create a separate private Cloudflare KV draft store that is not bound to the public site Worker.
+- [x] Prepare English and Russian translation drafts for Days 25–27 with explicit Draft status, reviewRequired=true, and publiclyVisible=false.
+- [ ] Editorially review the translations for meaning, tone, and terminology before approval.
+- [ ] Add language switching, localized article routes, and language-specific SEO/RSS only after translation approval.
+- Never expose draft translations through the public feed or publish them automatically.
 
-### P4 — Markets and useful live information
-- Keep data sources explicit, timestamped, and clearly marked as reference data.
-- Add graceful stale-data and provider-failure states.
+### P4 — Markets and useful live information <completed 2026-11-08>
+- [x] Keep Frankfurter as the explicit source for daily reference FX and XAU rates.
+- [x] Include source date and fetchedAt timestamp in the market response.
+- [x] Treat data as fresh for six hours; retain a bounded stale fallback for up to 72 hours.
+- [x] Return stale=true, a warning header, and a visibly different UI state when serving cached fallback.
+- [x] Return an explicit 503/no-store state when neither fresh nor bounded stale data is available.
+- [x] Add CI tests for fresh provider success, stale fallback after simulated provider outage, and no-cache provider failure.
+- [x] Verify live API response in CEO Notes Preview and the canonical production domain.
 - Never present reference FX or calculated gold values as executable bank/dealer quotes.
 
 ### P5 — Independent publishing automation
@@ -98,6 +107,14 @@ Scope: CEO Notes only. Keep this code and its publishing data separate from Roya
 - [x] Deploy production Worker and verify the live domain serves radio assets.
 - [ ] Re-test interactive audio playback when TinyFish browser wallet is funded.
 
+## Market data release checklist — 2026-11-08
+- [x] Verify USD and XAU reference endpoints.
+- [x] Verify fresh response includes source date, fetchedAt, and stale=false.
+- [x] Test stale fallback and no-data failure in CI with simulated provider outages.
+- [x] Verify CEO Notes Preview before release.
+- [x] Deploy only to the independent ceo-notes Pages project and verify the canonical domain.
+- [ ] Complete visual browser check of the stale warning state when browser-test capacity is available.
+
 ## Editorial release checklist — 2026-11-08
 - [x] Category and tag metadata present on the published archive.
 - [x] Live feed returns normalized categories and tags.
@@ -109,4 +126,4 @@ Scope: CEO Notes only. Keep this code and its publishing data separate from Roya
 - [ ] Interactive filter behavior, keyboard navigation, and responsive layout verified in a real browser.
 
 ## Current focus
-P0/P7 — verify the first publishing receipt and the first scheduled backup, then complete historical archive reconciliation without importing unverified content.
+P0/P3/P7 — verify the first publishing receipt and scheduled backup, review the private English/Russian drafts, and complete historical archive reconciliation without importing unverified content.
