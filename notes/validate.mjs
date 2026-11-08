@@ -38,7 +38,8 @@ const htmlMarkers = [
   'selectedPostDay',
   'card.id = "post-"',
   'id="ceo-radio"',
-  'src="/radio.js"'
+  'src="/radio.js"',
+  'The United States Of America'
 ];
 for (const marker of htmlMarkers) assert.ok(html.includes(marker), `homepage is missing: ${marker}`);
 
@@ -73,6 +74,8 @@ const radioMarkers = [
   'hidebroken:"true"',
   'limit:"24"',
   'is_https:"true"',
+  'hls:"0"',
+  'Number(station.hls) !== 1',
   'startsWith("https://")',
   'play.addEventListener("click"',
   'audio.play()',
