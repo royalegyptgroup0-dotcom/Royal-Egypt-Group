@@ -27,7 +27,10 @@ for (const marker of [
   'async function loadPosts()',
   'fetch("/feed"',
   'posts.json',
-  'prefers-reduced-motion'
+  'prefers-reduced-motion',
+  'share-button',
+  'navigator.share',
+  'card.id = "post-"'
 ]) assert.ok(html.includes(marker), `homepage is missing: ${marker}`);
 
 for (const zone of ["Africa/Cairo", "Europe/London", "America/New_York", "Europe/Moscow", "Asia/Dubai"]) {
