@@ -9,7 +9,7 @@ This folder is the source of truth for the standalone CEO Notes site at https://
 - The Worker serves the site, proxies the live feed, caches the last successful feed for up to 24 hours, and falls back to the static published-post snapshot if both the live feed and cache are unavailable.
 - World clocks use the browser's built-in `Intl.DateTimeFormat` timezone database. They require no external API, key, or subscription.
 - Free RSS, robots.txt, and sitemap.xml endpoints are served by the Pages Worker for feed readers and search engines.
-- Every published article has a stable `/post/{day}` URL with article-specific title and description metadata.
+- Every published article has a stable `/post/{day}` URL with server-rendered article-specific title and description metadata. These URLs are included in the sitemap and RSS feed.
 - No paid analytics, stock-data, translation, image, or automation API is required by the site itself.
 
 ## Editorial and publishing flow
