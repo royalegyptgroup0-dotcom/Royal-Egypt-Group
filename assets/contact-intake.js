@@ -36,6 +36,7 @@ form.addEventListener("submit",async event=>{
   const result=await response.json().catch(()=>({}));
   if(!response.ok)throw new Error(result.error||"request_failed");
   form.reset();
+  language.value=payload.language;
   requestId=null;
   status.textContent=t("success")+(result.reference||"");
   applyLanguage();
