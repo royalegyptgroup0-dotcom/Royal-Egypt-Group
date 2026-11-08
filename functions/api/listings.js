@@ -1,6 +1,10 @@
 const MAX_BODY_BYTES = 10 * 1024;
 const MAX_REQUESTS_PER_IP_PER_MINUTE = 10;
-const ALLOWED_ORIGIN = "https://royalegyptgroup-vy7.pages.dev";
+const ALLOWED_ORIGINS = new Set([
+  "https://royalegyptgroup-vy7.pages.dev",
+  "https://royalegyptgroup.com",
+  "https://www.royalegyptgroup.com",
+]);
 const ALLOWED_PROPERTY_TYPES = new Set(["شقة", "فيلا", "أرض", "تجاري", "إداري", "سياحي", "أخرى"]);
 const ALLOWED_PURPOSES = new Set(["بيع", "إيجار", "استثمار"]);
 const SECURITY_HEADERS = {
@@ -11,7 +15,7 @@ const SECURITY_HEADERS = {
 };
 
 function allowedOrigin(origin) {
-  return origin === ALLOWED_ORIGIN ||
+  return ALLOWED_ORIGINS.has(origin) ||
     /^https:\/\/[a-z0-9-]+\.royalegyptgroup-vy7\.pages\.dev$/i.test(origin || "");
 }
 
