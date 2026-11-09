@@ -53,14 +53,16 @@ function findRecords(value, output = []) {
   return output;
 }
 
-function stableKey(post) {
+function stableKeys(post) {
+  const keys = [];
   const id = norm(post.facebookPostId || post.id);
-  if (id) return "id:" + id;
   const permalink = norm(post.permalinkUrl || post.permalink_url);
-  if (permalink) return "url:" + permalink;
   const content = norm(post.article || post.message || post.title).toLocaleLowerCase();
   const date = String(post.publishedAt || "").slice(0, 10);
-  return "content:" + createHash("sha256").update(date + "\n" + content).digest("hex");
+  if (id) keys.push("id:" + id);
+  if (permalink) keys.push("url:" + permalink);
+  if (content) keys.push("content:" + createHash("sha256").update(date + "\n" + content).digest("hex"));
+  return keys;
 }
 
 function toCandidate(record, sourceFile) {
@@ -128,11 +130,14 @@ export async function buildImport({ input, current }) {
 
   const existing = current?.posts ?? [];
   if (!Array.isArray(existing)) throw new Error("Current feed must contain a posts array.");
-  const known = new Set(existing.map(stableKey));
+  const known = new Set(existing.flatMap(stableKeys));
   const unique = new Map();
   for (const post of imported) {
-    const key = stableKey(post);
-    if (!known.has(key)) unique.set(key, post);
+    const keys = stableKeys(post);
+    if (!keys.some((key) => known.has(key))) {
+      unique.set(keys[0] || "content:" + createHash("sha256").update(post.publishedAt + "\n" + post.article).digest("hex"), post);
+      for (const key of keys) known.add(key);
+    }
   }
   const additions = [...unique.values()].sort((a, b) => a.publishedAt.localeCompare(b.publishedAt));
   const usedDays = new Set(existing.map((p) => Number(p.day)).filter(Number.isInteger));
