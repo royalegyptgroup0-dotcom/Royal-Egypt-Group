@@ -97,16 +97,29 @@ try {
             $Found = $Successful | Where-Object { $_.day -eq [int]$Post.day } | Select-Object -First 1
             if ($Found) {
                 $ExistingImages = @()
-                if ($Post.images -is [array]) { $ExistingImages = @($Post.images) }
+                if ($null -ne $Post.images) {
+                    if ($Post.images -is [array]) { $ExistingImages = @($Post.images) }
+                    else { $ExistingImages = @([string]$Post.images) }
+                }
                 if ($ExistingImages -notcontains $Found.imageUrl) {
-                    $Post.images = @($ExistingImages + $Found.imageUrl)
+                    $UpdatedImages = @($ExistingImages + $Found.imageUrl)
+                    if ($Post.PSObject.Properties.Name -contains "images") {
+                        $Post.images = $UpdatedImages
+                    } else {
+                        $Post | Add-Member -NotePropertyName images -NotePropertyValue $UpdatedImages
+                    }
                 }
                 if ([string]::IsNullOrWhiteSpace([string]$Post.imageUrl)) {
-                    $Post.imageUrl = $Found.imageUrl
+                    if ($Post.PSObject.Properties.Name -contains "imageUrl") {
+                        $Post.imageUrl = $Found.imageUrl
+                    } else {
+                        $Post | Add-Member -NotePropertyName imageUrl -NotePropertyValue $Found.imageUrl
+                    }
                 }
             }
         }
-        $Feed | ConvertTo-Json -Depth 100 | Set-Content -LiteralPath $FeedFullPath -Encoding UTF8
+        $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+        [System.IO.File]::WriteAllText($FeedFullPath, ($Feed | ConvertTo-Json -Depth 100), $Utf8NoBom)
         Write-Info "Applied local image references to $FeedPath. No commit, deployment, or Facebook publishing was performed."
     }
 
@@ -119,7 +132,8 @@ try {
         results = @($Results)
         note = "Reel thumbnails are not guaranteed to be the original image files. Review all images before publishing the local feed."
     }
-    $Report | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $ReportFullPath -Encoding UTF8
+    $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($ReportFullPath, ($Report | ConvertTo-Json -Depth 20), $Utf8NoBom)
     Write-Info "Downloaded $($Successful.Count) thumbnail(s) for $($Targets.Count) archive post(s)."
     Write-Info "Report: $ReportFullPath"
     if (-not $Apply) {
