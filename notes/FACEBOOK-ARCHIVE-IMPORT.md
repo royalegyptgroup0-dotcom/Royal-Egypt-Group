@@ -4,45 +4,55 @@ This procedure replaces the blocked Make archive-export scenario. It uses the ow
 
 ## Obtain the source archive
 
-1. In Facebook, open the page/profile settings for the CEO Page and use **Download your information** (Meta Accounts Center may show this as **Your information and permissions → Download your information**).
-2. Select the CEO Page if Meta offers an account/page selector; choose **Posts** and the full available date range.
-3. Request JSON format and the highest available media quality if media is to be reviewed.
+1. In Facebook, open the Page settings or Meta Accounts Center and choose **Download your information** (often under **Your information and permissions**).
+2. Select the CEO Page if Meta offers an account/Page selector; choose **Posts** and the full available date range.
+3. Request **JSON** format and choose the highest available media quality.
 4. Download the ZIP and extract it locally. Keep the original ZIP unchanged as the source backup.
-5. Confirm the extracted folder contains a posts JSON file, usually under a path containing `posts` (for example, `posts/your_posts_1.json`).
+5. Confirm the extracted folder contains post JSON and its associated media folders. Typical post records refer to files such as \`posts/media/...jpg\` through \`attachments[].data[].media.uri\`.
 
-Do not upload the archive to a third-party converter. It can contain private page/account information. Share only the export ZIP in this ChatGPT conversation if you want assistance processing it.
+Do not upload the archive to a third-party converter. It can contain private Page/account information. Process it locally or share the export ZIP in this ChatGPT conversation if assistance is needed.
 
-## Preview the import
+## Preview text and image import
 
-Requires Node.js 20 or newer; no npm install is needed.
+Requires Node.js 20 or newer; no \`npm install\` is needed.
 
 From the repository root:
 
-```powershell
-node scripts/import-ceo-facebook-archive.mjs --input "C:\\path\\to\\extracted-meta-export" --current notes/posts.json --output notes/posts.import-preview.json
-```
+\`\`\`powershell
+node scripts/import-ceo-facebook-archive.mjs --input "C:\\path\\to\\extracted-meta-export" --current notes/posts.json --output notes/posts.import-preview.json --media-output notes/images/facebook-archive
+\`\`\`
 
-The default mode is preview-only. It:
+The default mode is preview-only for the feed. It:
 - reads JSON files whose paths identify post/publication/timeline data;
 - extracts post text, timestamps, Facebook IDs and permalinks where present;
-- preserves the existing feed entries;
-- sorts newly imported posts chronologically and assigns unused day numbers;
-- skips duplicates by Facebook ID, permalink, or normalized text plus publication date;
-- reports source files, scanned records, imported posts and skipped duplicates.
+- follows image references in post attachments and copies the original image files into \`notes/images/facebook-archive\`;
+- names copied files by a SHA-256 content fingerprint, so repeated references do not create duplicate files;
+- adds local \`/images/facebook-archive/...\` paths to each post's \`images\` array and sets \`imageUrl\` to the first archive image;
+- enriches matching posts already in \`notes/posts.json\` with archive images without replacing their existing \`imageUrl\`;
+- preserves existing feed entries, sorts new imports chronologically, and assigns unused day numbers;
+- skips duplicate posts by Facebook ID, permalink, or normalized text plus publication date;
+- reports scanned/imported posts, duplicates, enriched existing posts, media references, and the date range.
 
-Posts that have a timestamp but no text are retained using their export title as a placeholder so they can be manually reviewed. Media files are not copied into the site by this first import pass.
+The importer only copies image attachments (JPEG, PNG, GIF, WebP, AVIF and HEIC/HEIF). Video and audio attachments are intentionally not copied by this image-import phase. Missing or unsafe media paths do not stop text import; check the report and compare it with the source archive. The script never fetches remote URLs and never uploads archive contents to a third party.
 
-## Review and apply
+## Review the complete candidate
 
-Inspect `notes/posts.import-preview.json` before replacing the canonical feed. Correct placeholder titles, categories, tags, missing article text, and any ambiguous duplicate manually. Do not treat the export's presence as proof that every page post was included; compare the exported date range and record count with the Facebook Page archive.
+Before changing the canonical feed:
+1. Inspect \`notes/posts.import-preview.json\`.
+2. Open several copied images and confirm they belong to the matching posts.
+3. Compare the report's media count, source files, exported date range and post count with the Facebook Page archive.
+4. Check posts with no images and posts with multiple images.
+5. Review duplicates and any incomplete or private material; do not publish private messages, comments or unrelated account data.
 
-Only after review, create the final feed deliberately. The script supports `--apply` for local file generation, but it never commits, deploys, or publishes to Facebook:
+The website supports one or multiple local archive images per post. Existing generated \`imageUrl\` values are preserved; archive images are stored separately in \`images\`.
 
-```powershell
+Only after review, create the final feed deliberately. \`--apply\` updates the local feed file only; it does not commit, deploy, or publish to Facebook:
+
+\`\`\`powershell
 node scripts/import-ceo-facebook-archive.mjs --input "C:\\path\\to\\extracted-meta-export" --current notes/posts.json --apply
-```
+\`\`\`
 
-The output report must be saved with the import review. Keep the original feed and export ZIP as rollback evidence.
+Keep the original feed and export ZIP as rollback evidence. The copied image directory and the final feed must be committed together so image paths do not break.
 
 ## Safety boundaries
 
@@ -51,4 +61,4 @@ The output report must be saved with the import review. Keep the original feed a
 - No production deployment is performed by this script.
 - No existing feed entry is deleted or rewritten.
 - Never put credentials, private messages, comments, or unrelated account data into the public feed.
-- Review every imported post before merging the candidate into `notes/posts.json`.
+- Review every imported post and copied image before merging the candidate into \`notes/posts.json\`.
