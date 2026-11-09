@@ -21,8 +21,16 @@ for (const post of feed.posts) {
   assert.ok(typeof post.category === "string" && post.category.trim(), `post ${post.day} needs a category`);
   assert.ok(Array.isArray(post.tags) && post.tags.length > 0, `post ${post.day} needs topic tags`);
   assert.ok(post.tags.every(tag => typeof tag === "string" && tag.trim()), `post ${post.day} has invalid topic tags`);
-  for (const field of ["title", "article", "ideaOfTheDay", "ceoChallenge", "discussionQuestion"]) {
+  for (const field of ["title", "article"]) {
     assert.ok(typeof post[field] === "string" && post[field].trim(), `post ${post.day} needs ${field}`);
+  }
+  if (post.archiveImported) {
+    assert.equal(post.sourcePageId, "115226621594988", `post ${post.day} has an unexpected archive source`);
+    assert.ok(typeof post.sourceEvidence === "string" && post.sourceEvidence.trim(), `post ${post.day} needs source evidence`);
+  } else {
+    for (const field of ["ideaOfTheDay", "ceoChallenge", "discussionQuestion"]) {
+      assert.ok(typeof post[field] === "string" && post[field].trim(), `post ${post.day} needs ${field}`);
+    }
   }
 }
 
