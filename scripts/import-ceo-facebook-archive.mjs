@@ -101,6 +101,9 @@ function toCandidate(record, sourceFile) {
   const titleCandidate = norm(record.title || article.split(/\r?\n/)[0]);
   const title = titleCandidate.length > 110 ? titleCandidate.slice(0, 107) + "…" : titleCandidate;
   const identity = rawId ? String(rawId) : createHash("sha256").update(publishedAt + "\n" + article).digest("hex");
+  const sourcePageId = rawId && /^\d+_/.test(String(rawId))
+    ? String(rawId).split("_", 1)[0]
+    : "115226621594988";
   return {
     title: title || "من أرشيف CEO Notes",
     article,
@@ -111,11 +114,15 @@ function toCandidate(record, sourceFile) {
     status: "Published",
     publishedAt,
     category: "أرشيف فيسبوك",
-    tags: [],
+    tags: ["أرشيف فيسبوك"],
     source: "facebook-archive",
-    facebookPostId: rawId ? String(rawId) : undefined,
+    archiveImported: true,
+    sourcePageId,
     sourcePostId: rawId ? identity : undefined,
-    permalinkUrl: typeof permalinkUrl === "string" ? permalinkUrl : undefined,
+    facebookPostId: rawId ? String(rawId) : undefined,
+    sourceUrl: typeof permalinkUrl === "string" ? permalinkUrl : undefined,
+    sourcePublishedAt: publishedAt,
+    sourceEvidence: "facebook_page_post",
     archiveSourceFile: sourceFile,
     _mediaReferences: mediaReferences(record)
   };
