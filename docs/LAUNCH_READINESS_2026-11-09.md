@@ -40,7 +40,7 @@ Only aggregate counts and table schemas were inspected; customer names, phone nu
 - `orders`: 3 pending records.
 - `intake_rate_limits`: present.
 
-The public property catalogue therefore has no approved D1 inventory at this snapshot. Do not publish or approve a listing without owner verification and explicit approval.
+The public property catalogue therefore has no approved D1 inventory at this snapshot. The current Production page still contains three hard-coded property cards that bypass D1 moderation; consolidated PR #50 removes those cards and makes the catalogue database-only. Until that change is deployed, do not market those three cards as currently approved inventory. Do not publish or approve any listing without owner verification and explicit approval.
 
 ## 3. Runtime configuration blockers
 
@@ -122,6 +122,6 @@ The GitHub synthetic tests use test doubles for D1 and do not replace those live
 
 **Current decision: NO-GO for full commercial lead-generation launch.**
 
-A limited informational site can remain publicly accessible on the Pages hostname, with Coffee and Transportation clearly described as interest-only and no claim of live property inventory. Do not advertise active lead capture as operational until owner authentication and notification/review access are verified.
+The site may remain publicly accessible as a pre-launch site on the Pages hostname. However, the current Production property page still exposes the three unapproved static cards described above; do not promote the property catalogue until PR #50 is deployed. Coffee and Transportation must remain clearly described as interest-only. Do not advertise active lead capture as operational until owner authentication and notification/review access are verified.
 
 The minimum next release gate is: owner-configured admin secret + working lead review/notification route + verified property inventory decision + custom-domain decision + browser-level Preview acceptance. Production merge/deployment remains a separate approval gate.
