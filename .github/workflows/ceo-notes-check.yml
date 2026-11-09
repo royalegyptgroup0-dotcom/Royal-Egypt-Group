@@ -38,3 +38,4 @@ jobs:
         run: node notes/validate.mjs
       - name: Test market freshness and stale fallback
         run: node notes/test-market-stale.mjs
+\n      - name: Test offline Facebook archive importer\n        run: node --test scripts/import-ceo-facebook-archive.test.mjs\n
