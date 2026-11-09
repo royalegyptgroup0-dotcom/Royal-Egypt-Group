@@ -162,13 +162,21 @@ function safeArchivePath(root, uri) {
 
 async function copyPostImages(post, { archiveRoot, mediaOutput, mediaUrlPrefix, mediaCache }) {
   const urls = [];
-  for (const uri of post._mediaReferences || []) {
+  let missing = 0;
+  const references = post._mediaReferences || [];
+  for (const uri of references) {
     const source = safeArchivePath(archiveRoot, uri);
-    if (!source) continue;
+    if (!source) {
+      missing++;
+      continue;
+    }
     try {
       const bytes = await fs.readFile(source);
       const ext = path.extname(source).toLowerCase();
-      if (!IMAGE_EXTENSIONS.has(ext)) continue;
+      if (!IMAGE_EXTENSIONS.has(ext)) {
+        missing++;
+        continue;
+      }
       const digest = createHash("sha256").update(bytes).digest("hex");
       let filename = mediaCache.get(digest);
       if (!filename) {
@@ -183,15 +191,15 @@ async function copyPostImages(post, { archiveRoot, mediaOutput, mediaUrlPrefix, 
       }
       urls.push(mediaUrlPrefix.replace(/\/$/, "") + "/" + filename);
     } catch (error) {
-      if (error.code !== "ENOENT" && error.code !== "EISDIR") throw error;
+      if (error.code === "ENOENT" || error.code === "EISDIR") missing++;
+      else throw error;
     }
   }
   delete post._mediaReferences;
   post.images = [...new Set(urls)];
   if (post.images.length) post.imageUrl = post.images[0];
-  return post.images.length;
+  return { copied: post.images.length, missing, references: references.length };
 }
-
 function mergeImages(target, incoming) {
   const current = Array.isArray(target.images) ? target.images : [];
   const combined = [...current, ...(incoming.images || [])]
@@ -226,20 +234,26 @@ export async function buildImport({
   const mediaCache = new Map();
   let mediaCopied = 0;
   let recordsWithMedia = 0;
+  let mediaReferencesFound = 0;
+  let mediaMissingOrUnsafe = 0;
   if (mediaOutput) {
     for (const post of imported) {
-      const count = await copyPostImages(post, {
+      const result = await copyPostImages(post, {
         archiveRoot,
         mediaOutput: path.resolve(mediaOutput),
         mediaUrlPrefix,
         mediaCache,
       });
-      if (count) recordsWithMedia++;
-      mediaCopied += count;
+      if (result.references) recordsWithMedia++;
+      mediaReferencesFound += result.references;
+      mediaMissingOrUnsafe += result.missing;
+      mediaCopied += result.copied;
     }
   } else {
     for (const post of imported) {
-      if (post._mediaReferences?.length) recordsWithMedia++;
+      const references = post._mediaReferences?.length || 0;
+      if (references) recordsWithMedia++;
+      mediaReferencesFound += references;
       delete post._mediaReferences;
       post.images = [];
     }
@@ -304,7 +318,10 @@ export async function buildImport({
       skippedDuplicates,
       existingPostsEnriched,
       recordsWithMedia,
+      mediaReferencesFound,
       mediaCopied,
+      uniqueMediaFiles: mediaCache.size,
+      mediaMissingOrUnsafe,
       importedDateRange: additions.length ? {
         first: additions[0].publishedAt,
         last: additions.at(-1).publishedAt
