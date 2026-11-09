@@ -64,6 +64,8 @@ test("copies attached images and adds local image URLs to imported posts", async
     const post = result.posts[0];
     assert.equal(result.importReport.recordsWithMedia, 1);
     assert.equal(result.importReport.mediaCopied, 1);
+    assert.equal(result.importReport.uniqueMediaFiles, 1);
+    assert.equal(result.importReport.mediaMissingOrUnsafe, 0);
     assert.equal(post.images.length, 1);
     assert.match(post.imageUrl, /^\/images\/facebook-archive\/fb-[a-f0-9]{24}\.jpg$/);
     await access(path.join(outputDir, path.basename(post.imageUrl)));
@@ -133,6 +135,8 @@ test("ignores unsafe and missing media paths without failing the text import", a
       mediaOutput: path.join(root, "output")
     });
     assert.equal(result.importReport.imported, 1);
+    assert.equal(result.importReport.mediaReferencesFound, 2);
+    assert.equal(result.importReport.mediaMissingOrUnsafe, 2);
     assert.equal(result.posts[0].images.length, 0);
   } finally {
     await rm(root, { recursive: true, force: true });
