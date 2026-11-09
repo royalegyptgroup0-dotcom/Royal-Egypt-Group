@@ -19,7 +19,7 @@ Build a secure, multilingual Royal Egypt Group platform and a maintainable autom
 - Release candidate branch: `release/royal-eg-release-candidate-2026-11-06`
 - Draft PR #9: https://github.com/yasserabdelaziz83-maker/Royal-Egypt-Group/pull/9
 - Operations manual: `.github/PROJECT_OPERATIONS.md` (blocked from public Pages paths by middleware)
-- Current Pages production hostname: https://royalegyptgroup.pages.dev
+- Current Pages production hostname: https://royalegyptgroup-vy7.pages.dev
 - Preferred custom domain: https://royalegyptgroup.com (not currently attached to Pages)
 
 The release candidate combines:
