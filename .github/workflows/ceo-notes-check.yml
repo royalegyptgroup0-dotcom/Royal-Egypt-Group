@@ -41,5 +41,7 @@ jobs:
       - name: Test market freshness and stale fallback
         run: node notes/test-market-stale.mjs
 
+      - name: Check Facebook archive importer syntax
+        run: node --check scripts/import-ceo-facebook-archive.mjs
       - name: Test offline Facebook archive importer
         run: node --test scripts/import-ceo-facebook-archive.test.mjs
