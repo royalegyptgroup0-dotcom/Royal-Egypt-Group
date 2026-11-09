@@ -35,7 +35,7 @@ Do not merge PR #9 or deploy Production until all Preview gates pass and the own
 - Cloudflare Pages project: `royalegyptgroup`.
 - Production branch remains `main`.
 - Release candidate Preview deployment succeeded for commit `0aa07cbb6223b5b801a1ee7405359833ccc235aa`; the latest deployment may advance as new commits are pushed.
-- Preview branch alias: https://release-royal-eg-release-can.royalegyptgroup.pages.dev
+- Preview branch alias: https://release-royal-eg-release-can.royalegyptgroup-vy7.pages.dev
 - Only `royalegyptgroup.pages.dev` is attached as a domain; the custom `.com` domain is not attached.
 - GitHub Jekyll CI succeeded on the release-candidate commits inspected.
 - Added GitHub workflow `.github/workflows/functions-check.yml`: Node 22 syntax checks all Functions/assets JavaScript and runs synthetic intake tests. The first run completed successfully.
@@ -240,6 +240,6 @@ Current limitation: the existing business-center Worker has a customer POST but 
 - Added `migrations/0002_intake_rate_limits.sql` for the Production database and `migrations/preview/0003_intake_rate_limits.sql` for Preview. The `intake_rate_limits` table was created successfully in BOTH D1 databases via Cloudflare API. This was a schema-only change; no customer/listing rows were read or changed.
 - Added synthetic test coverage for the global D1 rate counter. GitHub Actions Functions/Intake tests and Jekyll CI both passed at commit `cfcd95c5d92265c30dfe81b1796ed537b44641ec`.
 - Cloudflare Pages Production settings were updated to include the Workers AI binding `AI`, matching the Preview binding. Production D1 binding remains `royal-eg-listings`. Production currently has `ADMIN_TOKEN`; `MAKE_INTAKE_WEBHOOK_URL` is not configured in Production, but the current D1-first intake endpoint treats Make as optional and still stores accepted requests. No Production code deployment has occurred yet.
-- Preview deployment for the global D1 rate limiter: `https://80ab066f.royalegyptgroup.pages.dev` (successful deploy of release branch commit `cfcd95c5d92265c30dfe81b1796ed537b44641ec`). Synthetic customer, opportunity and listing writes all returned HTTP 202; all three synthetic records were then deleted from TEST D1. The webhook test deliveries were drained with the original Make scenario containing only its webhook trigger, and that scenario was returned to inactive.
+- Historical Preview deployment for the global D1 rate limiter (successful deploy of release branch commit `cfcd95c5d92265c30dfe81b1796ed537b44641ec`). Synthetic customer, opportunity and listing writes all returned HTTP 202; all three synthetic records were then deleted from TEST D1. The webhook test deliveries were drained with the original Make scenario containing only its webhook trigger, and that scenario was returned to inactive.
 - Keep Make scenarios 8408747, 8413166, 8414627, 8415805 and 8415895 inactive unless explicitly being used for a bounded test. The on-demand test/audit/cleanup scenarios are not production automations.
 - Remaining launch consideration: Make notification automation is not configured; owner inbox polling is available. The Pages-level D1 limiter is global and materially stronger than the earlier isolate-only map, but an additional edge challenge such as Turnstile can still be considered if/when a sitekey and secret are provisioned safely.
