@@ -12,6 +12,8 @@ on:
   pull_request:
     paths:
       - "notes/**"
+      - "scripts/import-ceo-facebook-archive.mjs"
+      - "scripts/import-ceo-facebook-archive.test.mjs"
       - ".github/workflows/ceo-notes-check.yml"
   workflow_dispatch:
 
@@ -39,5 +41,7 @@ jobs:
       - name: Test market freshness and stale fallback
         run: node notes/test-market-stale.mjs
 
+      - name: Check Facebook archive importer syntax
+        run: node --check scripts/import-ceo-facebook-archive.mjs
       - name: Test offline Facebook archive importer
         run: node --test scripts/import-ceo-facebook-archive.test.mjs

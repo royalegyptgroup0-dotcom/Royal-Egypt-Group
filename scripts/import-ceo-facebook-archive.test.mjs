@@ -13,7 +13,7 @@ test("imports Facebook posts in chronological order and skips existing content",
     const duplicateText = "لما الرقم يتحسن… والشغل يسوء";
     const newText = "منشور قديم من أرشيف فيسبوك";
     await writeFile(path.join(postsDir, "your_posts_1.json"), JSON.stringify([
-      { timestamp: 1794000000, data: [{ post: duplicateText }] },
+      { timestamp: 1794000000, id: "fb-export-id-not-in-feed", data: [{ post: duplicateText }] },
       { timestamp: 1793000000, data: [{ post: newText }], id: "fb-archive-1" }
     ]));
     const current = {
