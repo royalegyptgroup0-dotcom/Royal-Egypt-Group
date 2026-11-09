@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { onRequest } from "../functions/api/intake.js";
 
-const origin = "https://release-royal-eg-release-can.royalegyptgroup.pages.dev";
+const origin = "https://release-royal-eg-release-can.royalegyptgroup-vy7.pages.dev";
 const webhook = "https://hook.eu1.make.com/test-placeholder";
 const requestId = "a9b7c1d2-4e5f-4a6b-8c7d-9e0f1a2b3c4d";
 const validPayload = {
@@ -46,7 +46,7 @@ class FakeDB {
 }
 
 function makeRequest(payload = validPayload, requestOrigin = origin, ip = "198.51.100.1") {
-  return new Request("https://release-royal-eg-release-can.royalegyptgroup.pages.dev/api/intake", {
+  return new Request("https://release-royal-eg-release-can.royalegyptgroup-vy7.pages.dev/api/intake", {
     method: "POST",
     headers: {
       "content-type": "application/json",
