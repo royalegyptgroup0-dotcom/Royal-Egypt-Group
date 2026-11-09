@@ -236,14 +236,23 @@
         if(post.category) top.append(node("span","post-category",post.category));
         if(post.publishedAt) top.append(node("time","date",post.publishedAt));
         card.append(top);
-        if(post.imageUrl){
-          const image = document.createElement("img");
-          image.src = post.imageUrl;
-          image.alt = "صورة توضيحية: " + (post.title || "CEO Notes");
-          image.loading = "lazy";
-          image.decoding = "async";
-          image.style.cssText = "display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:12px;margin:4px 0 16px;border:1px solid #c8a56855";
-          card.append(image);
+        const postImages = [...new Set([
+          ...(typeof post.imageUrl === "string" ? [post.imageUrl] : []),
+          ...(Array.isArray(post.images) ? post.images.map(item => typeof item === "string" ? item : item?.url) : [])
+        ].filter(url => typeof url === "string" && (url.startsWith("/") || url.startsWith("https://"))))];
+        if(postImages.length){
+          const gallery = node("div","post-image-gallery");
+          gallery.style.cssText = "display:grid;grid-template-columns:repeat(" + (postImages.length > 1 ? "2" : "1") + ",minmax(0,1fr));gap:8px;margin:4px 0 16px";
+          postImages.forEach((url,index) => {
+            const image = document.createElement("img");
+            image.src = url;
+            image.alt = "صورة " + (index + 1) + " من " + (post.title || "CEO Notes");
+            image.loading = "lazy";
+            image.decoding = "async";
+            image.style.cssText = "display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:12px;border:1px solid #c8a56855";
+            gallery.append(image);
+          });
+          card.append(gallery);
         }
         const heading = node("h3","");
         const titleLink = node("a","post-link",post.title || "ملاحظة يومية");
@@ -389,7 +398,10 @@
                 if(ogDescription) ogDescription.content = description;
                 const ogUrl = document.querySelector('meta[property="og:url"]');
                 if(ogUrl) ogUrl.content = canonical ? canonical.href : location.href;
-                const imageUrl = typeof selected.imageUrl === "string" && selected.imageUrl.startsWith("https://") ? selected.imageUrl : "";
+                const selectedImages = Array.isArray(selected.images) ? selected.images : [];
+                const imageUrl = typeof selected.imageUrl === "string" && (selected.imageUrl.startsWith("https://") || selected.imageUrl.startsWith("/"))
+                  ? selected.imageUrl
+                  : (typeof selectedImages[0] === "string" && (selectedImages[0].startsWith("https://") || selectedImages[0].startsWith("/")) ? selectedImages[0] : "");
                 const ogImage = document.querySelector('meta[property="og:image"]');
                 if(ogImage) ogImage.content = imageUrl;
                 const twitterTitle = document.querySelector('meta[name="twitter:title"]');
