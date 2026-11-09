@@ -7,6 +7,8 @@ on:
       - "notes/**"
       - ".github/workflows/ceo-notes-check.yml"
       - "scripts/build-ceo-notes-worker.mjs"
+      - "scripts/import-ceo-facebook-archive.mjs"
+      - "scripts/import-ceo-facebook-archive.test.mjs"
   pull_request:
     paths:
       - "notes/**"
