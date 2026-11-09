@@ -7,6 +7,8 @@ on:
       - "notes/**"
       - ".github/workflows/ceo-notes-check.yml"
       - "scripts/build-ceo-notes-worker.mjs"
+      - "scripts/import-ceo-facebook-archive.mjs"
+      - "scripts/import-ceo-facebook-archive.test.mjs"
   pull_request:
     paths:
       - "notes/**"
@@ -36,3 +38,6 @@ jobs:
         run: node notes/validate.mjs
       - name: Test market freshness and stale fallback
         run: node notes/test-market-stale.mjs
+
+      - name: Test offline Facebook archive importer
+        run: node --test scripts/import-ceo-facebook-archive.test.mjs
