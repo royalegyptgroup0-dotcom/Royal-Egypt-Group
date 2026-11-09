@@ -403,13 +403,14 @@
                   ? selected.imageUrl
                   : (typeof selectedImages[0] === "string" && (selectedImages[0].startsWith("https://") || selectedImages[0].startsWith("/")) ? selectedImages[0] : "");
                 const ogImage = document.querySelector('meta[property="og:image"]');
-                if(ogImage) ogImage.content = imageUrl;
+                const socialImageUrl = imageUrl ? new URL(imageUrl, location.origin).href : "";
+                if(ogImage) ogImage.content = socialImageUrl;
                 const twitterTitle = document.querySelector('meta[name="twitter:title"]');
                 if(twitterTitle) twitterTitle.content = document.title;
                 const twitterDescription = document.querySelector('meta[name="twitter:description"]');
                 if(twitterDescription) twitterDescription.content = description;
                 const twitterImage = document.querySelector('meta[name="twitter:image"]');
-                if(twitterImage) twitterImage.content = imageUrl;
+                if(twitterImage) twitterImage.content = socialImageUrl;
                 const twitterCard = document.querySelector('meta[name="twitter:card"]');
                 if(twitterCard) twitterCard.content = imageUrl ? "summary_large_image" : "summary";
               }
