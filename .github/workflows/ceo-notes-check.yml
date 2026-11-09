@@ -12,6 +12,8 @@ on:
   pull_request:
     paths:
       - "notes/**"
+      - "scripts/import-ceo-facebook-archive.mjs"
+      - "scripts/import-ceo-facebook-archive.test.mjs"
       - ".github/workflows/ceo-notes-check.yml"
   workflow_dispatch:
 
