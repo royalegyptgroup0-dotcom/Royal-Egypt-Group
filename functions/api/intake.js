@@ -41,8 +41,8 @@ function json(data, status, origin) {
 
 function allowedOrigin(origin) {
   if (!origin) return false;
-  return origin === "https://royalegyptgroup.pages.dev" ||
-    /^https:\/\/[a-z0-9-]+\.royalegyptgroup\.pages\.dev$/i.test(origin);
+  return origin === "https://royalegyptgroup-vy7.pages.dev" ||
+    /^https:\/\/[a-z0-9-]+\.royalegyptgroup-vy7\.pages\.dev$/i.test(origin);
 }
 
 function clean(value, max) {
