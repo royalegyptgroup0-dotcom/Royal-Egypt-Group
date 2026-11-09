@@ -45,7 +45,7 @@ function findRecords(value, output = []) {
   }
   if (!value || typeof value !== "object") return output;
   const timestamp = value.timestamp ?? value.creation_timestamp ?? value.created_time ?? value.creation_time;
-  const body = textFromRecord(value);
+  const body = textFromRecord(value) || norm(value.title);
   if (timestamp != null && body) output.push(value);
   for (const [key, child] of Object.entries(value)) {
     if (child && typeof child === "object" && key !== "attachments" && key !== "media") findRecords(child, output);
@@ -64,7 +64,7 @@ function stableKey(post) {
 }
 
 function toCandidate(record, sourceFile) {
-  const article = textFromRecord(record);
+  const article = textFromRecord(record) || norm(record.title);
   const publishedAt = isoDate(record.timestamp ?? record.creation_timestamp ?? record.created_time ?? record.creation_time);
   if (!article || !publishedAt) return null;
   const rawId = record.post_id ?? record.id ?? record.fbid ?? record.facebook_post_id ?? null;
