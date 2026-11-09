@@ -6,6 +6,7 @@ ru:{language:"العربية",home:"Главная",markets:"Рынки и фи�
 };
 let lang=localStorage.getItem("royal-lang")||"ar";if(!T[lang])lang="ar";
 function apply(){const d=T[lang];document.documentElement.lang=lang;document.documentElement.dir=lang==="ar"?"rtl":"ltr";document.querySelectorAll("[data-g-i]").forEach(el=>{const v=d[el.dataset.gI];if(v!==undefined)el.textContent=v});document.querySelectorAll("[data-g-placeholder]").forEach(el=>{const v=d[el.dataset.gPlaceholder];if(v!==undefined)el.placeholder=v});const b=document.getElementById("groupLangBtn");if(b)b.textContent=d.language;}
-function set(next){lang=next;localStorage.setItem("royal-lang",lang);apply();}
+function set(next){if(!T[next])return;lang=next;localStorage.setItem("royal-lang",lang);apply();document.dispatchEvent(new CustomEvent("royal:group-language",{detail:{lang}}));}
+document.addEventListener("royal:site-language",event=>{const next=event.detail?.lang;if(T[next]&&next!==lang){lang=next;apply();}});
 document.addEventListener("DOMContentLoaded",()=>{const b=document.getElementById("groupLangBtn");if(b)b.addEventListener("click",()=>set(lang==="ar"?"en":lang==="en"?"ru":"ar"));apply();});
 })();
