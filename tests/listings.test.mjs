@@ -52,8 +52,8 @@ function makeForm(overrides = {}) {
   return form;
 }
 
-function makeRequest(overrides = {}, ip = "198.51.100.10", origin = "https://preview-branch.royalegyptgroup.pages.dev") {
-  return new Request("https://preview-branch.royalegyptgroup.pages.dev/api/listings", {
+function makeRequest(overrides = {}, ip = "198.51.100.10", origin = "https://preview-branch.royalegyptgroup-vy7.pages.dev") {
+  return new Request("https://preview-branch.royalegyptgroup-vy7.pages.dev/api/listings", {
     method: "POST",
     headers: {
       origin,
@@ -66,7 +66,7 @@ function makeRequest(overrides = {}, ip = "198.51.100.10", origin = "https://pre
 test("public GET returns approved listings only and strips image payloads", async () => {
   const db = new FakeDB();
   const response = await onRequest({
-    request: new Request("https://preview-branch.royalegyptgroup.pages.dev/api/listings"),
+    request: new Request("https://preview-branch.royalegyptgroup-vy7.pages.dev/api/listings"),
     env: { DB: db },
   });
   assert.equal(response.status, 200);
@@ -128,9 +128,9 @@ test("rejects uploaded images until secure R2 storage is implemented", async () 
   const db = new FakeDB();
   const form = makeForm();
   form.set("images", new File(["synthetic"], "test.png", { type: "image/png" }));
-  const request = new Request("https://preview-branch.royalegyptgroup.pages.dev/api/listings", {
+  const request = new Request("https://preview-branch.royalegyptgroup-vy7.pages.dev/api/listings", {
     method: "POST",
-    headers: { origin: "https://preview-branch.royalegyptgroup.pages.dev", "cf-connecting-ip": "198.51.100.10" },
+    headers: { origin: "https://preview-branch.royalegyptgroup-vy7.pages.dev", "cf-connecting-ip": "198.51.100.10" },
     body: form,
   });
   const response = await onRequest({ request, env: { DB: db } });
