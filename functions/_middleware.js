@@ -6,7 +6,6 @@ const BLOCKED_PATHS = [
   /^\/wrangler\.toml$/i,
   /^\/AI_HANDOFF\.md$/i,
   /^\/CLOUDFLARE_LISTINGS_SETUP\.md$/i,
-  /^\/CONTACT_INTAKE_TEST\.md$/i,
   /^\/README\.md$/i,
   /^\/\.github\//i,
 ];
@@ -34,7 +33,7 @@ export async function onRequest(context) {
   }
 
   // Add noindex header for admin pages
-  const is_admin = path.startsWith('/admin') || path === '/admin-inbox.html';
+  const is_admin = path.startsWith('/admin');
 
   // Pass through to the next handler
   const response = await next();

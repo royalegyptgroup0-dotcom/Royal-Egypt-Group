@@ -42,7 +42,31 @@ function json(data, status, origin) {
 function allowedOrigin(origin) {
   if (!origin) return false;
   return origin === "https://royalegyptgroup-vy7.pages.dev" ||
+    origin === "https://royalegyptgroup.com" ||
+    origin === "https://www.royalegyptgroup.com" ||
     /^https:\/\/[a-z0-9-]+\.royalegyptgroup-vy7\.pages\.dev$/i.test(origin);
+}
+
+
+async function readLimitedText(request) {
+  const reader = request.body?.getReader();
+  if (!reader) return "";
+  const chunks = [];
+  let size = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > MAX_BODY_BYTES) {
+      await reader.cancel().catch(() => {});
+      return null;
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+  return new TextDecoder().decode(bytes);
 }
 
 function clean(value, max) {
@@ -126,11 +150,9 @@ export async function onRequest({ request, env }) {
   }
 
   let raw;
-  try { raw = await request.text(); }
+  try { raw = await readLimitedText(request); }
   catch { return json({ error: "invalid_body" }, 400, origin); }
-  if (new TextEncoder().encode(raw).byteLength > MAX_BODY_BYTES) {
-    return json({ error: "payload_too_large" }, 413, origin);
-  }
+  if (raw === null) return json({ error: "payload_too_large" }, 413, origin);
 
   let input;
   try { input = JSON.parse(raw); }
@@ -165,7 +187,7 @@ export async function onRequest({ request, env }) {
     status: requestType === "listing" ? "pending_review" : "new",
     name, phone, email: email || null, location: location || null,
     details, language, consent: true,
-    source: "royalegyptgroup.pages.dev",
+    source: "royalegyptgroup-vy7.pages.dev",
     received_at: new Date().toISOString(),
   };
 

@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#090a0b">
+<title>مركز الأسواق والمال | Royal Egypt Group</title>
+<meta name="description" content="تابع مؤشرات البورصات العالمية والذهب والعملات والأخبار الاقتصادية والتوقيت العالمي عبر مركز Royal Egypt Group المالي.">
+<link rel="canonical" href="https://royalegyptgroup-vy7.pages.dev/markets">
+<link rel="icon" href="/royal-logo.jpg" type="image/jpeg">
+<link rel="stylesheet" href="/assets/royal.css">
+<style>
+.market-hero{padding:65px 0 42px;background:radial-gradient(ellipse at 15% 0%,#9c77372b,transparent 42%),linear-gradient(125deg,#121820,#090a0b 72%);border-bottom:1px solid #c8a56833}
+.market-hero h1{font-size:clamp(34px,5vw,58px);line-height:1.2;margin:13px 0;color:#f5ead5}.market-hero h1 em{font-style:normal;color:#e5c783}.market-hero p{max-width:760px;color:#b8b7b1;line-height:2;font-size:14px}
+.market-kicker{color:#d7b879;font-size:11px;letter-spacing:2px;font-weight:800}
+.market-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.market-section{padding:46px 0;border-bottom:1px solid #ffffff12}
+.market-head{display:flex;justify-content:space-between;align-items:end;gap:18px;margin-bottom:22px}.market-head h2{font-size:clamp(22px,3vw,30px);margin:5px 0;color:#f0e5d1}.market-head p{margin:0;color:#999;font-size:12px;max-width:550px}
+.market-panel{background:#111820;border:1px solid #c8a56840;border-radius:16px;padding:12px;overflow:hidden}
+.market-panel .tradingview-widget-container{width:100%}
+.market-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}
+.market-card{background:linear-gradient(145deg,#171d25,#10151b);border:1px solid #ffffff18;border-radius:16px;padding:19px;min-width:0}
+.market-card h3{font-size:15px;color:#e5c783;margin:0 0 5px}.market-card p{font-size:11px;color:#999;margin:0 0 14px}
+.world-clocks{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.clock-card{padding:17px 12px;border:1px solid #ffffff1a;border-radius:13px;background:linear-gradient(145deg,#171d25,#10151b);text-align:center}
+.clock-card small{display:block;color:#a9a49a;font-size:11px}.clock-card strong{display:block;color:#f6e8cb;font-size:22px;direction:ltr;font-variant-numeric:tabular-nums;margin:5px 0}.clock-card span{font-size:10px;color:#8c929b}
+.market-news-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:18px;align-items:start}
+.news-frame{height:590px;background:#111820;border:1px solid #ffffff1a;border-radius:15px;overflow:hidden}
+.news-frame .tradingview-widget-container,.news-frame .tradingview-widget-container__widget{height:100%;width:100%}
+.news-frame iframe{max-width:100%}
+.source-note{font-size:10px;color:#8f969f;line-height:1.9;margin:12px 2px 0}
+.market-links{display:grid;gap:10px}.market-link{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px;border:1px solid #ffffff18;border-radius:11px;background:#141a21;color:#e9dfcc;font-size:12px}.market-link:hover{border-color:#c8a56888}.market-link span{color:#d8b978}
+.market-warning{padding:17px;border:1px solid #8a6a36;background:#201b12;border-radius:12px;color:#d8c7a5;font-size:11px;line-height:1.9;margin-top:22px}
+.market-footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;color:#96938d;font-size:11px}
+@media(max-width:850px){.market-grid,.market-news-grid{grid-template-columns:1fr}.world-clocks{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:560px){.market-hero{padding:48px 0 30px}.market-section{padding:34px 0}.world-clocks{grid-template-columns:repeat(2,1fr)}.clock-card strong{font-size:19px}.market-head{display:block}.news-frame{height:620px}}
+
+.language-select{appearance:none;background:#111820;color:#e5c783;border:1px solid #c8a56888;border-radius:9px;padding:9px 28px 9px 10px;font:inherit;font-size:11px;cursor:pointer;min-width:105px}
+.language-select:focus{outline:2px solid #d8b978;outline-offset:2px}
+[dir="ltr"] .market-head{direction:ltr;text-align:left}
+[dir="ltr"] .market-card,[dir="ltr"] .market-warning,[dir="ltr"] .source-note{text-align:left}
+[dir="ltr"] .market-links{direction:ltr}
+@media(max-width:760px){.nav-actions{gap:7px}.language-select{min-width:88px;padding:8px 7px;font-size:10px}}
+</style>
+</head>
+<body>
+<header class="site-header"><div class="wrap nav">
+<a class="brand" href="/" aria-label="Royal Egypt Group"><img src="/royal-logo.jpg" alt="Royal Egypt Group"><span class="brand-copy"><strong>ROYAL EGYPT</strong><small>مجموعة رويال إيجيبت</small></span></a>
+<nav class="nav-links"><a href="/">الرئيسية</a><a href="/markets" aria-current="page">الأسواق والمال</a><a href="/properties">العقارات</a><a href="/developers">دليل المطورين</a><a href="/coffee">القهوة</a><a href="/transportation">النقل</a></nav>
+<div class="nav-actions"><select class="language-select" id="siteLanguage" aria-label="اختر اللغة"><option value="ar">العربية</option><option value="en">English</option><option value="ru">Русский</option></select><a class="btn btn-small" href="/#contact">تواصل معنا</a><button class="menu-btn" type="button" aria-label="فتح القائمة" aria-expanded="false">☰</button></div>
+</div></header>
+<main>
+<section class="market-hero"><div class="wrap">
+<span class="market-kicker">ROYAL EGYPT GROUP · GLOBAL FINANCIAL DESK</span>
+<h1>رؤية أوسع للأسواق.<br><em>وقرارات أكثر وعيًا.</em></h1>
+<p>مركز متابعة مالي يجمع مؤشرات البورصة المصرية والعالمية، الذهب، العملات، الأخبار الاقتصادية، والأحداث المؤثرة في الاستثمار — في واجهة واحدة.</p>
+<div class="market-actions"><a class="btn" href="#indices">تابع الأسواق الآن</a><a class="btn btn-outline" href="/#contact">ناقش فرصة استثمارية</a></div>
+</div></section>
+<section class="market-section"><div class="wrap">
+<div class="market-head"><div><span class="market-kicker">GLOBAL TIME</span><h2>التوقيت العالمي</h2></div><p>ساعات المراكز المالية الرئيسية — تتحدث تلقائيًا حسب التوقيت الصيفي والشتوي لكل مدينة.</p></div>
+<div class="world-clocks" id="worldClocks">
+<div class="clock-card" data-zone="Africa/Cairo"><small>القاهرة · مصر</small><strong>--:--:--</strong><span>AFRICA/CAIRO</span></div>
+<div class="clock-card" data-zone="Asia/Dubai"><small>دبي · الإمارات</small><strong>--:--:--</strong><span>ASIA/DUBAI</span></div>
+<div class="clock-card" data-zone="Asia/Riyadh"><small>الرياض · السعودية</small><strong>--:--:--</strong><span>ASIA/RIYADH</span></div>
+<div class="clock-card" data-zone="Europe/London"><small>لندن · المملكة المتحدة</small><strong>--:--:--</strong><span>EUROPE/LONDON</span></div>
+<div class="clock-card" data-zone="America/New_York"><small>نيويورك · الولايات المتحدة</small><strong>--:--:--</strong><span>AMERICA/NEW_YORK</span></div>
+</div></div></section>
+<section class="market-section" id="indices"><div class="wrap">
+<div class="market-head"><div><span class="market-kicker">MARKET SNAPSHOT</span><h2>مؤشرات البورصة والأسواق</h2></div><p>متابعة لمؤشرات مختارة تشمل EGX30 والبورصات العالمية الرئيسية. قد تختلف سرعة التحديث حسب السوق ومزود البيانات.</p></div>
+<div class="market-panel"><div class="tradingview-widget-container">
+<div class="tradingview-widget-container__widget"></div>
+<div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/markets/" rel="noopener nofollow" target="_blank">بيانات الأسواق بواسطة TradingView</a></div>
+<script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
+{"colorTheme":"dark","dateRange":"1D","showChart":true,"locale":"en","isTransparent":true,"showSymbolLogo":true,"width":"100%","height":"520","tabs":[{"title":"Egypt & Global","symbols":[{"s":"EGX:EGX30","d":"EGX 30 · Egypt"},{"s":"FOREXCOM:SPXUSD","d":"S&P 500"},{"s":"NASDAQ:NDX","d":"NASDAQ 100"},{"s":"FOREXCOM:DJI","d":"Dow Jones"},{"s":"INDEX:DEU40","d":"DAX · Germany"},{"s":"TADAWUL:TASI","d":"Tadawul · Saudi Arabia"}]},{"title":"Gold & Commodities","symbols":[{"s":"OANDA:XAUUSD","d":"Gold · XAU/USD"},{"s":"OANDA:XAGUSD","d":"Silver · XAG/USD"},{"s":"TVC:USOIL","d":"WTI Crude Oil"},{"s":"TVC:UKOIL","d":"Brent Crude Oil"}]},{"title":"Currencies","symbols":[{"s":"FX:EURUSD","d":"EUR / USD"},{"s":"FX:GBPUSD","d":"GBP / USD"},{"s":"FX:USDJPY","d":"USD / JPY"},{"s":"FX:USDEGP","d":"USD / EGP"}]}]}
+</script></div></div>
+<p class="source-note">المصدر: TradingView ومزودو بيانات الأسواق المرتبطون به. قد تكون بعض بيانات البورصات متأخرة أو غير متاحة خارج ساعات التداول. البيانات للمتابعة العامة وليست توصية شراء أو بيع.</p>
+</div></section>
+<section class="market-section"><div class="wrap">
+<div class="market-head"><div><span class="market-kicker">GOLD WATCH</span><h2>الذهب والمعادن الثمينة</h2></div><p>رسم سعر الذهب العالمي بالدولار للأونصة، مع إمكانية تغيير الفترة الزمنية ومراجعة الحركة التاريخية.</p></div>
+<div class="market-grid">
+<div class="market-card"><h3>الذهب العالمي · XAU / USD</h3><p>السعر الفوري المرجعي للأونصة بالدولار — تحقق من سعر السوق المحلي والمصنعية قبل التعامل.</p>
+<div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div><div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/symbols/XAUUSD/" rel="noopener nofollow" target="_blank">Gold chart by TradingView</a></div><script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>{"symbols":[["Gold Spot","OANDA:XAUUSD|1D"]],"chartOnly":false,"width":"100%","height":340,"locale":"en","colorTheme":"dark","autosize":true,"showVolume":false,"showMA":false,"hideDateRanges":false,"hideMarketStatus":false,"hideSymbolLogo":false,"scalePosition":"right","scaleMode":"Normal","fontFamily":"-apple-system, BlinkMacSystemFont, Trebuchet MS, Roboto, Ubuntu, sans-serif","fontSize":"10","noTimeScale":false,"valuesTracking":"1","changeMode":"price-and-percent","chartType":"area","maLineColor":"#d8b978","lineWidth":2,"lineType":0,"dateRanges":["1d|1","1m|30","3m|60","12m|1D","all|1M"],"isTransparent":true}</script></div>
+</div>
+<div class="market-card"><h3>كيف تقرأ سعر الذهب؟</h3><p>معلومة مهمة للمستثمر قبل اتخاذ قرار الشراء أو البيع.</p>
+<ul style="padding-inline-start:20px;color:#c5c0b6;font-size:12px;line-height:2.2">
+<li>السعر العالمي المعروض هو للأونصة، وليس سعر جرام الذهب في مصر.</li>
+<li>سعر الجرام المحلي يتأثر بسعر الصرف والعيار والطلب المحلي والمصنعية والضرائب.</li>
+<li>قارن بين أكثر من تاجر وتحقق من الفاتورة والدمغة والوزن والعيار.</li>
+<li>لا تعتبر حركة يوم واحد ضمانًا لاتجاه السعر مستقبلًا.</li>
+</ul>
+<a class="market-link" href="https://www.tradingview.com/symbols/XAUUSD/" target="_blank" rel="noopener">فتح تفاصيل الذهب على TradingView <span>↗</span></a>
+</div></div></div></section>
+<section class="market-section"><div class="wrap">
+<div class="market-head"><div><span class="market-kicker">FX REFERENCE</span><h2>أسعار العملات المرجعية</h2></div><p>أسعار مرجعية يومية من مصدر مفتوح، وليست أسعار تنفيذ أو أسعار بيع وشراء البنوك.</p></div>
+<div class="market-grid">
+<div class="market-card"><h3>أسعار الصرف مقابل الجنيه المصري</h3><p id="fxStamp">جارٍ جلب آخر تاريخ متاح من Frankfurter…</p>
+<div class="market-links">
+<div class="market-link"><span>الدولار الأمريكي / الجنيه</span><strong id="usdEgp">--</strong></div>
+<div class="market-link"><span>اليورو / الجنيه</span><strong id="eurEgp">--</strong></div>
+<div class="market-link"><span>الجنيه الإسترليني / الجنيه</span><strong id="gbpEgp">--</strong></div>
+</div></div>
+<div class="market-card"><h3>تنبيه بخصوص الأسعار</h3><p>لا تخلط بين سعر الصرف المرجعي والسعر الذي تنفذ به البنوك أو شركات الصرافة المعاملات.</p><div class="market-warning" style="margin-top:10px">المصدر المرجعي قد لا ينشر بيانات في أيام العطلات أو عند تأخر تحديثه. عند تعذر الاتصال، ستظهر رسالة بعدم التوفر بدلًا من عرض سعر قديم على أنه جديد.</div><a class="market-link" href="https://www.frankfurter.app/" target="_blank" rel="noopener">المصدر: Frankfurter API <span>↗</span></a></div>
+</div></div></section>
+<section class="market-section"><div class="wrap">
+<div class="market-head"><div><span class="market-kicker">FINANCIAL NEWS</span><h2>أخبار المال والأعمال</h2></div><p>موجز أخبار الأسواق والأصول المالية من مزود أخبار TradingView، مع روابط إلى القصص ومصادرها.</p></div>
+<div class="market-news-grid">
+<div class="news-frame"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div><div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/news/" rel="noopener nofollow" target="_blank">Financial news by TradingView</a></div><script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-timeline.js" async>{"feedMode":"all_symbols","isTransparent":true,"displayMode":"regular","width":"100%","height":"590","colorTheme":"dark","locale":"en"}</script></div></div>
+<div class="market-links">
+<a class="market-link" href="https://www.egx.com.eg/" target="_blank" rel="noopener">البورصة المصرية EGX <span>↗</span></a>
+<a class="market-link" href="https://www.cbe.org.eg/" target="_blank" rel="noopener">البنك المركزي المصري <span>↗</span></a>
+<a class="market-link" href="https://www.reuters.com/markets/" target="_blank" rel="noopener">Reuters · الأسواق العالمية <span>↗</span></a>
+<a class="market-link" href="https://www.bloomberg.com/markets" target="_blank" rel="noopener">Bloomberg · الأسواق والاقتصاد <span>↗</span></a>
+<a class="market-link" href="https://www.cnbc.com/world/?region=world" target="_blank" rel="noopener">CNBC · المال والأعمال <span>↗</span></a>
+<a class="market-link" href="https://www.tradingview.com/news/" target="_blank" rel="noopener">TradingView · أخبار الأسواق <span>↗</span></a>
+</div></div>
+<p class="source-note">الأخبار تُعرض من مزود خارجي؛ قد تختلف اللغة والتغطية وتوقيت النشر. الروابط تفتح المصدر الأصلي. لا نعيد نشر نصوص الأخبار ولا ننسب آراء المحللين إلى Royal Egypt Group.</p>
+</div></section>
+<section class="market-section"><div class="wrap">
+<div class="market-head"><div><span class="market-kicker">ECONOMIC CALENDAR</span><h2>الأجندة الاقتصادية</h2></div><p>تابع مواعيد قرارات البنوك المركزية وبيانات التضخم والتوظيف والأحداث المؤثرة في الأسواق.</p></div>
+<div class="market-panel"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div><div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/economic-calendar/" rel="noopener nofollow" target="_blank">Economic calendar by TradingView</a></div><script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-events.js" async>{"colorTheme":"dark","isTransparent":true,"width":"100%","height":"450","locale":"en","importanceFilter":"-1,0,1","currencyFilter":"USD,EUR,GBP,JPY,CNY,EGP"}</script></div></div>
+</div></section>
+<section class="market-section"><div class="wrap market-footer"><span>© <span id="year"></span> Royal Egypt Group · مركز المعلومات المالية</span><span>مصادر البيانات الخارجية موضحة بجوار كل قسم · ليست نصيحة استثمارية</span></div></section>
+</main>
+<script>
+(()=>{"use strict";
+const menu=document.querySelector(".menu-btn"),nav=document.querySelector(".nav-links");if(menu&&nav)menu.addEventListener("click",()=>{const open=nav.classList.toggle("open");menu.setAttribute("aria-expanded",String(open))});
+document.getElementById("year").textContent=new Date().getFullYear();
+const clocks=[...document.querySelectorAll(".clock-card")];
+function tick(){const now=new Date();for(const card of clocks){const zone=card.dataset.zone;const time=card.querySelector("strong");if(time)time.textContent=new Intl.DateTimeFormat("en-GB",{timeZone:zone,hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(now)}}
+tick();setInterval(tick,1000);
+const fields={USD:document.getElementById("usdEgp"),EUR:document.getElementById("eurEgp"),GBP:document.getElementById("gbpEgp")},stamp=document.getElementById("fxStamp");
+async function rates(){try{const r=await fetch("https://api.frankfurter.dev/v1/latest?base=USD&symbols=EGP,EUR,GBP",{headers:{Accept:"application/json"},cache:"no-store"});if(!r.ok)throw Error("rate unavailable");const d=await r.json();const usd=Number(d.rates?.EGP),eur=Number(d.rates?.EUR),gbp=Number(d.rates?.GBP);if(!usd||!eur||!gbp)throw Error("incomplete rates");fields.USD.textContent="1 USD = "+usd.toFixed(2)+" EGP";fields.EUR.textContent="1 EUR = "+(usd/eur).toFixed(2)+" EGP";fields.GBP.textContent="1 GBP = "+(usd/gbp).toFixed(2)+" EGP";stamp.textContent=(currentLanguage==="ar"?"آخر تاريخ بيانات متاح: ":currentLanguage==="ru"?"Последняя доступная дата: ":"Latest available data date: ")+d.date+(currentLanguage==="ar"?" · مرجع يومي وليس سعر تنفيذ":currentLanguage==="ru"?" · справочный курс, не курс сделки":" · daily reference, not an executable rate")}catch(e){for(const el of Object.values(fields))el.textContent=currentLanguage==="ar"?"غير متاح حاليًا":currentLanguage==="ru"?"Временно недоступно":"Currently unavailable";stamp.textContent=currentLanguage==="ar"?"تعذر جلب السعر المرجعي الآن. لم نعرض بيانات قديمة.":currentLanguage==="ru"?"Не удалось получить справочные курсы. Устаревшие данные не отображаются.":"Unable to retrieve reference rates. No stale data is displayed."}}
+
+const languageSelect=document.getElementById("siteLanguage");
+const translations={
+"الرئيسية":["Home","Главная"],"الأسواق والمال":["Markets & Finance","Рынки и финансы"],"العقارات":["Real Estate","Недвижимость"],"دليل المطورين":["Developer Directory","Каталог застройщиков"],"القهوة":["Coffee","Кофе"],"النقل":["Transportation","Транспорт"],"تواصل معنا":["Contact us","Связаться"],
+"رؤية أوسع للأسواق.":["A broader view of the markets.","Шире взгляд на рынки."],"وقرارات أكثر وعيًا.":["Better-informed decisions.","Более взвешенные решения."],
+"مركز متابعة مالي يجمع مؤشرات البورصة المصرية والعالمية، الذهب، العملات، الأخبار الاقتصادية، والأحداث المؤثرة في الاستثمار — في واجهة واحدة.":["A financial hub bringing together Egyptian and global market indices, gold, currencies, business news and investment-moving events — all in one place.","Финансовый центр, объединяющий индексы египетского и мировых рынков, золото, валюты, деловые новости и события, влияющие на инвестиции."],
+"تابع الأسواق الآن":["Explore markets","Следить за рынками"],"ناقش فرصة استثمارية":["Discuss an investment opportunity","Обсудить инвестиционную возможность"],
+"التوقيت العالمي":["World clocks","Мировое время"],"ساعات المراكز المالية الرئيسية — تتحدث تلقائيًا حسب التوقيت الصيفي والشتوي لكل مدينة.":["Live clocks for major financial centres, automatically adjusted for each city's daylight-saving rules.","Время в крупнейших финансовых центрах с автоматическим учетом сезонного перевода часов."],
+"القاهرة · مصر":["Cairo · Egypt","Каир · Египет"],"دبي · الإمارات":["Dubai · UAE","Дубай · ОАЭ"],"الرياض · السعودية":["Riyadh · Saudi Arabia","Эр-Рияд · Саудовская Аравия"],"لندن · المملكة المتحدة":["London · UK","Лондон · Великобритания"],"نيويورك · الولايات المتحدة":["New York · USA","Нью-Йорк · США"],
+"مؤشرات البورصة والأسواق":["Stock markets & indices","Биржи и рыночные индексы"],"متابعة لمؤشرات مختارة تشمل EGX30 والبورصات العالمية الرئيسية. قد تختلف سرعة التحديث حسب السوق ومزود البيانات.":["Selected indices including EGX30 and major global markets. Update speed varies by market and data provider.","Избранные индексы, включая EGX30 и крупнейшие мировые рынки. Частота обновления зависит от рынка и поставщика данных."],
+"المصدر: TradingView ومزودو بيانات الأسواق المرتبطون به. قد تكون بعض بيانات البورصات متأخرة أو غير متاحة خارج ساعات التداول. البيانات للمتابعة العامة وليست توصية شراء أو بيع.":["Source: TradingView and its market-data providers. Some exchange data may be delayed or unavailable outside trading hours. For information only, not a buy or sell recommendation.","Источник: TradingView и его поставщики рыночных данных. Данные отдельных бирж могут поступать с задержкой или быть недоступны вне торговых часов. Информация не является рекомендацией покупать или продавать."],
+"الذهب والمعادن الثمينة":["Gold & precious metals","Золото и драгоценные металлы"],"رسم سعر الذهب العالمي بالدولار للأونصة، مع إمكانية تغيير الفترة الزمنية ومراجعة الحركة التاريخية.":["Gold price chart in US dollars per ounce, with selectable time ranges and historical performance.","График мировой цены золота в долларах за унцию с выбором периода и просмотром истории."],
+"الذهب العالمي · XAU / USD":["Global gold · XAU / USD","Мировое золото · XAU / USD"],"السعر الفوري المرجعي للأونصة بالدولار — تحقق من سعر السوق المحلي والمصنعية قبل التعامل.":["Indicative spot price per ounce in USD. Check local market prices and making charges before trading.","Ориентировочная спотовая цена за унцию в долларах США. Перед сделкой проверьте местную цену и стоимость изготовления."],
+"كيف تقرأ سعر الذهب؟":["How to read gold prices","Как читать цены на золото"],"معلومة مهمة للمستثمر قبل اتخاذ قرار الشراء أو البيع.":["Key points for investors before buying or selling.","Важные сведения перед покупкой или продажей."],
+"السعر العالمي المعروض هو للأونصة، وليس سعر جرام الذهب في مصر.":["The displayed global price is per ounce, not the Egyptian price per gram.","Указана мировая цена за унцию, а не цена грамма в Египте."],
+"سعر الجرام المحلي يتأثر بسعر الصرف والعيار والطلب المحلي والمصنعية والضرائب.":["The local gram price depends on exchange rates, karat, local demand, making charges and taxes.","Местная цена за грамм зависит от курса валют, пробы, спроса, стоимости изготовления и налогов."],
+"قارن بين أكثر من تاجر وتحقق من الفاتورة والدمغة والوزن والعيار.":["Compare multiple dealers and verify the invoice, hallmark, weight and karat.","Сравните предложения нескольких продавцов и проверьте чек, клеймо, вес и пробу."],
+"لا تعتبر حركة يوم واحد ضمانًا لاتجاه السعر مستقبلًا.":["One day's movement does not guarantee a future price trend.","Изменение цены за один день не гарантирует будущую динамику."],
+"فتح تفاصيل الذهب على TradingView":["View gold on TradingView","Открыть золото в TradingView"],
+"أسعار العملات المرجعية":["Reference exchange rates","Справочные валютные курсы"],"أسعار مرجعية يومية من مصدر مفتوح، وليست أسعار تنفيذ أو أسعار بيع وشراء البنوك.":["Daily reference rates from an open source, not executable rates or bank buy/sell quotes.","Ежедневные справочные курсы из открытого источника, а не курсы фактических сделок или покупки/продажи банков."],
+"أسعار الصرف مقابل الجنيه المصري":["Exchange rates against the Egyptian pound","Курсы валют к египетскому фунту"],"جارٍ جلب آخر تاريخ متاح من Frankfurter…":["Fetching the latest available date from Frankfurter…","Загружается последняя доступная дата Frankfurter…"],
+"الدولار الأمريكي / الجنيه":["US dollar / EGP","Доллар США / EGP"],"اليورو / الجنيه":["Euro / EGP","Евро / EGP"],"الجنيه الإسترليني / الجنيه":["British pound / EGP","Фунт стерлингов / EGP"],
+"تنبيه بخصوص الأسعار":["Rate information","Важная информация о курсах"],"لا تخلط بين سعر الصرف المرجعي والسعر الذي تنفذ به البنوك أو شركات الصرافة المعاملات.":["Do not confuse reference rates with the rates actually applied by banks or exchange providers.","Не путайте справочный курс с курсом, по которому банки и обменные пункты проводят операции."],
+"المصدر المرجعي قد لا ينشر بيانات في أيام العطلات أو عند تأخر تحديثه. عند تعذر الاتصال، ستظهر رسالة بعدم التوفر بدلًا من عرض سعر قديم على أنه جديد.":["The source may not publish data on holidays or when updates are delayed. If unavailable, the page will say so rather than present an old rate as current.","Источник может не публиковать данные в праздничные дни или при задержке обновления. Если данные недоступны, страница сообщит об этом, а не покажет старый курс как текущий."],
+"المصدر: Frankfurter API":["Source: Frankfurter API","Источник: Frankfurter API"],
+"أخبار المال والأعمال":["Business & financial news","Финансовые и деловые новости"],"موجز أخبار الأسواق والأصول المالية من مزود أخبار TradingView، مع روابط إلى القصص ومصادرها.":["Market and financial-asset headlines from TradingView's news provider, with links to original stories and sources.","Новости рынков и финансовых активов от поставщика TradingView со ссылками на оригинальные материалы и источники."],
+"الأخبار تُعرض من مزود خارجي؛ قد تختلف اللغة والتغطية وتوقيت النشر. الروابط تفتح المصدر الأصلي. لا نعيد نشر نصوص الأخبار ولا ننسب آراء المحللين إلى Royal Egypt Group.":["News is supplied by a third party; language, coverage and publication times may vary. Links open original sources. Royal Egypt Group does not republish articles or attribute analysts' opinions to the group.","Новости предоставляет сторонний сервис; язык, охват и время публикации могут различаться. Ссылки ведут к оригиналам. Royal Egypt Group не перепечатывает статьи и не приписывает группе мнения аналитиков."],
+"البورصة المصرية EGX":["Egyptian Exchange (EGX)","Египетская биржа (EGX)"],"البنك المركزي المصري":["Central Bank of Egypt","Центральный банк Египта"],"الأسواق العالمية · Reuters":["Reuters · Global markets","Reuters · Мировые рынки"],"الأسواق والاقتصاد · Bloomberg":["Bloomberg · Markets & economy","Bloomberg · Рынки и экономика"],"CNBC · المال والأعمال":["CNBC · Business","CNBC · Бизнес"],"TradingView · أخبار الأسواق":["TradingView · Market news","TradingView · Новости рынков"],
+"الأجندة الاقتصادية":["Economic calendar","Экономический календарь"],"تابع مواعيد قرارات البنوك المركزية وبيانات التضخم والتوظيف والأحداث المؤثرة في الأسواق.":["Track central-bank decisions, inflation and employment releases, and other market-moving events.","Следите за решениями центральных банков, публикациями данных об инфляции и занятости и другими событиями, влияющими на рынки."],
+"© ":"© ","مصادر البيانات الخارجية موضحة بجوار كل قسم · ليست نصيحة استثمارية":["External data sources are identified in each section · Not investment advice","Внешние источники данных указаны в каждом разделе · Не является инвестиционной рекомендацией"],
+"آخر تاريخ بيانات متاح: ":"Latest available data date: "," · مرجع يومي وليس سعر تنفيذ":" · daily reference, not an executable rate",
+"تعذر جلب السعر المرجعي الآن. لم نعرض بيانات قديمة.":["Unable to retrieve reference rates. No stale data is displayed.","Не удалось получить справочные курсы. Устаревшие данные не отображаются."],
+"غير متاح حاليًا":["Currently unavailable","Временно недоступно"]
+};
+let currentLanguage="ar";
+function setLanguage(lang){
+ currentLanguage=lang;
+ const index=lang==="en"?0:lang==="ru"?1:-1;
+ document.documentElement.lang=lang;document.documentElement.dir=lang==="ar"?"rtl":"ltr";
+ const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let node;while(node=walker.nextNode()){if(!node.dataset.arOriginal)node.dataset.arOriginal=node.nodeValue;const original=node.dataset.arOriginal.trim();const translated=translations[original];if(translated)node.nodeValue=node.dataset.arOriginal.replace(original,index<0?original:translated[index]);}
+ document.querySelectorAll("[aria-label]").forEach(el=>{if(!el.dataset.arLabel)el.dataset.arLabel=el.getAttribute("aria-label");const t=translations[el.dataset.arLabel];if(t)el.setAttribute("aria-label",index<0?el.dataset.arLabel:t[index]);});
+ if(languageSelect)languageSelect.value=lang;
+ try{localStorage.setItem("royal-lang",lang)}catch(e){}
+}
+let saved="ar";try{saved=localStorage.getItem("royal-lang")||"ar"}catch(e){}
+if(!["ar","en","ru"].includes(saved))saved="ar";
+if(languageSelect){languageSelect.value=saved;languageSelect.addEventListener("change",()=>setLanguage(languageSelect.value));}
+setLanguage(saved);
+
+rates();
+})();
+</script>
+<script src="/assets/site-enhancements.js" defer></script></body></html>

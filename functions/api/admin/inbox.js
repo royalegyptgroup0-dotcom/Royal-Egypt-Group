@@ -18,7 +18,7 @@ export async function onRequest({ request, env }) {
 
   try {
     if (request.method === "GET") {
-      const [customers, opportunities, listings] = await Promise.all([
+      const [customers, opportunities, listings, orders] = await Promise.all([
         env.DB.prepare(`
           SELECT id,name,email,phone,language,type,interests,source,status,notes,created_at,updated_at
           FROM customers ORDER BY created_at DESC LIMIT 100
@@ -31,11 +31,16 @@ export async function onRequest({ request, env }) {
           SELECT id,contact_name,contact_phone,title,property_type,location,price,purpose,description,status,created_at,reviewed_at
           FROM listings ORDER BY created_at DESC LIMIT 100
         `).all(),
+        env.DB.prepare(`
+          SELECT id,order_type,customer_name,customer_phone,customer_email,details,preferred_date,preferred_time,language,status,created_at,updated_at
+          FROM orders ORDER BY created_at DESC LIMIT 100
+        `).all(),
       ]);
       return json({
         customers: customers.results || [],
         opportunities: opportunities.results || [],
         listings: listings.results || [],
+        orders: orders.results || [],
         generated_at: new Date().toISOString(),
       });
     }

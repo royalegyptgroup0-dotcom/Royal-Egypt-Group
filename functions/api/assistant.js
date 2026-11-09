@@ -1,3 +1,5 @@
+const MAX_BODY_BYTES = 12_000;
+
 const MAX_REQUESTS_PER_IP_PER_MINUTE = 10;
 
 async function allowRequest(db, ip) {
@@ -36,9 +38,41 @@ const json = (data, status = 200) => new Response(JSON.stringify(data), {
   }
 });
 
+
+function allowedOrigin(origin) {
+  return origin === "https://royalegyptgroup-vy7.pages.dev" ||
+    origin === "https://royalegyptgroup.com" ||
+    origin === "https://www.royalegyptgroup.com" ||
+    /^https:\/\/[a-z0-9-]+\.royalegyptgroup-vy7\.pages\.dev$/i.test(origin || "");
+}
+
+async function readLimitedText(request) {
+  const reader = request.body?.getReader();
+  if (!reader) return "";
+  const chunks = [];
+  let size = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > MAX_BODY_BYTES) {
+      await reader.cancel().catch(() => {});
+      return null;
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+  return new TextDecoder().decode(bytes);
+}
+
 export async function onRequest({ request, env }) {
-  if (request.method !== "POST") {
-    return json({ error: "method_not_allowed" }, 405);
+  const origin = request.headers.get("Origin") || "";
+  if (!allowedOrigin(origin)) return json({ error: "origin_not_allowed" }, 403);
+  if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
+  if (!(request.headers.get("content-type") || "").toLowerCase().includes("application/json")) {
+    return json({ error: "json_required" }, 415);
   }
 
   if (!env.DB) {
@@ -61,10 +95,8 @@ export async function onRequest({ request, env }) {
 
   let body;
   try {
-    const raw = await request.text();
-    if (new TextEncoder().encode(raw).byteLength > 12_000) {
-      return json({ error: "message_too_long" }, 413);
-    }
+    const raw = await readLimitedText(request);
+    if (raw === null) return json({ error: "message_too_long" }, 413);
     body = JSON.parse(raw);
   } catch {
     return json({ error: "invalid_json" }, 400);
@@ -75,17 +107,13 @@ export async function onRequest({ request, env }) {
     return json({ error: "messages_required" }, 400);
   }
 
-  const messages = body.messages.slice(-8).map(item => {
-    if (!item || !["user", "assistant"].includes(item.role) ||
-        typeof item.content !== "string" || !item.content.trim()) {
-      return null;
-    }
-    return { role: item.role, content: item.content.trim().slice(0, 1_500) };
-  });
+  // The browser may send prior assistant turns, but they are client-controlled.
+  // Rebuild context from visitor messages only to prevent forged assistant history.
+  const messages = body.messages.slice(-8)
+    .filter(item => item && item.role === "user" && typeof item.content === "string" && item.content.trim())
+    .map(item => ({ role: "user", content: item.content.trim().slice(0, 1_500) }));
 
-  if (messages.some(item => !item) || !messages.some(item => item.role === "user")) {
-    return json({ error: "invalid_messages" }, 400);
-  }
+  if (!messages.length) return json({ error: "invalid_messages" }, 400);
 
   let approvedListings = [];
   let listingsState = "unavailable";

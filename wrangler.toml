@@ -2,7 +2,6 @@ name = "royalegyptgroup"
 compatibility_date = "2026-11-04"
 pages_build_output_dir = "./"
 
-# Keep the existing production database ID from the connected Cloudflare account.
 [[d1_databases]]
 binding = "DB"
 database_name = "royal-eg-listings"
@@ -11,17 +10,14 @@ database_id = "fec37fa6-9406-4bb9-aba1-25f03a7cb2ed"
 [ai]
 binding = "AI"
 
-# Preview uses the verified isolated test database in the connected Cloudflare account.
 [[env.preview.d1_databases]]
 binding = "DB"
 database_name = "royal-eg-listings-preview"
 database_id = "2d8c26ad-041e-4a51-aa13-ddb2120ce836"
-migrations_dir = "migrations/preview"
 
 [env.preview.ai]
 binding = "AI"
 
-# Production remains explicitly bound to the existing live database.
 [[env.production.d1_databases]]
 binding = "DB"
 database_name = "royal-eg-listings"

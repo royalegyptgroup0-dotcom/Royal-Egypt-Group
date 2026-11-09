@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090a0b">
+  <title>CEO Notes | ملاحظات يومية في الإدارة والقيادة</title>
+  <meta name="description" content="CEO Notes — أفكار عملية عن القيادة والإدارة والعمل الذكي، في مقالات يومية قصيرة قابلة للتطبيق.">
+  <link rel="canonical" href="https://ceo-notes.pages.dev/">
+  <link rel="alternate" type="application/rss+xml" title="CEO Notes RSS" href="https://ceo-notes.pages.dev/rss.xml">
+  <meta name="robots" content="index,follow">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="CEO Notes | ملاحظات يومية في الإدارة والقيادة">
+  <meta property="og:description" content="أفكار عملية عن القيادة والإدارة والعمل الذكي.">
+  <meta property="og:url" content="https://ceo-notes.pages.dev/">
+  <style>
+    :root{color-scheme:dark;--bg:#090a0b;--panel:#121416;--panel2:#191b1d;--gold:#c8a568;--gold2:#e5cc98;--ink:#f7f3eb;--muted:#aaa59a;--line:#ffffff20;--max:1080px}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:radial-gradient(ellipse at 50% -20%,#6b51231c,transparent 48%),var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;line-height:1.85}
+    a{color:inherit;text-decoration:none}
+    button,input{font:inherit}
+    .wrap{width:min(var(--max),92%);margin-inline:auto}
+    .topbar{border-bottom:1px solid var(--line);background:#090a0bea}
+    .nav{min-height:76px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+    .brand{display:flex;align-items:center;gap:13px}
+    .mark{width:44px;height:44px;border:1px solid #c8a568a8;border-radius:13px;display:grid;place-items:center;color:var(--gold2);font-weight:800;letter-spacing:-2px;background:linear-gradient(145deg,#292219,#0d0e0f)}
+    .brand-name{display:grid;line-height:1.25}
+    .brand-name strong{font-size:16px;letter-spacing:2px}
+    .brand-name small{font-size:10px;color:var(--gold);letter-spacing:1.5px;margin-top:4px}
+    .navlinks{display:flex;gap:24px;color:#c9c4b9;font-size:13px}
+    .navlinks a:hover{color:var(--gold2)}
+    .hero{padding:76px 0 64px;text-align:center}
+    .eyebrow{display:inline-flex;align-items:center;gap:10px;color:var(--gold2);font-size:11px;letter-spacing:2px}
+    .eyebrow:before,.eyebrow:after{content:"";width:24px;height:1px;background:var(--gold)}
+    h1{font-size:clamp(36px,6vw,66px);line-height:1.2;margin:18px 0 14px;letter-spacing:-1.5px}
+    h1 span{color:var(--gold2)}
+    .hero p{max-width:690px;margin:0 auto;color:#bcb7ad;font-size:16px}
+    .hero-note{display:inline-flex;margin-top:27px;padding:7px 14px;border:1px solid #c8a56855;border-radius:30px;color:#d6c39d;font-size:11px}
+    .market-watch{padding:0 0 42px}
+    .market-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+    .market-card{background:linear-gradient(145deg,#17191b,#101214);border:1px solid var(--line);border-radius:13px;padding:14px;min-width:0}
+    .market-label{font-size:11px;color:#d8c7a5}
+    .market-value{font-size:clamp(17px,2.4vw,23px);font-weight:750;font-variant-numeric:tabular-nums;direction:ltr;text-align:right;white-space:nowrap}
+    .market-unit{font-size:10px;color:var(--muted);text-align:right}
+    .market-note{font-size:10px;color:#928d83;margin:12px 0 0}
+    .market-updated{font-size:10px;color:var(--muted);text-align:left}
+    .world-clock{padding:0 0 48px}
+    .clock-heading{display:flex;align-items:end;justify-content:space-between;gap:14px;margin-bottom:15px}
+    .clock-heading h2{font-size:19px;margin:0}
+    .clock-heading p{font-size:11px;color:var(--muted);margin:0}
+    .clocks{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:11px}
+    .clock{background:linear-gradient(145deg,#17191b,#101214);border:1px solid var(--line);border-radius:13px;padding:14px;min-width:0}
+    .clock-city{font-size:11px;color:#d8c7a5}
+    .clock-time{font-size:clamp(17px,2.5vw,25px);font-weight:700;letter-spacing:.5px;direction:ltr;text-align:right;font-variant-numeric:tabular-nums}
+    .clock-date{font-size:10px;color:var(--muted);direction:ltr;text-align:right}
+    .clock-zone{font-size:9px;color:#8d8980;margin-top:3px}
+    .toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 25px}
+    .section-title{margin:0;font-size:23px}
+    .count{color:var(--muted);font-size:12px}
+    .search{width:min(330px,100%);background:#101214;border:1px solid var(--line);border-radius:9px;padding:11px 14px;color:var(--ink);outline:none}
+    .search:focus{border-color:var(--gold)}
+    .posts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;padding-bottom:75px}
+    .post{background:linear-gradient(145deg,#17191b,#101214);border:1px solid var(--line);border-radius:17px;padding:23px;min-width:0}
+    .post-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+    .day{color:var(--gold2);font-size:11px;letter-spacing:1.2px;font-weight:700}
+    .date{color:#88857e;font-size:10px}
+    .post h3{font-size:20px;line-height:1.5;margin:0 0 13px;color:#f2e8d4}
+    .post-link:hover{color:var(--gold2)}
+    .article{white-space:pre-line;color:#d0cbc1;font-size:13px;line-height:2;margin:0}
+    .post-actions{display:flex;justify-content:flex-start;margin-top:14px}
+    .share-button{border:1px solid #c8a56866;background:#c8a56812;color:var(--gold2);border-radius:8px;padding:7px 13px;font-size:11px;cursor:pointer}
+    .share-button:hover,.share-button:focus-visible{background:#c8a56824;border-color:var(--gold);outline:none}
+    .detail{border-top:1px solid var(--line);margin-top:18px;padding-top:15px;display:grid;gap:12px}
+    .detail-block{font-size:12px;color:#c8c2b7}
+    .detail-block strong{display:block;color:var(--gold2);font-size:11px;margin-bottom:3px}
+    .hashtags{display:flex;flex-wrap:wrap;gap:7px;margin-top:3px}
+    .tag{color:#d6c39d;font-size:10px;background:#c8a56812;border:1px solid #c8a56835;border-radius:30px;padding:3px 8px}
+    .empty{grid-column:1/-1;text-align:center;padding:48px 22px;border:1px dashed #ffffff35;border-radius:16px;color:var(--muted)}
+    .empty strong{display:block;color:var(--gold2);font-size:17px;margin-bottom:8px}
+    .about{border-top:1px solid var(--line);background:#0d0f10;padding:45px 0}
+    .about-inner{max-width:760px;margin:auto;text-align:center}
+    .about h2{font-size:22px;margin:0 0 8px}
+    .about p{color:var(--muted);font-size:13px;margin:0}
+    footer{padding:22px 0;color:#817d75;font-size:11px;border-top:1px solid var(--line)}
+    .footer-row{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+    @media(max-width:700px){.market-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.clocks{grid-template-columns:repeat(2,minmax(0,1fr))}.clock:last-child{grid-column:1/-1}.nav{min-height:68px}.navlinks{gap:13px;font-size:11px}.mark{width:39px;height:39px}.brand-name strong{font-size:13px}.hero{padding:56px 0 44px}.hero p{font-size:14px}.toolbar{align-items:stretch;flex-direction:column}.search{width:100%}.posts{grid-template-columns:1fr}.post{padding:19px}.post h3{font-size:18px}}
+    @media(max-width:420px){.navlinks a:last-child{display:none}.brand-name small{font-size:9px}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  </style>
+  <link rel="stylesheet" href="/radio.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap nav">
+      <a class="brand" href="/" aria-label="CEO Notes">
+        <span class="mark" aria-hidden="true">CN</span>
+        <span class="brand-name"><strong>CEO NOTES</strong><small>LEADERSHIP · BUSINESS · MINDSET</small></span>
+      </a>
+      <nav class="navlinks" aria-label="التنقل">
+        <a href="#latest">المقالات</a>
+        <a href="#radio">الراديو</a>
+        <a href="#about">عن السلسلة</a>
+        <a href="https://www.facebook.com/115226621594988/" target="_blank" rel="noopener noreferrer">صفحة فيسبوك</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap">
+        <div class="eyebrow">ملاحظات من أرض الواقع</div>
+        <h1>فكر أوضح.<br><span>وقُد بوعي أكبر.</span></h1>
+        <p>مساحة يومية لأفكار عملية عن القيادة والإدارة والعمل الذكي. مش شعارات محفوظة؛ ملاحظات تساعدك تشوف المشكلة من زاوية مختلفة وتحوّل الفكرة لخطوة قابلة للتنفيذ.</p>
+        <div class="hero-note">مقال جديد كل يوم · فكرة · تحدٍ عملي · نقاش</div>
+      </div>
+    </section>
+
+    <section class="wrap market-watch" aria-labelledby="market-title">
+      <div class="clock-heading">
+        <div>
+          <h2 id="market-title">مؤشرات العملات والذهب</h2>
+          <p>أسعار مرجعية يومية من مصادر مفتوحة</p>
+        </div>
+        <div class="market-updated" id="market-updated" aria-live="polite">جارٍ تحميل البيانات…</div>
+      </div>
+      <div class="market-grid" id="market-board" aria-live="polite">
+        <div class="market-card"><div class="market-label">أسعار العملات</div><div class="market-value">—</div><div class="market-unit">جارٍ التحميل</div></div>
+      </div>
+      <p class="market-note">الأسعار مرجعية يومية وليست أسعار تداول لحظية أو أسعار شراء وبيع البنوك. قيمة الذهب محسوبة من أونصة تروي XAU، ولا تمثل سعر المشغولات أو السعر المحلي بعد المصنعية والضرائب. المصدر: <a href="https://frankfurter.dev/" target="_blank" rel="noopener noreferrer" style="color:var(--gold2)">Frankfurter</a>.</p>
+    </section>
+
+    <section class="wrap world-clock" aria-labelledby="clock-title">
+      <div class="clock-heading">
+        <div>
+          <h2 id="clock-title">ساعات الأعمال حول العالم</h2>
+          <p>توقيت مباشر حسب المناطق الزمنية الرسمية، دون API أو اشتراك خارجي.</p>
+        </div>
+      </div>
+      <div class="clocks" id="world-clocks">
+        <div class="clock"><div class="clock-city">القاهرة</div><div class="clock-time">--:--:--</div><div class="clock-zone">Africa/Cairo</div></div>
+        <div class="clock"><div class="clock-city">لندن</div><div class="clock-time">--:--:--</div><div class="clock-zone">Europe/London</div></div>
+        <div class="clock"><div class="clock-city">نيويورك</div><div class="clock-time">--:--:--</div><div class="clock-zone">America/New_York</div></div>
+        <div class="clock"><div class="clock-city">موسكو</div><div class="clock-time">--:--:--</div><div class="clock-zone">Europe/Moscow</div></div>
+        <div class="clock"><div class="clock-city">دبي</div><div class="clock-time">--:--:--</div><div class="clock-zone">Asia/Dubai</div></div>
+      </div>
+    </section>
+
+    <section class="wrap radio-section" id="radio" aria-labelledby="radio-title">
+      <div class="radio-panel" id="ceo-radio">
+        <div class="radio-head">
+          <div><h2 id="radio-title">راديو CEO Notes</h2><p>اكتشف محطات إذاعية مجانية من مصر والعالم، واستمع مباشرة من مصدر البث.</p></div>
+          <span class="radio-free">مجاني · بدون تسجيل</span>
+        </div>
+        <form class="radio-controls" id="radio-form">
+          <input class="radio-input" id="radio-search" type="search" maxlength="100" placeholder="ابحث باسم محطة إذاعية…" aria-label="ابحث عن محطة إذاعية">
+          <select class="radio-country" id="radio-country" aria-label="اختر الدولة"><option value="">كل الدول</option><option value="Egypt">مصر</option><option value="United Arab Emirates">الإمارات</option><option value="Saudi Arabia">السعودية</option><option value="United Kingdom">بريطانيا</option><option value="United States">الولايات المتحدة</option></select>
+          <button class="radio-search-btn" type="submit">ابحث عن محطات</button>
+        </form>
+        <div class="radio-presets" aria-label="تصنيفات الراديو">
+          <button class="radio-filter" type="button" data-radio-tag="" aria-pressed="true">الأكثر استماعًا</button>
+          <button class="radio-filter" type="button" data-radio-tag="arabic" aria-pressed="false">عربي</button>
+          <button class="radio-filter" type="button" data-radio-tag="news" aria-pressed="false">أخبار</button>
+          <button class="radio-filter" type="button" data-radio-tag="jazz" aria-pressed="false">جاز</button>
+          <button class="radio-filter" type="button" data-radio-tag="pop" aria-pressed="false">موسيقى</button>
+        </div>
+        <p class="radio-status" id="radio-status" role="status" aria-live="polite">اختر تصنيفًا أو ابحث عن محطة لبدء الاستماع.</p>
+        <div class="radio-results" id="radio-results"><div class="radio-empty">المحطات ستظهر هنا بعد البحث.</div></div>
+        <div class="radio-player">
+          <div class="radio-now"><strong>يعمل الآن</strong><span id="radio-now-name">لم يتم اختيار محطة</span><span id="radio-now-country">اختر محطة من القائمة</span></div>
+          <audio id="radio-audio" controls preload="none" aria-label="مشغل الراديو"></audio>
+        </div>
+        <p class="radio-disclaimer">المحطات وروابط البث مقدمة من دليل Radio Browser المفتوح. الصوت يأتي مباشرة من خوادم المحطات؛ لا يستضيف CEO Notes البث ولا يسجله أو يعيد توزيعه. قد تتوقف بعض المحطات أو تقيّد الاستماع حسب الدولة. لأمان الموقع، نعرض روابط البث الآمنة HTTPS فقط. <a href="https://www.radio-browser.info/" target="_blank" rel="noopener noreferrer" style="color:var(--gold2)">المصدر والترخيص</a>.</p>
+      </div>
+    </section>
+
+    <section class="wrap" id="latest">
+      <div class="toolbar">
+        <div>
+          <h2 class="section-title">أحدث الملاحظات</h2>
+          <div class="count" id="count" aria-live="polite">جارٍ تحميل المقالات…</div>
+        </div>
+        <input class="search" id="search" type="search" placeholder="ابحث في العناوين والمقالات…" aria-label="ابحث في المقالات">
+      </div>
+      <div class="posts" id="posts" aria-live="polite">
+        <div class="empty"><strong>لحظة واحدة…</strong>بنجهز أحدث الملاحظات للعرض.</div>
+      </div>
+    </section>
+
+    <section class="about" id="about">
+      <div class="wrap about-inner">
+        <h2>عن CEO Notes</h2>
+        <p>سلسلة مستقلة تناقش مواقف العمل والقيادة من منظور عملي. كل مقال يقدّم فكرة واضحة، وتطبيقًا صغيرًا، وسؤالًا يفتح باب التفكير والنقاش.</p>
+        <p style="margin-top:18px"><a href="https://www.facebook.com/115226621594988/" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:10px 18px;border:1px solid #c8a568;border-radius:30px;color:#e5cc98">تابع CEO Notes على Facebook</a></p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-row">
+      <span>© <span id="year"></span> CEO Notes</span>
+      <span>أفكار عملية. قرارات أوضح. أثر يدوم.</span>
+    </div>
+  </footer>
+
+  <script>
+    (function(){
+      "use strict";
+      const list = document.getElementById("posts");
+      const search = document.getElementById("search");
+      const count = document.getElementById("count");
+      const marketBoard = document.getElementById("market-board");
+      const marketUpdated = document.getElementById("market-updated");
+      function marketCard(label,value,unit){
+        const card=node("div","market-card");
+        card.append(node("div","market-label",label));
+        card.append(node("div","market-value",value));
+        card.append(node("div","market-unit",unit));
+        return card;
+      }
+      async function loadMarkets(){
+        try{
+          const response=await fetch("/markets",{cache:"no-store",headers:{"Accept":"application/json"}});
+          if(!response.ok) throw new Error("market_data_unavailable");
+          const data=await response.json();
+          const fx=Object.fromEntries((Array.isArray(data.fx)?data.fx:[]).map(item=>[item.quote,Number(item.rate)]));
+          const gold=Object.fromEntries((Array.isArray(data.gold)?data.gold:[]).map(item=>[item.quote,Number(item.rate)]));
+          const fmt=(value,digits=4)=>Number(value).toLocaleString("en-US",{maximumFractionDigits:digits});
+          const cards=[];
+          const pairs=[
+            ["دولار / جنيه مصري","EGP","جنيه لكل دولار",3],
+            ["دولار / يورو","EUR","يورو لكل دولار",4],
+            ["دولار / إسترليني","GBP","إسترليني لكل دولار",4],
+            ["دولار / روبل","RUB","روبل لكل دولار",2],
+            ["دولار / درهم إماراتي","AED","درهم لكل دولار",4],
+            ["دولار / ريال سعودي","SAR","ريال لكل دولار",4]
+          ];
+          pairs.forEach(([label,code,unit,digits])=>{
+            if(Number.isFinite(fx[code])) cards.push(marketCard(label,fmt(fx[code],digits),unit));
+          });
+          if(Number.isFinite(gold.USD)) cards.push(marketCard("أونصة الذهب","$"+fmt(gold.USD,2),"دولار أمريكي / أونصة تروي"));
+          if(Number.isFinite(gold.EGP)){
+            cards.push(marketCard("أونصة الذهب","ج.م "+fmt(gold.EGP,0),"جنيه مصري / أونصة تروي"));
+            cards.push(marketCard("جرام ذهب 24 قيراط","ج.م "+fmt(gold.EGP/31.1034768,2),"قيمة مرجعية محسوبة قبل المصنعية والضرائب"));
+          }
+          if(!cards.length) throw new Error("empty_market_data");
+          marketBoard.replaceChildren(...cards);
+          marketUpdated.textContent="تاريخ البيانات: "+String(data.date || "غير متاح");
+        }catch(error){
+          marketBoard.replaceChildren();
+          marketBoard.append(node("div","empty","تعذر تحميل المؤشرات حاليًا. حاول مرة أخرى لاحقًا."));
+          marketUpdated.textContent="البيانات غير متاحة مؤقتًا";
+        }
+      }
+      loadMarkets();
+      const clockRoot = document.getElementById("world-clocks");
+      document.getElementById("year").textContent = String(new Date().getFullYear());
+      const clockFormatters = [
+        {zone:"Africa/Cairo",time:new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Cairo",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}),date:new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Cairo",weekday:"short",day:"2-digit",month:"short"})},
+        {zone:"Europe/London",time:new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}),date:new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",weekday:"short",day:"2-digit",month:"short"})},
+        {zone:"America/New_York",time:new Intl.DateTimeFormat("en-GB",{timeZone:"America/New_York",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}),date:new Intl.DateTimeFormat("en-GB",{timeZone:"America/New_York",weekday:"short",day:"2-digit",month:"short"})},
+        {zone:"Europe/Moscow",time:new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/Moscow",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}),date:new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/Moscow",weekday:"short",day:"2-digit",month:"short"})},
+        {zone:"Asia/Dubai",time:new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Dubai",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}),date:new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Dubai",weekday:"short",day:"2-digit",month:"short"})}
+      ];
+      function updateWorldClocks(){
+        const now = new Date();
+        clockRoot.querySelectorAll(".clock").forEach((card,index)=>{
+          const item = clockFormatters[index];
+          if(!item) return;
+          card.querySelector(".clock-time").textContent = item.time.format(now);
+          card.querySelector(".clock-date").textContent = item.date.format(now);
+        });
+      }
+      clockRoot.querySelectorAll(".clock").forEach((card,index)=>{
+        const date = document.createElement("div");
+        date.className = "clock-date";
+        card.append(date);
+        const zone = document.createElement("div");
+        zone.className = "clock-zone";
+        zone.textContent = clockFormatters[index].zone;
+        card.querySelector(".clock-zone").replaceWith(zone);
+      });
+      updateWorldClocks();
+      window.setInterval(updateWorldClocks,1000);
+      let posts = [];
+      const selectedPostMatch = location.pathname.match(/^\/post\/(\d+)\/?$/);
+      const selectedPostDay = selectedPostMatch ? Number(selectedPostMatch[1]) : null;
+
+      function node(tag, className, value){
+        const el = document.createElement(tag);
+        if(className) el.className = className;
+        if(value !== undefined && value !== null) el.textContent = String(value);
+        return el;
+      }
+      function makePost(post){
+        const card = node("article","post");
+        if(post.day !== undefined) card.id = "post-" + String(post.day);
+        const top = node("div","post-top");
+        top.append(node("span","day","CEO NOTES · DAY " + post.day));
+        if(post.publishedAt) top.append(node("time","date",post.publishedAt));
+        card.append(top);
+        if(post.imageUrl){
+          const image = document.createElement("img");
+          image.src = post.imageUrl;
+          image.alt = "صورة توضيحية: " + (post.title || "CEO Notes");
+          image.loading = "lazy";
+          image.decoding = "async";
+          image.style.cssText = "display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:12px;margin:4px 0 16px;border:1px solid #c8a56855";
+          card.append(image);
+        }
+        const heading = node("h3","");
+        const titleLink = node("a","post-link",post.title || "ملاحظة يومية");
+        titleLink.href = "/post/" + encodeURIComponent(String(post.day || ""));
+        heading.append(titleLink);
+        card.append(heading);
+        card.append(node("p","article",post.article || ""));
+        const detail = node("div","detail");
+        if(post.ideaOfTheDay){
+          const block = node("div","detail-block");
+          block.append(node("strong","","فكرة اليوم"));
+          block.append(node("span","",post.ideaOfTheDay));
+          detail.append(block);
+        }
+        if(post.ceoChallenge){
+          const block = node("div","detail-block");
+          block.append(node("strong","","CEO CHALLENGE"));
+          block.append(node("span","",post.ceoChallenge));
+          detail.append(block);
+        }
+        if(post.discussionQuestion){
+          const block = node("div","detail-block");
+          block.append(node("strong","","للنقاش"));
+          block.append(node("span","",post.discussionQuestion));
+          detail.append(block);
+        }
+        const tags = Array.isArray(post.hashtags) ? post.hashtags : String(post.hashtags || "").split(/\s+/).filter(Boolean);
+        if(tags.length){
+          const tagList = node("div","hashtags");
+          tags.filter(Boolean).forEach(tag => tagList.append(node("span","tag",tag)));
+          detail.append(tagList);
+        }
+        card.append(detail);
+        const actions = node("div","post-actions");
+        const share = node("button","share-button","مشاركة المقال");
+        share.type = "button";
+        share.addEventListener("click",async()=>{
+          const shareUrl = location.origin + "/post/" + encodeURIComponent(String(post.day || ""));
+          const payload = {title:post.title || "CEO Notes",text:(post.title || "CEO Notes") + " — CEO Notes",url:shareUrl};
+          try{
+            if(navigator.share){await navigator.share(payload);}
+            else if(navigator.clipboard && navigator.clipboard.writeText){
+              await navigator.clipboard.writeText(shareUrl);
+              share.textContent = "تم نسخ الرابط";
+              share.setAttribute("aria-label","تم نسخ رابط المقال");
+            }else{
+              window.open("https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(shareUrl),"_blank","noopener,noreferrer");
+            }
+          }catch(error){
+            if(error && error.name !== "AbortError"){
+              share.textContent = "تعذرت المشاركة";
+            }
+          }
+        });
+        actions.append(share);
+        card.append(actions);
+        return card;
+      }
+      function render(){
+        const q = search.value.trim().toLocaleLowerCase("ar");
+        const filtered = posts.filter(post => {
+          if(selectedPostDay && Number(post.day) !== selectedPostDay) return false;
+          const haystack = [post.day,post.title,post.article,post.ideaOfTheDay,post.ceoChallenge,post.discussionQuestion,post.hashtags].join(" ").toLocaleLowerCase("ar");
+          return haystack.includes(q);
+        });
+        count.textContent = filtered.length + " مقال منشور";
+        list.replaceChildren();
+        if(!filtered.length){
+          const empty = node("div","empty");
+          empty.append(node("strong","",posts.length ? "مفيش نتائج مطابقة" : "أول ملاحظة في الطريق"));
+          empty.append(node("span","",posts.length ? "جرّب كلمة بحث مختلفة." : "المقالات ستظهر هنا تلقائيًا بعد اعتماد ونشر أول منشور."));
+          list.append(empty);
+          return;
+        }
+        filtered.forEach(post => list.append(makePost(post)));
+      }
+      search.addEventListener("input",render);
+      async function loadPosts(){
+        const fallbackUrl = (location.pathname.endsWith("/") ? location.pathname : location.pathname + "/") + "posts.json";
+        let firstError = null;
+        for(const url of ["/feed",fallbackUrl]){
+          try{
+            const response = await fetch(url,{cache:"no-store",headers:{"Accept":"application/json"}});
+            if(!response.ok) throw new Error("HTTP " + response.status);
+            const data = await response.json();
+            const items = Array.isArray(data) ? data : (Array.isArray(data.posts) ? data.posts : []);
+            if(!Array.isArray(items)) throw new Error("invalid_posts_format");
+            posts = items.filter(item => item && item.status !== "Draft" && item.status !== "Reserved")
+              .sort((a,b) => Number(b.day || 0) - Number(a.day || 0));
+            if(selectedPostDay){
+              const selected = posts.find(post => Number(post.day) === selectedPostDay);
+              if(selected){
+                document.title = (selected.title || "CEO Notes") + " | CEO Notes";
+                const description = String(selected.article || "").slice(0,155);
+                const descriptionMeta = document.querySelector('meta[name="description"]');
+                if(descriptionMeta) descriptionMeta.content = description;
+                const canonical = document.querySelector('link[rel="canonical"]');
+                if(canonical) canonical.href = location.origin + "/post/" + selectedPostDay;
+                const ogTitle = document.querySelector('meta[property="og:title"]');
+                if(ogTitle) ogTitle.content = document.title;
+                const ogDescription = document.querySelector('meta[property="og:description"]');
+                if(ogDescription) ogDescription.content = description;
+                const ogUrl = document.querySelector('meta[property="og:url"]');
+                if(ogUrl) ogUrl.content = canonical ? canonical.href : location.href;
+              }
+            }
+            render();
+            return;
+          }catch(error){
+            if(!firstError) firstError = error;
+          }
+        }
+        list.replaceChildren();
+        const empty = node("div","empty");
+        empty.append(node("strong","","تعذر تحميل المقالات حاليًا"));
+        empty.append(node("span","","حاول تحديث الصفحة بعد قليل."));
+        list.append(empty);
+        count.textContent = "المحتوى غير متاح مؤقتًا";
+      }
+      loadPosts();
+    })();
+  </script>
+<!-- CEO Notes live feed: Cloudflare Workers AI + KV -->
+  <script src="/radio.js" defer></script>
+</body>
+</html>

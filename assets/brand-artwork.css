@@ -1,0 +1,6 @@
+/* Reusable overlay for designed Royal Egypt Group artwork only.
+   Do not apply it to original customer/listing photographs. */
+.brand-artwork{position:relative;isolation:isolate;overflow:hidden}
+.brand-artwork__mark{position:absolute;z-index:5;right:clamp(12px,3%,28px);bottom:clamp(12px,3%,28px);width:clamp(132px,18%,210px);height:auto;aspect-ratio:240/88;object-fit:contain;pointer-events:none;filter:drop-shadow(0 4px 12px #0008)}
+.brand-artwork--portrait .brand-artwork__mark{top:clamp(12px,3%,28px);bottom:auto}
+@media(max-width:520px){.brand-artwork__mark{width:clamp(112px,24%,160px)}}

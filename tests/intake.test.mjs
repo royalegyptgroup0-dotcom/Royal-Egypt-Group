@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { onRequest } from "../functions/api/intake.js";
 
-const origin = "https://release-royal-eg-release-can.royalegyptgroup-vy7.pages.dev";
+const origin = "https://royalegyptgroup-vy7.pages.dev";
 const webhook = "https://hook.eu1.make.com/test-placeholder";
 const requestId = "a9b7c1d2-4e5f-4a6b-8c7d-9e0f1a2b3c4d";
 const validPayload = {
@@ -46,7 +46,7 @@ class FakeDB {
 }
 
 function makeRequest(payload = validPayload, requestOrigin = origin, ip = "198.51.100.1") {
-  return new Request("https://release-royal-eg-release-can.royalegyptgroup-vy7.pages.dev/api/intake", {
+  return new Request("https://royalegyptgroup-vy7.pages.dev/api/intake", {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -246,4 +246,41 @@ test("limits each client IP to 10 intake requests per minute using the shared D1
   ]);
   assert.equal(forwarded, 10);
   assert.equal(responses[10].headers.get("access-control-allow-origin"), origin);
+});
+
+
+test("rejects an oversized JSON body before parsing", async () => {
+  const response = await onRequest({
+    request: makeRequest({ ...validPayload, details: "x".repeat(12_000) }),
+    env: { DB: new FakeDB(), MAKE_INTAKE_WEBHOOK_URL: webhook }
+  });
+  assert.equal(response.status, 413);
+  assert.equal((await response.json()).error, "payload_too_large");
+});
+
+test("accepts the current Pages Preview hostname", async () => {
+  const db = new FakeDB();
+  const response = await withFetch(async () => new Response("ok", { status: 200 }), () =>
+    onRequest({
+      request: makeRequest(validPayload, "https://preview-abc123.royalegyptgroup-vy7.pages.dev"),
+      env: { DB: db, MAKE_INTAKE_WEBHOOK_URL: webhook }
+    })
+  );
+  assert.equal(response.status, 202);
+  assert.equal(db.records.size, 1);
+});
+
+test("accepts apex and www custom-domain origins for website intake", async () => {
+  for (const customOrigin of ["https://royalegyptgroup.com", "https://www.royalegyptgroup.com"]) {
+    const db = new FakeDB();
+    const response = await withFetch(async () => new Response("ok", { status: 200 }), () =>
+      onRequest({
+        request: makeRequest(validPayload, customOrigin, "198.51.100.22"),
+        env: { DB: db, MAKE_INTAKE_WEBHOOK_URL: webhook }
+      })
+    );
+    assert.equal(response.status, 202);
+    assert.equal(response.headers.get("access-control-allow-origin"), customOrigin);
+    assert.equal(db.records.size, 1);
+  }
 });
