@@ -1,10 +1,13 @@
 # Royal Egypt Group — Project Operations & Launch Control
 
-Last verified: 2026-11-06
+Last verified: 2026-11-09
 Owner: Royal Egypt Group
-Repository: https://github.com/yasserabdelaziz83-maker/Royal-Egypt-Group
-Production Pages hostname currently known: https://royalegyptgroup.pages.dev
-Preferred custom domain: https://royalegyptgroup.com (attachment/verification not confirmed)
+Repository: https://github.com/royalegyptgroup0-dotcom/Royal-Egypt-Group
+Production Pages hostname currently known: https://royalegyptgroup-vy7.pages.dev
+Preferred custom domain: https://royalegyptgroup.com (Pages verification is pending)
+
+
+> **Current status:** This file contains historical operating snapshots. Use [docs/LAUNCH_READINESS_2026-11-09.md](../docs/LAUNCH_READINESS_2026-11-09.md) as the current verified launch record. Re-check old branch, binding, secret, Make, and domain details before relying on them.
 
 ## 1. Operating principles
 
