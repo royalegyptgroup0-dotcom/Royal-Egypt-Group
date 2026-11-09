@@ -14,7 +14,8 @@ This document supersedes older infrastructure and handoff snapshots where they c
 - PR #9 is merged. Its production deployment completed successfully.
 - The latest main-branch GitHub checks for Functions/Intake and Jekyll CI completed successfully.
 - PR #10 was closed as superseded. Its branch was divergent and conflicted; the current main branch contains a more complete assistant implementation and test coverage.
-- PR #47 contains a focused language-control synchronization fix. Functions/Intake CI, Jekyll CI, and its Cloudflare Preview deployment all passed. It is ready for review but has **not** been merged.
+- Consolidated PR #50 contains the language-control synchronization fix, approved-only public catalogue correction, regression tests, and documentation updates. Functions/Intake CI, Jekyll CI, and its Cloudflare Preview deployment passed. It has **not** been merged.
+- PRs #47, #48 and #49 were closed as superseded by consolidated PR #50, leaving one release candidate for review.
 - A Preview-only retry deployment completed successfully after adding the missing Workers AI binding. Its D1 binding remained the isolated Preview database.
 
 ## 2. Cloudflare bindings and data stores
@@ -91,11 +92,11 @@ Treat these capabilities as unavailable until the owner configures and verifies 
 Passed:
 - GitHub Actions Functions and Intake Tests on current `main`.
 - GitHub Actions Jekyll CI on current `main`.
-- GitHub Actions Functions and Intake Tests on PR #47.
-- GitHub Actions Jekyll CI on PR #47.
+- GitHub Actions Functions and Intake Tests on consolidated PR #50.
+- GitHub Actions Jekyll CI on consolidated PR #50.
 - Cloudflare Pages Production deployment for the current main merge.
 - Cloudflare Pages Preview deployment for the Preview AI-binding correction.
-- Cloudflare Pages Preview deployment for PR #47.
+- Cloudflare Pages Preview deployment for consolidated PR #50.
 - Read-only D1 schema and aggregate-count inspection in both environments.
 - Confirmation that Production and Preview D1 bindings are distinct.
 
