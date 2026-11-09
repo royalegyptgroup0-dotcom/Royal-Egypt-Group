@@ -43,7 +43,7 @@ The public property catalogue therefore has no approved D1 inventory at this sna
 
 ## 3. Runtime configuration blockers
 
-The Cloudflare Pages project configuration currently returns an empty environment-variable map for both Production and Preview. No `ADMIN_TOKEN` or `MAKE_INTAKE_WEBHOOK_URL` key is present in the returned configuration.
+The owner-authentication and optional notification configuration are not verified as present in the current Pages settings. Treat these capabilities as unavailable until the owner configures and verifies them.
 
 Treat these capabilities as unavailable until the owner configures and verifies them:
 
