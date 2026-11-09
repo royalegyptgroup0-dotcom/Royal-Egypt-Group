@@ -31,7 +31,7 @@ The default mode is preview-only for the feed. It:
 - enriches matching posts already in \`notes/posts.json\` with archive images without replacing their existing \`imageUrl\`;
 - preserves existing feed entries, sorts new imports chronologically, and assigns unused day numbers;
 - skips duplicate posts by Facebook ID, permalink, or normalized text plus publication date;
-- reports scanned/imported posts, duplicates, enriched existing posts, media references, and the date range.
+- reports scanned/imported posts, duplicates, enriched existing posts, image references found, unique files copied, missing/unsafe media references, and the date range.
 
 The importer only copies image attachments (JPEG, PNG, GIF, WebP, AVIF and HEIC/HEIF). Video and audio attachments are intentionally not copied by this image-import phase. Missing or unsafe media paths do not stop text import; check the report and compare it with the source archive. The script never fetches remote URLs and never uploads archive contents to a third party.
 
