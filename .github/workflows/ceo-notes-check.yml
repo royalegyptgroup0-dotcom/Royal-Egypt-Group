@@ -34,6 +34,8 @@ jobs:
         run: node --check notes/radio.js
       - name: Check Pages Worker JavaScript syntax
         run: node --check --input-type=module < notes/_worker.js
+      - name: Verify generated CEO Notes Worker is synchronized
+        run: node scripts/build-ceo-notes-worker.mjs
       - name: Validate CEO Notes content and site
         run: node notes/validate.mjs
       - name: Test market freshness and stale fallback
