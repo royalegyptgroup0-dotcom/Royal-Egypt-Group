@@ -54,7 +54,7 @@ function findRecords(value, output = []) {
 }
 
 function stableKey(post) {
-  const id = norm(post.facebookPostId || post.sourcePostId || post.id);
+  const id = norm(post.facebookPostId || post.id);
   if (id) return "id:" + id;
   const permalink = norm(post.permalinkUrl || post.permalink_url);
   if (permalink) return "url:" + permalink;
@@ -85,7 +85,7 @@ function toCandidate(record, sourceFile) {
     tags: [],
     source: "facebook-archive",
     facebookPostId: rawId ? String(rawId) : undefined,
-    sourcePostId: identity,
+    sourcePostId: rawId ? identity : undefined,
     permalinkUrl: typeof permalinkUrl === "string" ? permalinkUrl : undefined,
     archiveSourceFile: sourceFile
   };
