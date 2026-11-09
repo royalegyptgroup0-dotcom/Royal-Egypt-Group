@@ -118,7 +118,7 @@ export async function buildImport({ input, current }) {
   const imported = [];
   for (const file of files) {
     let parsed;
-    try { parsed = JSON.parse(await fs.readFile(file, "utf8").replace(/^\uFEFF/, "")); }
+    try { parsed = JSON.parse((await fs.readFile(file, "utf8")).replace(/^\uFEFF/, "")); }
     catch (error) { throw new Error("Invalid JSON in " + file + ": " + error.message); }
     for (const record of findRecords(parsed)) {
       const post = toCandidate(record, path.relative(input, file));
