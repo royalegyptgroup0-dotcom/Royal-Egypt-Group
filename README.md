@@ -26,7 +26,7 @@ A multilingual group website and business platform for Royal Egypt Group.
 - Never commit secrets or personal customer records.
 
 ## Deployment
-- Current known Pages hostname: https://royalegyptgroup.pages.dev
+- Current known Pages hostname: https://royalegyptgroup-vy7.pages.dev
 - Preferred custom domain: https://royalegyptgroup.com (must be verified before switching canonical URLs).
 - Use a Preview deployment and synthetic data for all integration tests before Production.
 - See `.github/PROJECT_OPERATIONS.md` for the verified operations map, launch gates, security checklist, and handover requirements.
