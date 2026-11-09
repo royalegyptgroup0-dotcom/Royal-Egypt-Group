@@ -96,8 +96,6 @@ const workerMarkers = [
   'url.pathname==="/robots.txt"',
   'url.pathname==="/radio.css"',
   'url.pathname==="/radio.js"',
-  'const RADIO_CSS=',
-  'const RADIO_JS=',
   'const articleMatch=url.pathname.match(',
   'function normalizeEditorialFeed(feed)',
   'normalizeEditorialFeed(parsed)',
