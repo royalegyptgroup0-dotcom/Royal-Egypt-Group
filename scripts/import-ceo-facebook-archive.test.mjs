@@ -29,6 +29,9 @@ test("imports Facebook posts chronologically and skips existing content", async 
     const result = await buildImport({ input: root, current });
     assert.equal(result.importReport.imported, 1);
     assert.equal(result.importReport.skippedDuplicates, 1);
+    assert.equal(result.posts[0].archiveImported, true);
+    assert.equal(result.posts[0].sourcePageId, "115226621594988");
+    assert.ok(result.posts[0].tags.length > 0);
     assert.equal(result.posts.length, 2);
     assert.equal(result.posts[0].day, 1);
     assert.equal(result.posts[0].facebookPostId, "fb-archive-1");
