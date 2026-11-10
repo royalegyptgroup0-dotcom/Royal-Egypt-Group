@@ -44,6 +44,11 @@ test("generation, image generation and publishing reject missing bearer auth", a
   assert.equal((await call(PUBLISH_PATH)).status, 401);
 });
 
+test("admin routes fail closed when ADMIN_TOKEN is not configured", async () => {
+  assert.equal((await call(GEN_PATH, { method: "POST", body: {} }, { ADMIN_TOKEN: undefined })).status, 401);
+  assert.equal((await call(PUBLISH_PATH, {}, { ADMIN_TOKEN: undefined })).status, 401);
+});
+
 test("valid bearer token passes the authorization gate", async () => {
   const response = await call(PUBLISH_PATH, {
     method: "POST",
