@@ -5,6 +5,7 @@ on:
     branches: [ceo-notes-site]
     paths:
       - "notes/**"
+      - "workers/ceo-notes-ai/**"
       - ".github/workflows/ceo-notes-check.yml"
       - "scripts/build-ceo-notes-worker.mjs"
       - "scripts/import-ceo-facebook-archive.mjs"
@@ -12,6 +13,7 @@ on:
   pull_request:
     paths:
       - "notes/**"
+      - "workers/ceo-notes-ai/**"
       - "scripts/import-ceo-facebook-archive.mjs"
       - "scripts/import-ceo-facebook-archive.test.mjs"
       - ".github/workflows/ceo-notes-check.yml"
@@ -30,6 +32,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Check CEO Notes AI Worker syntax
+        run: node --check workers/ceo-notes-ai/worker.js
+      - name: Test CEO Notes AI Worker access controls
+        run: node --test workers/ceo-notes-ai/worker.test.mjs
       - name: Check radio JavaScript syntax
         run: node --check notes/radio.js
       - name: Check Pages Worker JavaScript syntax
