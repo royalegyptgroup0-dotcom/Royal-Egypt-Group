@@ -1,0 +1,38 @@
+.live-desk-section{padding:clamp(58px,7vw,92px) 0;background:linear-gradient(180deg,#09131f,#0b1018);border-block:1px solid rgba(216,184,120,.22)}
+.live-desk-heading,.live-panel-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px}
+.live-desk-heading{margin-bottom:24px}.live-desk-heading h2{color:#f4ead7;font-size:clamp(25px,3vw,36px);margin:7px 0}.live-desk-heading p,.live-panel>p{color:#adb7c2;font-size:13px;line-height:1.9;margin:0}
+.live-fx-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.live-data-card,.live-panel{border:1px solid rgba(216,184,120,.2);border-radius:15px;background:linear-gradient(145deg,#172536,#0d1723);padding:17px;min-width:0}
+.live-data-card{display:grid;gap:8px;grid-template-columns:36px 1fr;align-items:center}
+.live-data-icon{grid-row:span 2;width:36px;height:36px;display:grid;place-items:center;border-radius:11px;background:#d8b87818;color:#f0d9a5;border:1px solid #d8b87855;font-size:17px}
+.live-data-card small,.live-clock-grid small{font-size:11px;color:#aeb7c0}
+.live-data-card strong{font-size:17px;color:#fff;direction:ltr;text-align:start;font-variant-numeric:tabular-nums}
+.live-data-note{font-size:10px!important;color:#929eaa!important;line-height:1.8;margin:10px 2px 18px!important}
+.live-subgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.live-panel{padding:21px}
+.live-panel-head{align-items:center;margin-bottom:15px}
+.live-panel-head h3{margin:5px 0 0;color:#f1e6d3;font-size:19px}
+.live-chip{font-size:10px;color:#f0d9a5;border:1px solid #d8b87855;border-radius:30px;padding:6px 10px;white-space:nowrap}
+.live-clock-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:16px}
+.live-clock-grid>div{padding:12px 9px;border-radius:11px;background:#07111d;border:1px solid #ffffff12}
+.live-clock-grid small,.live-clock-grid strong{display:block;text-align:center}
+.live-clock-grid strong{font-size:18px;color:#f5e7c8;direction:ltr;font-variant-numeric:tabular-nums;margin-top:6px}
+.live-market-links{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:17px}
+.live-market-links a{padding:13px 9px;text-align:center;border:1px solid #d8b87844;border-radius:10px;color:#f0d9a5;font-size:11px}
+.live-market-links b{margin-inline-start:5px}
+.radio-controls{display:flex;gap:9px;align-items:center;margin-top:16px}
+.radio-controls select{flex:1;min-width:0;background:#07111d;color:#f4ead7;border:1px solid #ffffff30;border-radius:9px;padding:11px;font:inherit;font-size:12px}
+.radio-panel audio{width:100%;margin-top:14px;accent-color:#d8b878}
+.ceo-notes-feed{display:grid;gap:10px;margin-top:14px}
+.ceo-note-card{padding:14px;border-radius:12px;background:#07111d;border:1px solid #ffffff15}
+.ceo-note-day{font-size:10px;letter-spacing:1px;color:#d8b878}
+.ceo-note-card h3{font-size:15px;color:#f4ead7;margin:7px 0}
+.ceo-note-card p{font-size:12px;line-height:1.9;color:#b9c2cb;margin:0 0 9px}
+.ceo-note-card a{font-size:11px;color:#f0d9a5;text-decoration:underline;text-underline-offset:3px}
+@media(max-width:850px){.live-fx-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.live-subgrid{grid-template-columns:1fr}}
+@media(max-width:560px){.live-desk-heading{align-items:flex-start;flex-direction:column}.live-fx-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.live-data-card{padding:12px;gap:6px}.live-data-card strong{font-size:14px}.live-data-card small{font-size:10px}.live-clock-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.live-market-links{grid-template-columns:1fr}.radio-controls{align-items:stretch;flex-direction:column}.live-panel{padding:15px}}
+.live-quote-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.live-quote-box{min-width:0;padding:10px;border:1px solid #ffffff18;border-radius:11px;background:#07111d}
+.live-quote-box>small{display:block;color:#e8d5ad;font-size:10px;margin:2px 3px 8px}
+.live-quote-box .tradingview-widget-container{width:100%;min-width:0}
+@media(max-width:560px){.live-quote-grid{grid-template-columns:1fr}}

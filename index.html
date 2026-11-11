@@ -41,7 +41,7 @@
 @media(max-width:600px){.group-hero-premium{padding:58px 0;background-position:58% center}.group-hero-shade{background:linear-gradient(90deg,#07111ff2,#07111fcf 72%,#07111f99)}.group-hero-content{grid-template-columns:1fr}.group-hero-mark{display:none}.group-hero-premium h1{font-size:clamp(2.4rem,11vw,3.5rem)}.group-hero-premium p{font-size:14px}.global-strip-head{align-items:flex-start;flex-direction:column}.global-grid{grid-template-columns:1fr 1fr;gap:8px}.global-card{padding:12px;gap:9px}.global-icon{width:34px;height:34px;flex-basis:34px}.global-card strong{font-size:15px}}
 
 </style>
-<link rel="stylesheet" href="/assets/premium-experience.css">
+<link rel="stylesheet" href="/assets/premium-experience.css"><link rel="stylesheet" href="/assets/live-desk.css">
 <!-- Cloudflare Web Analytics -->
 <script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1a7fde740f104fd38d3b68bcf31b417a"}'></script>
 <!-- End Cloudflare Web Analytics -->
@@ -55,6 +55,52 @@
 <main>
 <section class="group-hero group-hero-premium"><div class="group-hero-shade"></div><div class="wrap group-hero-content"><div class="group-hero-copy"><span class="group-kicker">ROYAL EGYPT GROUP · EGYPT</span><h1><span data-g-i="hero">نبني الفرص.</span><br><em data-g-i="hero2">ونفتح آفاقًا جديدة.</em></h1><p data-g-i="intro">مجموعة مصرية تجمع بين العقارات والقهوة والنقل، برؤية عملية تربط الخدمات والفرص في تجربة واحدة واضحة.</p><div class="hero-actions"><a class="btn" href="#divisions" data-g-i="discover">اكتشف شركات المجموعة</a><a class="btn btn-outline" href="#contact" data-g-i="talk">تواصل مع فريقنا</a></div><div class="group-proof"><span data-g-i="sectors">ثلاثة قطاعات</span><span data-g-i="experience">تجربة موحدة</span><span data-g-i="world">من مصر إلى العالم</span></div></div><div class="group-hero-mark"><img src="/royal-logo.jpg" alt="الشعار الرسمي لمجموعة رويال إيجيبت" loading="eager"><span>BUILD · INVEST · GROW</span></div></div></section>
 <section class="global-strip" aria-label="معلومات عالمية"><div class="wrap"><div class="global-strip-head"><div><span class="section-kicker">GLOBAL DESK</span><h2 data-g-i="global">نافذتك على العالم</h2><p data-g-i="globalDesc">متابعة الأسواق والذهب والعملات والأخبار الاقتصادية من مركز المستثمرين.</p></div><span class="free-note" data-g-i="free">مجانية · بدون حساب</span></div><div class="global-grid"><article class="global-card"><span class="global-icon">◷</span><div><small data-g-i="cairo">توقيت القاهرة</small><strong id="cairoClock">--:--:--</strong><span id="cairoDate">جارٍ التحميل</span></div></article><article class="global-card"><span class="global-icon">$</span><div><small data-g-i="usd">الدولار مقابل الجنيه</small><strong id="usdEgp">جارٍ التحديث</strong><span id="fxUpdated">سعر مرجعي · Frankfurter</span></div></article><article class="global-card"><span class="global-icon">€</span><div><small data-g-i="eur">اليورو مقابل الجنيه</small><strong id="eurEgp">جارٍ التحديث</strong><span>سعر مرجعي · ليس سعرًا بنكيًا</span></div></article><article class="global-card global-card-link"><span class="global-icon">↗</span><div><small>أسواق المال</small><strong data-g-i="marketCenter">مركز الأسواق والمال</strong><a href="/markets" data-g-i="marketLink">الذهب · البورصة · العملات · الأخبار</a></div></article></div><p class="global-disclaimer" id="market-note">أسعار الصرف مرجعية وقد تختلف عن أسعار البنوك وشركات الصرافة. لا نقدم في هذه المرحلة أسعار ذهب أو مؤشرات بورصة غير متحقق من مصدرها أو توقيت تحديثها.</p></div></section>
+
+<section class="live-desk-section" id="live-desk">
+ <div class="wrap">
+  <div class="live-desk-heading"><div><span class="section-kicker">ROYAL EGYPT LIVE</span><h2>مركز المتابعة العالمية</h2><p>العملات، التوقيت العالمي، الذهب والبورصة في نافذة واحدة.</p></div><a class="btn btn-outline" href="/markets">كل الأسواق والأسعار ↗</a></div>
+  <div class="live-fx-grid">
+   <article class="live-data-card"><span class="live-data-icon">$</span><small>الدولار الأمريكي / EGP</small><strong id="liveUsdEgp">--</strong></article>
+   <article class="live-data-card"><span class="live-data-icon">€</span><small>اليورو / EGP</small><strong id="liveEurEgp">--</strong></article>
+   <article class="live-data-card"><span class="live-data-icon">£</span><small>الإسترليني / EGP</small><strong id="liveGbpEgp">--</strong></article>
+   <article class="live-data-card"><span class="live-data-icon">﷼</span><small>الريال السعودي / EGP</small><strong id="liveSarEgp">--</strong></article>
+   <article class="live-data-card"><span class="live-data-icon">د.إ</span><small>الدرهم الإماراتي / EGP</small><strong id="liveAedEgp">--</strong></article>
+  </div>
+  <p class="live-data-note" id="liveFxNote">جارٍ تحميل أسعار الصرف المرجعية…</p>
+  <div class="live-subgrid">
+   <article class="live-panel">
+    <div class="live-panel-head"><div><span class="section-kicker">WORLD CLOCKS</span><h3>الساعات العالمية</h3></div><span class="live-chip">تحديث مباشر</span></div>
+    <div class="live-clock-grid">
+     <div><small>القاهرة</small><strong id="worldCairo">--:--:--</strong></div><div><small>دبي</small><strong id="worldDubai">--:--:--</strong></div><div><small>الرياض</small><strong id="worldRiyadh">--:--:--</strong></div><div><small>لندن</small><strong id="worldLondon">--:--:--</strong></div><div><small>نيويورك</small><strong id="worldNewYork">--:--:--</strong></div><div><small>موسكو</small><strong id="worldMoscow">--:--:--</strong></div>
+    </div>
+   </article>
+   <article class="live-panel live-market-panel">
+    <div class="live-panel-head"><div><span class="section-kicker">GOLD & EXCHANGE</span><h3>الذهب والبورصة</h3></div><span class="live-chip">بيانات السوق</span></div>
+    <p>تابع سعر الذهب العالمي ومؤشر EGX30 والأسواق الدولية من مزودي بيانات الأسواق.</p>
+    <div class="live-quote-grid">
+ <div class="live-quote-box"><small>الذهب العالمي · XAU/USD</small><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div><script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>{"symbol":"OANDA:XAUUSD","width":"100%","height":"150","locale":"en","dateRange":"1D","colorTheme":"dark","isTransparent":true,"autosize":true,"chartOnly":false}</script></div></div>
+ <div class="live-quote-box"><small>مؤشر البورصة المصرية · EGX30</small><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div><script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>{"symbol":"EGX:EGX30","width":"100%","height":"150","locale":"en","dateRange":"1D","colorTheme":"dark","isTransparent":true,"autosize":true,"chartOnly":false}</script></div></div>
+ </div>
+ <div class="live-market-links"><a href="/markets#indices">مؤشرات البورصة <b>↗</b></a><a href="/markets">الذهب والمعادن <b>↗</b></a><a href="/markets">العملات والأسواق <b>↗</b></a></div>
+   </article>
+  </div>
+  <div class="live-subgrid live-media-grid">
+   <article class="live-panel radio-panel">
+    <div class="live-panel-head"><div><span class="section-kicker">ROYAL EGYPT RADIO</span><h3>الراديو المصري</h3></div><span class="live-chip">بث عبر الإنترنت</span></div>
+    <p>اختر محطة من دليل الإذاعات المصرية المتاح. التشغيل يبدأ بضغطك فقط.</p>
+    <div class="radio-controls"><select id="radioStations" aria-label="اختر محطة إذاعية"><option>جارٍ تحميل المحطات…</option></select><button class="btn btn-small" id="radioRefresh" type="button">تحديث المحطات</button></div>
+    <audio id="radioAudio" controls preload="none" aria-label="مشغل الراديو"></audio>
+    <p class="live-data-note" id="radioStatus" role="status">جارٍ الاتصال بدليل المحطات…</p>
+   </article>
+   <article class="live-panel ceo-notes-panel">
+    <div class="live-panel-head"><div><span class="section-kicker">CEO NOTES</span><h3>عمود الإدارة والقيادة</h3></div><a class="live-chip" href="https://ceo-notes.pages.dev/" target="_blank" rel="noopener noreferrer">الموقع الأصلي ↗</a></div>
+    <p>أحدث المقالات المنشورة في CEO Notes، تُعرض من موجز المحتوى دون إعادة نشر تلقائي.</p>
+    <div id="ceoNotesFeed" class="ceo-notes-feed"><p>جارٍ تحميل أحدث المقالات…</p></div>
+    <p class="live-data-note" id="ceoNotesStatus" role="status"></p>
+   </article>
+  </div>
+ </div>
+</section>
 <section class="section" id="divisions"><div class="wrap"><div class="section-head"><div><div class="section-kicker" data-g-i="divisions">شركات المجموعة</div><h2 data-g-i="mainSectors">قطاعاتنا الرئيسية</h2></div><p>كل قطاع له خدماته وصفحاته المستقلة، ويجمعهم اسم وهوية Royal Egypt Group.</p></div>
 <div class="division-grid">
 <article class="division"><div class="symbol">⌂</div><h2>Royal Egypt Properties</h2><p data-g-i="propDesc">التسويق العقاري، الأراضي، الوحدات السكنية والسياحية، والمساحات الإدارية والاستثمارية في مصر.</p><a class="btn" href="/properties" data-g-i="exploreProp">استكشف العقارات</a></article>
@@ -76,4 +122,4 @@ const loadRates=async()=>{try{const response=await fetch("https://api.frankfurte
 loadRates();
 })();
 </script>
-<script src="/assets/group-languages.js" defer></script><script src="/assets/site-enhancements.js" defer></script><script src="/assets/contact-intake.js" defer></script></body></html>
+<script src="/assets/live-desk.js" defer></script><script src="/assets/group-languages.js" defer></script><script src="/assets/site-enhancements.js" defer></script><script src="/assets/contact-intake.js" defer></script></body></html>
