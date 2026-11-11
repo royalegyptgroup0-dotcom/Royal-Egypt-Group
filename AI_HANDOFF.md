@@ -1,9 +1,8 @@
 # Royal Egypt Group — AI Project Handoff
 
-Last updated: 2026-11-09
+Last updated: 2026-11-11
 
-> **Current source of truth:** Read [docs/LAUNCH_READINESS_2026-11-09.md](docs/LAUNCH_READINESS_2026-11-09.md) before continuing work. This file's original body was written on 2026-11-04 and contains historical implementation and infrastructure snapshots. Where older statements below conflict with the current audit, the current audit is authoritative. Do not reuse old repository URLs, hostnames, D1 IDs, or binding assumptions without re-verification.
-
+> **Current source of truth:** Read [docs/TECHNICAL_AUDIT_2026-11-11.md](docs/TECHNICAL_AUDIT_2026-11-11.md) before continuing work. This audit supersedes older infrastructure, repository, hostname, database, and launch-readiness snapshots where they differ. The remainder of this file contains historical project notes; do not rely on its old repository URLs, hostnames, D1 IDs, or configuration assumptions without re-verification.
 ## Mission
 Build and operate the Royal Egypt Group web platform and, later, a persistent assistant/agent hosted on Cloudflare. The owner wants the platform to remain as free as reasonably possible. Never promise that every component or AI usage will remain free; verify current plan limits before enabling paid usage.
 
