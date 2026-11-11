@@ -371,7 +371,7 @@
       search.addEventListener("input",render);
       categoryFilter.addEventListener("change",render);
       async function loadPosts(){
-        const fallbackUrl = (location.pathname.endsWith("/") ? location.pathname : location.pathname + "/") + "posts.json";
+        const fallbackUrl = "/posts.json";
         let firstError = null;
         for(const url of ["/feed",fallbackUrl]){
           try{
