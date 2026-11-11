@@ -319,3 +319,26 @@ test("aborts a stalled Make notification after the bounded timeout", async () =>
     globalThis.clearTimeout = originalClearTimeout;
   }
 });
+
+test("rejects phone values containing letters even when the digit count is valid", async () => {
+  const db = new FakeDB();
+  const response = await onRequest({
+    request: makeRequest({ ...validPayload, phone: "abc1234567" }),
+    env: { DB: db }
+  });
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).error, "validation_failed");
+  assert.equal(db.records.size, 0);
+});
+
+test("accepts a formatted international phone number", async () => {
+  const db = new FakeDB();
+  const phone = "+20 (100) 000-0000";
+  const response = await onRequest({
+    request: makeRequest({ ...validPayload, phone }),
+    env: { DB: db }
+  });
+  assert.equal(response.status, 202);
+  assert.equal(db.records.size, 1);
+  assert.equal([...db.records.values()][0].values[3], phone);
+});
