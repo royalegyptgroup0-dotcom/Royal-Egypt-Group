@@ -284,3 +284,38 @@ test("accepts apex and www custom-domain origins for website intake", async () =
     assert.equal(db.records.size, 1);
   }
 });
+
+
+test("aborts a stalled Make notification after the bounded timeout", async () => {
+  const db = new FakeDB();
+  const originalSetTimeout = globalThis.setTimeout;
+  const originalClearTimeout = globalThis.clearTimeout;
+  let timeoutMs = 0;
+  let signalAborted = false;
+
+  globalThis.setTimeout = (callback, delay) => {
+    timeoutMs = delay;
+    callback();
+    return 123;
+  };
+  globalThis.clearTimeout = () => {};
+  try {
+    const response = await withFetch(async (_url, init) => {
+      signalAborted = init.signal.aborted;
+      if (init.signal.aborted) throw new DOMException("Aborted", "AbortError");
+      return new Response("unexpected", { status: 200 });
+    }, () => onRequest({
+      request: makeRequest(),
+      env: { DB: db, MAKE_INTAKE_WEBHOOK_URL: webhook }
+    }));
+
+    assert.equal(response.status, 202);
+    assert.equal((await response.json()).notification_status, "delivery_failed");
+    assert.equal(timeoutMs, 5_000);
+    assert.equal(signalAborted, true);
+    assert.equal(db.records.size, 1);
+  } finally {
+    globalThis.setTimeout = originalSetTimeout;
+    globalThis.clearTimeout = originalClearTimeout;
+  }
+});
