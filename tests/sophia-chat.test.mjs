@@ -50,3 +50,11 @@ test("rejects an empty successful response", async () => {
   }));
   await assert.rejects(() => api.ask([{ role: "user", text: "Hello" }]), /assistant_unavailable/);
 });
+
+test("loads the Sophia API client before the chat submit handler", async () => {
+  const html = await readFile(new URL("../properties.html", import.meta.url), "utf8");
+  const clientScript = html.indexOf('<script src="/assets/sophia-chat.js"></script>');
+  const submitHandler = html.indexOf("window.RoyalSophia.ask(conversation)");
+  assert.ok(clientScript >= 0, "Sophia API client script is included");
+  assert.ok(submitHandler > clientScript, "chat handler uses the loaded API client");
+});
