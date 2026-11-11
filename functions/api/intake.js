@@ -170,7 +170,7 @@ export async function onRequest({ request, env }) {
   const details = clean(input.details, 3000);
   const language = clean(input.language, 2);
   const digits = phone.replace(/\D/g, "");
-  if (name.length < 2 || !/^[+0-9()\\s.-]{7,24}$/.test(phone) ||
+  if (name.length < 2 || !/^[+0-9()\s.-]{7,24}$/.test(phone) ||
       digits.length < 7 || digits.length > 15 ||
       !details || !ALLOWED_TYPES.has(requestType) ||
       !ALLOWED_LANGUAGES.has(language) || input.consent !== true) {
