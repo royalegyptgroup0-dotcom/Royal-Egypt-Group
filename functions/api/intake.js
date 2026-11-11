@@ -202,15 +202,20 @@ export async function onRequest({ request, env }) {
   // There is no durable retry queue yet, so never label a failed delivery as pending.
   let notificationStatus = "not_configured";
   if (inserted && env.MAKE_INTAKE_WEBHOOK_URL && trustedWebhook(env.MAKE_INTAKE_WEBHOOK_URL)) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5_000);
     try {
       const upstream = await fetch(env.MAKE_INTAKE_WEBHOOK_URL, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(forwarded),
+        signal: controller.signal,
       });
       notificationStatus = upstream.ok ? "sent" : "delivery_failed";
     } catch {
       notificationStatus = "delivery_failed";
+    } finally {
+      clearTimeout(timeoutId);
     }
   } else if (!inserted) {
     notificationStatus = "duplicate";
