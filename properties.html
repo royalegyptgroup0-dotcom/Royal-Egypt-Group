@@ -17,7 +17,7 @@
 <footer class="site-footer"><div class="wrap footer-row"><span>© <span id="year"></span> Royal Egypt Group</span><div class="footer-links"><a href="mailto:RoyalEgyptgroup0@gmail.com">RoyalEgyptgroup0@gmail.com</a><a href="https://wa.me/201225020980" dir="ltr">+20 122 502 0980</a><a href="/">Royal Egypt</a></div></div></footer>
 <button class="assistant-launch" id="assistantLaunch" type="button" data-i="advisor">صوفيا · المساعدة الذكية</button>
 <section class="assistant-panel" id="assistantPanel" aria-label="Sophia AI — Royal Egypt Group"><div class="assistant-head"><span data-i="advisor">صوفيا · المساعدة الذكية</span><button id="assistantClose" type="button" aria-label="Close">×</button></div><div class="assistant-messages" id="assistantMessages" aria-live="polite"></div><form class="assistant-form" id="assistantForm"><input id="assistantInput" autocomplete="off" maxlength="500" placeholder="اكتب طلبك..." aria-label="Your property requirements"><button type="submit" data-i="send">إرسال</button></form></section>
-<script src="/assets/royal.js" defer></script>
+<script src="/assets/royal.js" defer></script><script src="/assets/sophia-chat.js"></script>
 <script>
 (()=>{"use strict";
 const listings=[];
@@ -27,10 +27,35 @@ function card(p){const l=lang();const el=document.createElement("article");el.cl
 function render(){const q=search.value.trim().toLowerCase();const matches=listings.filter(p=>(area.value==="all"||p.area===area.value)&&(kind.value==="all"||p.kind===kind.value)&&(!q||(p.search+" "+p.title.ar+" "+p.title.en+" "+p.title.ru+" "+p.location.ar).toLowerCase().includes(q)));grid.replaceChildren();matches.forEach(p=>grid.appendChild(card(p)));count.textContent=matches.length+" / "+listings.length;if(!matches.length){const empty=document.createElement("div");empty.className="empty-state";empty.textContent=listings.length?t("noResults"):t("noApprovedListings");grid.appendChild(empty)}}
 [search,area,kind].forEach(x=>x.addEventListener("input",render));document.getElementById("reset").addEventListener("click",()=>{search.value="";area.value="all";kind.value="all";render()});document.addEventListener("royal:language",render);
 const panel=document.getElementById("assistantPanel"),messages=document.getElementById("assistantMessages"),input=document.getElementById("assistantInput");let conversation=[];
-function say(text,who){const n=document.createElement("div");n.className="assistant-msg"+(who==="user"?" user":"");n.textContent=text;messages.appendChild(n);messages.scrollTop=messages.scrollHeight}
+function say(text,who){const n=document.createElement("div");n.className="assistant-msg"+(who==="user"?" user":"");n.textContent=text;messages.appendChild(n);messages.scrollTop=messages.scrollHeight;return n;}
 function openAssistant(){panel.classList.add("open");if(!conversation.length){say(t("assistantIntro"));conversation.push({role:"assistant",text:t("assistantIntro")})}input.focus()}
 document.getElementById("assistantLaunch").addEventListener("click",openAssistant);document.getElementById("assistantClose").addEventListener("click",()=>panel.classList.remove("open"));
-document.getElementById("assistantForm").addEventListener("submit",e=>{e.preventDefault();const value=input.value.trim();if(!value)return;input.value="";say(value,"user");conversation.push({role:"user",text:value});const s=value.toLowerCase();let a=null,k=null;if(/الغردقة|hurghada|хургада|الأحياء|الاحياء/.test(s))a="Hurghada";if(/السخنة|العين السخنة|sokhna|ain sokhna|айн-сохна/.test(s))a="Ain Sokhna";if(/السويس|suez|суэц/.test(s))a="Suez";if(/أرض|اراضي|أراضي|land|земл/.test(s))k="land";if(/فيلا|شقة|سكن|مصيف|villa|residential|жиль|вилл/.test(s))k="residential";if(/إداري|اداري|تجاري|مكتب|جراج|office|commercial|офис/.test(s))k="commercial";if(/استثمار|investment|инвест/.test(s)){}const found=listings.filter(p=>(!a||p.area===a)&&(!k||p.kind===k));let response;if(!a&&!k)response=t("assistantIntro");else if(found.length)response=(lang()==="ar"?"أقرب الاختيارات المنشورة:":lang()==="ru"?"Ближайшие опубликованные варианты:":"Closest published matches:")+"\n"+found.map(p=>"• "+p.title[lang()]+" — "+p.location[lang()]).join("\n")+"\n\n"+t("checks");else response=t("noResults")+"\n"+t("availability");say(response);conversation.push({role:"assistant",text:response});const wa=document.createElement("a");wa.className="btn btn-small";wa.target="_blank";wa.rel="noopener noreferrer";wa.href="https://wa.me/201225020980?text="+encodeURIComponent("Royal Egypt Group — Customer request\n"+conversation.filter(x=>x.role==="user").map(x=>x.text).join("\n"));wa.textContent=t("talk");messages.appendChild(wa);messages.scrollTop=messages.scrollHeight});
+document.getElementById("assistantForm").addEventListener("submit",async e=>{
+e.preventDefault();
+const value=input.value.trim();
+if(!value)return;
+input.value="";
+say(value,"user");
+conversation.push({role:"user",text:value});
+const submit=document.querySelector("#assistantForm button[type='submit']");
+submit.disabled=true;
+const pending=say(lang()==="ar"?"جارٍ إعداد الرد...":lang()==="ru"?"Готовим ответ...":"Preparing a reply...");
+try{
+const answer=await window.RoyalSophia.ask(conversation);
+pending.textContent=answer;
+conversation.push({role:"assistant",text:answer});
+}catch(error){
+pending.textContent=lang()==="ar"?"تعذر الاتصال بالمساعد الآن. يمكنك التواصل معنا مباشرة عبر واتساب.":lang()==="ru"?"Сейчас не удалось связаться с помощником. Вы можете написать нам в WhatsApp.":"The assistant is temporarily unavailable. You can contact our team on WhatsApp.";
+}finally{submit.disabled=false;input.focus();}
+const wa=document.createElement("a");
+wa.className="btn btn-small";
+wa.target="_blank";
+wa.rel="noopener noreferrer";
+wa.href="https://wa.me/201225020980?text="+encodeURIComponent("Royal Egypt Group — Customer request\n"+conversation.filter(x=>x.role==="user").map(x=>x.text).join("\n"));
+wa.textContent=t("talk");
+messages.appendChild(wa);
+messages.scrollTop=messages.scrollHeight;
+});
 document.addEventListener("royal:language",()=>{render();if(conversation.length===1){messages.replaceChildren();conversation=[];say(t("assistantIntro"));conversation.push({role:"assistant",text:t("assistantIntro")})}});
 render();
 fetch("/api/listings").then(r=>r.ok?r.json():null).then(data=>{if(!data||!Array.isArray(data.listings))return;for(const row of data.listings){const title={ar:row.title,en:row.title,ru:row.title};const loc={ar:row.location,en:row.location,ru:row.location};const facts={ar:[row.property_type,row.area_sqm?row.area_sqm+" م²":"",row.price||""].filter(Boolean),en:[row.property_type,row.area_sqm?row.area_sqm+" m²":"",row.price||""].filter(Boolean),ru:[row.property_type,row.area_sqm?row.area_sqm+" м²":"",row.price||""].filter(Boolean)};const desc={ar:row.description,en:row.description,ru:row.description};const normalized=(row.property_type||"").toLowerCase();const listingKind=/أرض|land/.test(normalized)?"land":/شقة|فيلا|سكن|سياحي/.test(normalized)?"residential":"commercial";const locText=row.location||"";const listingArea=/الغردقة|hurghada/i.test(locText)?"Hurghada":/السخنة|sokhna/i.test(locText)?"Ain Sokhna":/السويس|suez/i.test(locText)?"Suez":"";listings.push({id:"user-"+row.id,area:listingArea,kind:listingKind,style:"office",tag:{ar:"إعلان معتمد",en:"Reviewed listing",ru:"Проверенное объявление"},title,location:loc,facts,desc,search:(row.title+" "+row.location+" "+row.property_type).toLowerCase(),image_urls:row.images||[],contact_phone:row.contact_phone});}render();}).catch(()=>{});
