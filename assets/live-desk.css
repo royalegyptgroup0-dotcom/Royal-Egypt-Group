@@ -31,3 +31,8 @@
 .ceo-note-card a{font-size:11px;color:#f0d9a5;text-decoration:underline;text-underline-offset:3px}
 @media(max-width:850px){.live-fx-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.live-subgrid{grid-template-columns:1fr}}
 @media(max-width:560px){.live-desk-heading{align-items:flex-start;flex-direction:column}.live-fx-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.live-data-card{padding:12px;gap:6px}.live-data-card strong{font-size:14px}.live-data-card small{font-size:10px}.live-clock-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.live-market-links{grid-template-columns:1fr}.radio-controls{align-items:stretch;flex-direction:column}.live-panel{padding:15px}}
+.live-quote-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.live-quote-box{min-width:0;padding:10px;border:1px solid #ffffff18;border-radius:11px;background:#07111d}
+.live-quote-box>small{display:block;color:#e8d5ad;font-size:10px;margin:2px 3px 8px}
+.live-quote-box .tradingview-widget-container{width:100%;min-width:0}
+@media(max-width:560px){.live-quote-grid{grid-template-columns:1fr}}
