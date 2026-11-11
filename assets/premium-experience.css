@@ -257,7 +257,7 @@ body{
   background-position:center 48% !important;
   background-size:cover !important;
 }
-body:has(.brand-copy small) .branch-hero:after{
+:is(body.page-coffee,body.page-transportation) .branch-hero:after{
   content:"";
   position:absolute;
   inset:0;
@@ -265,20 +265,20 @@ body:has(.brand-copy small) .branch-hero:after{
   background:linear-gradient(90deg,rgba(5,13,22,.91),rgba(5,13,22,.66) 54%,rgba(5,13,22,.24));
   pointer-events:none;
 }
-body:has(.brand-copy small) .branch-hero .wrap{position:relative;z-index:1}
-body:has(.brand-copy small) .branch-hero h1,
-body:has(.brand-copy small) .branch-hero p,
-body:has(.brand-copy small) .branch-hero .eyebrow{ text-shadow:0 2px 18px rgba(0,0,0,.48) }
-body:has(.brand-copy small) .branch-hero h1{color:#fff}
-body:has(.brand-copy small) .branch-hero p{color:#f0f3f6}
-body:has(.brand-copy small) .branch-hero .eyebrow{color:var(--reg-gold-bright)}
-body:has(.brand-copy small) .coming{
+:is(body.page-coffee,body.page-transportation) .branch-hero .wrap{position:relative;z-index:1}
+:is(body.page-coffee,body.page-transportation) .branch-hero h1,
+:is(body.page-coffee,body.page-transportation) .branch-hero p,
+:is(body.page-coffee,body.page-transportation) .branch-hero .eyebrow{ text-shadow:0 2px 18px rgba(0,0,0,.48) }
+:is(body.page-coffee,body.page-transportation) .branch-hero h1{color:#fff}
+:is(body.page-coffee,body.page-transportation) .branch-hero p{color:#f0f3f6}
+:is(body.page-coffee,body.page-transportation) .branch-hero .eyebrow{color:var(--reg-gold-bright)}
+:is(body.page-coffee,body.page-transportation) .coming{
   background:linear-gradient(145deg,rgba(25,42,58,.96),rgba(9,17,27,.98));
   border-color:rgba(216,184,120,.34);
   box-shadow:var(--reg-shadow);
 }
-body:has(.brand-copy small) .coming h2{color:#f4ecdc}
-body:has(.brand-copy small) .coming p{color:#cbd3dc;line-height:1.95}
+:is(body.page-coffee,body.page-transportation) .coming h2{color:#f4ecdc}
+:is(body.page-coffee,body.page-transportation) .coming p{color:#cbd3dc;line-height:1.95}
 @media(max-width:650px){
   .group-hero-premium{
     background:
