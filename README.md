@@ -8,20 +8,20 @@ A multilingual group portal for Royal Egypt Group and its three divisions:
 
 ## Production site
 
-- Cloudflare Pages project: `royalegyptgroup`
-- Production branch: `main`
+- Cloudflare Pages project: royalegyptgroup
+- Production branch: main
 - Current Pages hostname: https://royalegyptgroup-vy7.pages.dev
-- Intended custom domain: `royalegyptgroup.com` (DNS verification is still pending).
+- Intended custom domain: royalegyptgroup.com (DNS verification is still pending).
 
 ## Main pages
 
-- `index.html` — group homepage and navigation.
-- `markets.html` — markets and financial information center with third-party market widgets.
-- `properties.html` — property catalogue, property submission and AI assistant.
-- `developers.html` — informational developer directory with official-source and non-endorsement disclaimers.
-- `coffee.html` and `transportation.html` — interest-only division pages; they are not online shops or booking systems.
-- `admin-inbox.html` — private owner inbox for customers, opportunities, listings and read-only orders.
-- `admin-listings.html` — private listing moderation interface.
+- index.html — group homepage and navigation.
+- markets.html — markets and financial information center with third-party market widgets.
+- properties.html — property catalogue, property submission and AI assistant.
+- developers.html — informational developer directory with official-source and non-endorsement disclaimers.
+- coffee.html and transportation.html — interest-only division pages; they are not online shops or booking systems.
+- admin-inbox.html — private owner inbox for customers, opportunities, listings and read-only orders.
+- admin-listings.html — private listing moderation interface.
 
 ## Current application behavior
 
@@ -29,12 +29,12 @@ A multilingual group portal for Royal Egypt Group and its three divisions:
 - The website intake endpoint stores accepted customer, opportunity and listing requests in Cloudflare D1. Consent is required; submissions do not publish listings automatically.
 - The shared assistant uses Cloudflare Workers AI and approved public listing context. It must not invent prices, availability, legal status or guarantees.
 - Coffee and Transportation forms collect expressions of interest only. They do not confirm a booking, order, payment or service availability.
-- The owner inbox and moderation APIs require server-side authentication. Configure and verify the owner authentication secret before relying on these tools.
+- The owner inbox and moderation APIs require server-side authentication. Verify the owner authentication secret and a successful authenticated session before relying on these tools.
 - Owner notification delivery must be configured and tested before public lead collection is treated as operational.
 
 ## Important limitations
 
-- The production catalogue currently has no approved D1 listings. Verify property details and obtain owner approval before publishing any offer.
+- The Production catalogue currently has no approved D1 listings. Verify property details and obtain owner approval before publishing any offer.
 - A website image-upload/gallery pipeline is not active. Do not advertise website image uploads; use only an owner-approved photo-sharing process.
 - Coffee and Transportation are not yet operational commerce or booking systems.
 - The custom domain is not yet verified; keep the Pages hostname as the fallback.
@@ -45,7 +45,7 @@ A multilingual group portal for Royal Egypt Group and its three divisions:
 - Source control: GitHub.
 - Hosting and server-side functions: Cloudflare Pages.
 - Application data: separate Production and Preview Cloudflare D1 databases.
-- Workers AI is configured for Production and Preview; observe current provider quotas and limits.
+- Workers AI is configured for Production; the main Wrangler configuration and the verified PR #50 Preview deployment also include the Preview binding. Verify the specific Preview deployment before AI testing and observe current provider quotas.
 - No R2 image bucket or paid image-storage service is enabled.
 - Do not add a paid service, subscription, card requirement or recurring charge without explicit approval.
 
@@ -58,4 +58,4 @@ A multilingual group portal for Royal Egypt Group and its three divisions:
 - Keep secrets out of source control, documentation, frontend storage, logs and chat.
 - Production merges/deployments, DNS changes, external messages and changes to real customer data remain approval-gated.
 
-See [the latest launch-readiness audit](docs/LAUNCH_READINESS_2026-11-09.md) for verified infrastructure state, test evidence and outstanding launch gates.
+See [the latest technical audit](docs/TECHNICAL_AUDIT_2026-11-11.md) for the verified infrastructure state, test evidence and outstanding launch gates.
