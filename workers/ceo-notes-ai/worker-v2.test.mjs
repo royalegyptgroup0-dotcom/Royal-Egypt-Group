@@ -64,7 +64,7 @@ function makeEnv({ posts = [], adminToken = token } = {}) {
           get(key) { return values.get(key); },
           put(key, value) { values.set(key, structuredClone(value)); },
           delete(key) { values.delete(key); },
-          list({ prefix = "" } = {}) { return new Map([...values.entries()].filter(([key]) => key.startsWith(prefix))); }
+          list({ prefix = "" } = {}) { return new Map([...values.entries()].filter(([key]) => key.startsWith(prefix))).entries(); }
         };
         const coordinatorObject = new CEOOutboxCoordinator({ storage: { kv } }, {});
         coordinatorObjects.set(id, coordinatorObject);
