@@ -5,7 +5,8 @@
   "compatibility_date": "2026-11-12",
   "workers_dev": true,
   "vars": {
-    "PUBLIC_BASE": "https://ceo-notes-ai-preview.yasser-abdelaziz83.workers.dev"
+    "PUBLIC_BASE": "https://ceo-notes-ai-preview.yasser-abdelaziz83.workers.dev",
+    "PREVIEW_MODE": "true"
   },
   "kv_namespaces": [
     {
