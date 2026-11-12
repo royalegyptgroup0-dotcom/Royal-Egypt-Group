@@ -59,13 +59,15 @@ async function getFeed(env){
     }catch(error){}
   }
   let seed={version:1,posts:[]};
-  try{
-    const response=await fetch(FEED_URL,{cf:{cacheTtl:0}});
-    if(response.ok){
-      const parsed=await response.json();
-      if(Array.isArray(parsed.posts))seed=parsed;
-    }
-  }catch(error){}
+  if(env.PREVIEW_MODE!=="true"){
+    try{
+      const response=await fetch(FEED_URL,{cf:{cacheTtl:0}});
+      if(response.ok){
+        const parsed=await response.json();
+        if(Array.isArray(parsed.posts))seed=parsed;
+      }
+    }catch(error){}
+  }
   await env.CEO_NOTES_KV.put("feed",JSON.stringify(seed));
   return seed;
 }
