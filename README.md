@@ -10,8 +10,7 @@ A multilingual group portal for Royal Egypt Group and its three divisions:
 
 - Cloudflare Pages project: royalegyptgroup
 - Production branch: main
-- Current Pages hostname: https://royalegyptgroup-vy7.pages.dev
-- Intended custom domain: royalegyptgroup.com (DNS verification is still pending).
+- Primary and canonical Pages hostname: https://royalegyptgroup-vy7.pages.dev
 
 ## Main pages
 
@@ -37,7 +36,6 @@ A multilingual group portal for Royal Egypt Group and its three divisions:
 - The Production catalogue currently has no approved D1 listings. Verify property details and obtain owner approval before publishing any offer.
 - A website image-upload/gallery pipeline is not active. Do not advertise website image uploads; use only an owner-approved photo-sharing process.
 - Coffee and Transportation are not yet operational commerce or booking systems.
-- The custom domain is not yet verified; keep the Pages hostname as the fallback.
 - The platform is in controlled pre-launch status, not a completed commercial launch.
 
 ## Free-first hosting and data
@@ -45,7 +43,7 @@ A multilingual group portal for Royal Egypt Group and its three divisions:
 - Source control: GitHub.
 - Hosting and server-side functions: Cloudflare Pages.
 - Application data: separate Production and Preview Cloudflare D1 databases.
-- Workers AI is configured for Production; the main Wrangler configuration and the verified PR #50 Preview deployment also include the Preview binding. Verify the specific Preview deployment before AI testing and observe current provider quotas.
+- Workers AI is configured for Production. Preview AI availability must be verified from the live project configuration before AI testing; observe current provider quotas.
 - No R2 image bucket or paid image-storage service is enabled.
 - Do not add a paid service, subscription, card requirement or recurring charge without explicit approval.
 
@@ -56,6 +54,6 @@ A multilingual group portal for Royal Egypt Group and its three divisions:
 - Never run test writes against Production D1.
 - Never publish a property listing without explicit owner approval.
 - Keep secrets out of source control, documentation, frontend storage, logs and chat.
-- Production merges/deployments, DNS changes, external messages and changes to real customer data remain approval-gated.
+- Production merges/deployments, external messages and changes to real customer data remain approval-gated.
 
 See [the latest technical audit](docs/TECHNICAL_AUDIT_2026-11-11.md) for the verified infrastructure state, test evidence and outstanding launch gates.
