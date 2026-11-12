@@ -344,7 +344,7 @@ export class CEOOutboxCoordinator {
         if(!current)return J({error:"reservation_missing"},409);
         if(current.contentHash!==hash)return J({error:"outbox_content_conflict"},409);
         if(current.status==="succeeded")return J({ok:true,status:"succeeded",receipt:current});
-        if(current.status!=="attempting"&&current.status!=="unknown"&&current.status!=="receipt_recorded")return J({error:"reconciliation_not_required",status:current.status},409);
+        if(current.status!=="reserved"&&current.status!=="attempting"&&current.status!=="unknown"&&current.status!=="receipt_recorded")return J({error:"reconciliation_not_required",status:current.status},409);
         if(body.action==="published"){
           const postId=String(body.postId||"").trim(),permalink=String(body.permalink||"").trim();
           if(!postId||!validPlatformPermalink(platform,permalink))return J({error:"platform_post_id_and_permalink_required"},400);
