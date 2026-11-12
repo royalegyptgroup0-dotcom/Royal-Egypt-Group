@@ -36,6 +36,10 @@ jobs:
         run: node --check workers/ceo-notes-ai/worker.js
       - name: Test CEO Notes AI Worker access controls
         run: node --test workers/ceo-notes-ai/worker.test.mjs
+      - name: Check CEO Notes AI Worker v2 syntax
+        run: node --check workers/ceo-notes-ai/worker-v2.js
+      - name: Test CEO Notes AI Worker v2 outbox and recovery
+        run: node --test workers/ceo-notes-ai/worker-v2.test.mjs
       - name: Check radio JavaScript syntax
         run: node --check notes/radio.js
       - name: Check Pages Worker JavaScript syntax
