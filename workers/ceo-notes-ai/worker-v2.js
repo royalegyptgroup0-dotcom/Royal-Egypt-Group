@@ -353,7 +353,8 @@ export class CEOOutboxCoordinator {
           return J({ok:true,status:"receipt_recorded",verificationRequired:true,receipt:record});
         }
         if(body.action==="not_published"){
-          const record={version:2,day,platform,identity,contentHash:hash,status:"reserved",createdAt:current.createdAt||now,updatedAt:now,reconciledAt:now,lastOutcome:"confirmed_not_published"};
+          if(current.status==="receipt_recorded")return J({error:"receipt_recorded_requires_manual_review",status:current.status},409);
+          if(current.status!=="reserved"&&(body.verificationSource!==(platform==="facebook"?"facebook_graph_api":"instagram_graph_api")||body.verificationStatus!=="not_found"||String(body.verifiedPostId||"")!==""))return J({error:"authoritative_not_found_lookup_required"},403);
           await this.state.storage.delete(key);
           return J({ok:true,status:"cleared_for_retry",retryAllowed:true});
         }
