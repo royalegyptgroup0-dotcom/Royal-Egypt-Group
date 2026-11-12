@@ -4,7 +4,7 @@ const API_PUBLISH_PATH="/api/publish";
 const OUTBOX_PREFIX="/api/outbox/";
 const FEED_URL="https://raw.githubusercontent.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/ceo-notes-site/notes/posts.json";
 const PUBLIC_BASE="https://ceo-notes-ai.yasser-abdelaziz83.workers.dev";
-function publicBase(env){return String(env.PUBLIC_BASE||PUBLIC_BASE).replace(/\\/+$/,"");}
+function publicBase(env){return String(env.PUBLIC_BASE||PUBLIC_BASE).replace(/\/+$/,"");}
 
 function authorized(req,env){
   const token=env.ADMIN_TOKEN;
