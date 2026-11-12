@@ -93,12 +93,18 @@ async function createBackup(env,scheduledTime){
   }
   let coordinatorOutboxCount=0,coordinatorOutboxSha256=null;
   if(env.OUTBOX_COORDINATOR){
-    const coordinator=env.OUTBOX_COORDINATOR.get(env.OUTBOX_COORDINATOR.idFromName("ceo-notes-global"));
-    const snapshotResponse=await coordinator.fetch("https://outbox-coordinator/snapshot");
-    if(!snapshotResponse.ok)throw new Error("outbox_coordinator_backup_failed");
-    const snapshot=await snapshotResponse.json();
-    const snapshotValue=JSON.stringify(snapshot.records||[]);
-    coordinatorOutboxCount=(snapshot.records||[]).length;
+    const coordinatorRecords=[];
+    for(const post of feed.posts||[]){
+      const day=Number(post.day);
+      if(!Number.isInteger(day)||day<1)continue;
+      const coordinator=env.OUTBOX_COORDINATOR.get(env.OUTBOX_COORDINATOR.idFromName("ceo-notes-day:"+day));
+      const snapshotResponse=await coordinator.fetch("https://outbox-coordinator/snapshot");
+      if(!snapshotResponse.ok)throw new Error("outbox_coordinator_backup_failed");
+      const snapshot=await snapshotResponse.json();
+      coordinatorRecords.push(...(snapshot.records||[]));
+    }
+    const snapshotValue=JSON.stringify(coordinatorRecords);
+    coordinatorOutboxCount=coordinatorRecords.length;
     coordinatorOutboxSha256=await backupHash(snapshotValue);
     await env.CEO_NOTES_KV.put("backup:"+date+":outbox-coordinator",snapshotValue);
   }
@@ -153,7 +159,7 @@ async function validateOutboxContext(env,body){
 async function withEditorialLock(env,date,work){
   if(!env.OUTBOX_COORDINATOR)return J({error:"outbox_coordinator_unavailable"},503);
   const token=crypto.randomUUID();
-  const stub=env.OUTBOX_COORDINATOR.get(env.OUTBOX_COORDINATOR.idFromName("ceo-notes-global"));
+  const stub=env.OUTBOX_COORDINATOR.get(env.OUTBOX_COORDINATOR.idFromName("ceo-notes-date:"+String(date)));
   const key="editorial:"+String(date);
   const locked=await stub.fetch("https://outbox-coordinator/lock",{
     method:"POST",
@@ -178,7 +184,7 @@ async function handleOutbox(req,env,path){
   const context=await validateOutboxContext(env,body);
   if(context.error)return context.error;
   const action=path.slice(OUTBOX_PREFIX.length);
-  const id=env.OUTBOX_COORDINATOR.idFromName("ceo-notes-global");
+  const id=env.OUTBOX_COORDINATOR.idFromName("ceo-notes-day:"+context.day);
   const stub=env.OUTBOX_COORDINATOR.get(id);
   const response=await stub.fetch("https://outbox-coordinator/"+action,{
     method:"POST",
@@ -290,120 +296,99 @@ async function publishPost(req,env){
 }
 
 export class CEOOutboxCoordinator {
-  constructor(state,env){
-    this.state=state;
-    this.env=env;
-  }
+  constructor(state,env){this.state=state;this.env=env;}
   async fetch(request){
-    const url=new URL(request.url);
-    const action=url.pathname.slice(1);
+    const url=new URL(request.url),action=url.pathname.slice(1),storage=this.state.storage.kv;
     if(request.method==="GET"&&action==="snapshot"){
-      return await this.state.blockConcurrencyWhile(async()=>{
-        const entries=await this.state.storage.list({prefix:"outbox:"});
-        return J({ok:true,records:[...entries.entries()].map(([key,value])=>({key,value}))});
-      });
+      const entries=storage.list({prefix:"outbox:"});
+      return J({ok:true,records:[...entries.entries()].map(([key,value])=>({key,value}))});
     }
     if(request.method!=="POST")return J({error:"method_not_allowed"},405);
     let body;
     try{body=await request.json();}catch(error){return J({error:"invalid_json"},400);}
     if(action==="lock"||action==="unlock"){
-      const key=String(body.key||"");
-      const token=String(body.token||"");
-      if(!/^editorial:\d{4}-\d{2}-\d{2}$/.test(key)||token.length<16)return J({error:"invalid_editorial_lock"},400);
-      const storageKey="editorial-lock:"+key;
-      return await this.state.blockConcurrencyWhile(async()=>{
-        const current=await this.state.storage.get(storageKey)||null;
-        if(action==="lock"){
-          const ttlMs=Math.max(30000,Math.min(900000,Number(body.ttlMs)||900000));
-          if(current&&current.expiresAt>Date.now()&&current.token!==token)return J({error:"editorial_operation_in_progress"},409);
-          await this.state.storage.put(storageKey,{token,expiresAt:Date.now()+ttlMs});
-          return J({ok:true,locked:true});
-        }
-        if(!current||current.token!==token)return J({error:"editorial_lock_not_owned"},409);
-        await this.state.storage.delete(storageKey);
-        return J({ok:true,released:true});
-      });
+      const lockKey=String(body.key||""),token=String(body.token||"");
+      if(!/^editorial:\d{4}-\d{2}-\d{2}$/.test(lockKey)||token.length<16)return J({error:"invalid_editorial_lock"},400);
+      const storageKey="editorial-lock:"+lockKey,current=storage.get(storageKey)||null;
+      if(action==="lock"){
+        const ttlMs=Math.max(30000,Math.min(900000,Number(body.ttlMs)||900000));
+        if(current&&current.expiresAt>Date.now()&&current.token!==token)return J({error:"editorial_operation_in_progress"},409);
+        storage.put(storageKey,{token,expiresAt:Date.now()+ttlMs});
+        return J({ok:true,locked:true});
+      }
+      if(!current||current.token!==token)return J({error:"editorial_lock_not_owned"},409);
+      storage.delete(storageKey);
+      return J({ok:true,released:true});
     }
     const day=Number(body.day),platform=String(body.platform||""),identity=String(body.identity||""),hash=String(body.contentHash||"");
     if(!Number.isInteger(day)||day<1||!hash||!outboxAllowed(platform,identity))return J({error:"invalid_outbox_identity_or_payload"},400);
-    const key=outboxKey(platform,identity,day),now=new Date().toISOString();
-    return await this.state.blockConcurrencyWhile(async()=>{
-      const current=await this.state.storage.get(key)||null;
-      const actionName=action;
-      if(actionName==="reserve"){
-        if(current&&current.contentHash!==hash)return J({error:"outbox_content_conflict",status:current.status},409);
-        if(current?.status==="succeeded")return J({ok:true,decision:"skip",status:"succeeded",receipt:current});
-        if(current?.status==="attempting"||current?.status==="unknown"||current?.status==="receipt_recorded")return J({error:"reconciliation_required",decision:"blocked",status:current.status},409);
-        if(current?.status==="reserved")return J({error:"reservation_already_claimed",decision:"blocked",status:"reserved"},409);
-        const record={version:2,day,platform,identity,contentHash:hash,status:"reserved",createdAt:now,updatedAt:now};
-        await this.state.storage.put(key,record);
-        return J({ok:true,decision:"publish",status:"reserved",key});
+    const key=outboxKey(platform,identity,day),now=new Date().toISOString(),current=storage.get(key)||null;
+    if(action==="reserve"){
+      if(current&&current.contentHash!==hash)return J({error:"outbox_content_conflict",status:current.status},409);
+      if(current?.status==="succeeded")return J({ok:true,decision:"skip",status:"succeeded",receipt:current});
+      if(current?.status==="attempting"||current?.status==="unknown"||current?.status==="receipt_recorded")return J({error:"reconciliation_required",decision:"blocked",status:current.status},409);
+      if(current?.status==="reserved")return J({error:"reservation_already_claimed",decision:"blocked",status:"reserved"},409);
+      const record={version:2,day,platform,identity,contentHash:hash,status:"reserved",createdAt:now,updatedAt:now};
+      storage.put(key,record);return J({ok:true,decision:"publish",status:"reserved",key});
+    }
+    if(action==="start"){
+      if(!current)return J({error:"reservation_missing"},409);
+      if(current.contentHash!==hash)return J({error:"outbox_content_conflict"},409);
+      if(current.status==="succeeded")return J({ok:true,decision:"skip",status:"succeeded",receipt:current});
+      if(current.status!=="reserved")return J({error:"reconciliation_required",status:current.status},409);
+      storage.put(key,{...current,status:"attempting",attemptedAt:now,updatedAt:now});
+      return J({ok:true,decision:"publish",status:"attempting"});
+    }
+    if(action==="receipt"){
+      if(!current)return J({error:"reservation_missing"},409);
+      if(current.contentHash!==hash)return J({error:"outbox_content_conflict"},409);
+      const postId=String(body.postId||"").trim(),permalink=String(body.permalink||"").trim();
+      if(!postId||!validPlatformPermalink(platform,permalink))return J({error:"platform_post_id_and_permalink_required"},400);
+      if(current.status==="succeeded"){
+        if(current.postId===postId)return J({ok:true,idempotent:true,receipt:current});
+        return J({error:"receipt_conflict",postId:current.postId},409);
       }
-      if(actionName==="start"){
-        if(!current)return J({error:"reservation_missing"},409);
-        if(current.contentHash!==hash)return J({error:"outbox_content_conflict"},409);
-        if(current.status==="succeeded")return J({ok:true,decision:"skip",status:"succeeded",receipt:current});
-        if(current.status!=="reserved")return J({error:"reconciliation_required",status:current.status},409);
-        const record={...current,status:"attempting",attemptedAt:now,updatedAt:now};
-        await this.state.storage.put(key,record);
-        return J({ok:true,decision:"publish",status:"attempting"});
-      }
-      if(actionName==="receipt"){
-        if(!current)return J({error:"reservation_missing"},409);
-        if(current.contentHash!==hash)return J({error:"outbox_content_conflict"},409);
+      if(current.status!=="attempting"&&current.status!=="unknown")return J({error:"publish_attempt_not_started",status:current.status},409);
+      const record={...current,status:"receipt_recorded",postId,permalink,publishedAt:String(body.publishedAt||now),receiptRecordedAt:now,updatedAt:now};
+      storage.put(key,record);return J({ok:true,receiptStored:true,verificationRequired:true,receipt:record});
+    }
+    if(action==="verify"){
+      if(!current)return J({error:"reservation_missing"},409);
+      if(current.contentHash!==hash)return J({error:"outbox_content_conflict"},409);
+      if(current.status==="succeeded")return J({ok:true,status:"succeeded",receipt:current});
+      if(current.status!=="receipt_recorded")return J({error:"receipt_verification_required",status:current.status},409);
+      const expectedSource=platform==="facebook"?"facebook_graph_api":"instagram_graph_api";
+      if(body.verified!==true||String(body.verifiedPostId||"")!==current.postId||String(body.verifiedPermalink||"")!==current.permalink||body.verificationSource!==expectedSource||body.verificationStatus!=="published")return J({error:"platform_lookup_attestation_required"},403);
+      const record={...current,status:"succeeded",verifiedAt:now,verificationSource:expectedSource,updatedAt:now};
+      storage.put(key,record);return J({ok:true,status:"succeeded",receipt:record});
+    }
+    if(action==="unknown"){
+      if(!current)return J({error:"reservation_missing"},409);
+      if(current.status==="succeeded"||current.status==="receipt_recorded")return J({ok:true,status:current.status,receipt:current});
+      if(current.status!=="attempting"&&current.status!=="reserved")return J({error:"invalid_outbox_transition",status:current.status},409);
+      storage.put(key,{...current,status:"unknown",reason:String(body.reason||"ambiguous_publish_outcome").slice(0,180),updatedAt:now});
+      return J({ok:true,status:"unknown",reconciliationRequired:true});
+    }
+    if(action==="reconcile"){
+      if(!current)return J({error:"reservation_missing"},409);
+      if(current.contentHash!==hash)return J({error:"outbox_content_conflict"},409);
+      if(current.status==="succeeded")return J({ok:true,status:"succeeded",receipt:current});
+      if(current.status!=="reserved"&&current.status!=="attempting"&&current.status!=="unknown"&&current.status!=="receipt_recorded")return J({error:"reconciliation_not_required",status:current.status},409);
+      if(body.action==="published"){
         const postId=String(body.postId||"").trim(),permalink=String(body.permalink||"").trim();
         if(!postId||!validPlatformPermalink(platform,permalink))return J({error:"platform_post_id_and_permalink_required"},400);
-        if(current.status==="succeeded"){
-          if(current.postId===postId)return J({ok:true,idempotent:true,receipt:current});
-          return J({error:"receipt_conflict",postId:current.postId},409);
-        }
-        if(current.status!=="attempting"&&current.status!=="unknown")return J({error:"publish_attempt_not_started",status:current.status},409);
-        const record={...current,status:"receipt_recorded",postId,permalink,publishedAt:String(body.publishedAt||now),receiptRecordedAt:now,updatedAt:now};
-        await this.state.storage.put(key,record);
-        return J({ok:true,receiptStored:true,verificationRequired:true,receipt:record});
+        const record={...current,status:"receipt_recorded",postId,permalink,publishedAt:String(body.publishedAt||now),receiptRecordedAt:now,reconciledAt:now,updatedAt:now};
+        storage.put(key,record);return J({ok:true,status:"receipt_recorded",verificationRequired:true,receipt:record});
       }
-      if(actionName==="verify"){
-        if(!current)return J({error:"reservation_missing"},409);
-        if(current.contentHash!==hash)return J({error:"outbox_content_conflict"},409);
-        if(current.status==="succeeded")return J({ok:true,status:"succeeded",receipt:current});
-        if(current.status!=="receipt_recorded")return J({error:"receipt_verification_required",status:current.status},409);
-        const expectedSource=platform==="facebook"?"facebook_graph_api":"instagram_graph_api";
-        if(body.verified!==true||String(body.verifiedPostId||"")!==current.postId||String(body.verifiedPermalink||"")!==current.permalink||body.verificationSource!==expectedSource||body.verificationStatus!=="published")return J({error:"platform_lookup_attestation_required"},403);
-        const record={...current,status:"succeeded",verifiedAt:now,verificationSource:expectedSource,updatedAt:now};
-        await this.state.storage.put(key,record);
-        return J({ok:true,status:"succeeded",receipt:record});
+      if(body.action==="not_published"){
+        if(current.status==="receipt_recorded")return J({error:"receipt_recorded_requires_manual_review",status:current.status},409);
+        if(current.status!=="reserved"&&(body.verificationSource!==(platform==="facebook"?"facebook_graph_api":"instagram_graph_api")||body.verificationStatus!=="not_found"||String(body.verifiedPostId||"")!==""))return J({error:"authoritative_not_found_lookup_required"},403);
+        storage.delete(key);return J({ok:true,status:"cleared_for_retry",retryAllowed:true});
       }
-      if(actionName==="unknown"){
-        if(!current)return J({error:"reservation_missing"},409);
-        if(current.status==="succeeded"||current.status==="receipt_recorded")return J({ok:true,status:current.status,receipt:current});
-        if(current.status!=="attempting"&&current.status!=="reserved")return J({error:"invalid_outbox_transition",status:current.status},409);
-        const record={...current,status:"unknown",reason:String(body.reason||"ambiguous_publish_outcome").slice(0,180),updatedAt:now};
-        await this.state.storage.put(key,record);
-        return J({ok:true,status:"unknown",reconciliationRequired:true});
-      }
-      if(actionName==="reconcile"){
-        if(!current)return J({error:"reservation_missing"},409);
-        if(current.contentHash!==hash)return J({error:"outbox_content_conflict"},409);
-        if(current.status==="succeeded")return J({ok:true,status:"succeeded",receipt:current});
-        if(current.status!=="reserved"&&current.status!=="attempting"&&current.status!=="unknown"&&current.status!=="receipt_recorded")return J({error:"reconciliation_not_required",status:current.status},409);
-        if(body.action==="published"){
-          const postId=String(body.postId||"").trim(),permalink=String(body.permalink||"").trim();
-          if(!postId||!validPlatformPermalink(platform,permalink))return J({error:"platform_post_id_and_permalink_required"},400);
-          const record={...current,status:"receipt_recorded",postId,permalink,publishedAt:String(body.publishedAt||now),receiptRecordedAt:now,reconciledAt:now,updatedAt:now};
-          await this.state.storage.put(key,record);
-          return J({ok:true,status:"receipt_recorded",verificationRequired:true,receipt:record});
-        }
-        if(body.action==="not_published"){
-          if(current.status==="receipt_recorded")return J({error:"receipt_recorded_requires_manual_review",status:current.status},409);
-          if(current.status!=="reserved"&&(body.verificationSource!==(platform==="facebook"?"facebook_graph_api":"instagram_graph_api")||body.verificationStatus!=="not_found"||String(body.verifiedPostId||"")!==""))return J({error:"authoritative_not_found_lookup_required"},403);
-          await this.state.storage.delete(key);
-          return J({ok:true,status:"cleared_for_retry",retryAllowed:true});
-        }
-        return J({error:"invalid_reconciliation_action"},400);
-      }
-      if(actionName==="status")return J({ok:true,receipt:current});
-      return J({error:"not_found"},404);
-    });
+      return J({error:"invalid_reconciliation_action"},400);
+    }
+    if(action==="status")return J({ok:true,receipt:current});
+    return J({error:"not_found"},404);
   }
 }
 function validPlatformPermalink(platform,value){
