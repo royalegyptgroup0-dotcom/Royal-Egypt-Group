@@ -253,6 +253,23 @@ test("ambiguous publication is blocked until explicit reconciliation", async () 
   assert.equal((await retry.json()).decision, "publish");
 });
 
+test("abandoned reservation requires explicit not-published reconciliation before retry", async () => {
+  const env = makeEnv();
+  const { generated } = await createPublishedPost(env);
+  const base = { day: generated.post.day, platform: "facebook", identity: "ceo-page", contentHash: generated.contentHash };
+  const first = await call("/api/outbox/reserve", { method: "POST", headers: auth, body: base }, env);
+  assert.equal(first.status, 200);
+  const blocked = await call("/api/outbox/reserve", { method: "POST", headers: auth, body: base }, env);
+  assert.equal(blocked.status, 409);
+  const reconcile = await call("/api/outbox/reconcile", {
+    method: "POST", headers: auth, body: { ...base, action: "not_published" }
+  }, env);
+  assert.equal(reconcile.status, 200);
+  const retry = await call("/api/outbox/reserve", { method: "POST", headers: auth, body: base }, env);
+  assert.equal(retry.status, 200);
+  assert.equal((await retry.json()).decision, "publish");
+});
+
 test("concurrent reserve requests grant exactly one publication claim", async () => {
   const env = makeEnv();
   const { generated } = await createPublishedPost(env);
