@@ -208,6 +208,6 @@ This addendum records later read-only checks against the Cloudflare account conn
 
 - The standalone ceo-notes.pages.dev Pages project exists in the other Cloudflare account associated with yasser.abdelaziz83@gmail.com, not in the target royalegyptgroup0@gmail.com Cloudflare account.
 - That standalone project has no GitHub source connection in its current Cloudflare project metadata and its last recorded deployment was an ad-hoc deployment from ceo-notes-site on 10 November 2026.
-- The current CEO Notes social-link and outbox changes are present in the Royal Egypt Group PR #66 Preview, but have not been deployed to the standalone ceo-notes.pages.dev production project.
+- The CEO Notes social-link change is present in the Royal Egypt Group PR #66 Pages Preview. The outbox Worker code is staged in PR #66 but has not been deployed to a Worker. Neither change has been deployed to the standalone ceo-notes.pages.dev production project.
 
 **Current assessment:** Royal Egypt Group sitemap/robots host alignment and /markets sitemap coverage are now deployed. Production/Preview D1 isolation remains in place. Preview AI availability, standalone CEO Notes deployment integration, custom-domain setup, and actual Google Search Console index confirmation remain separate open items.
