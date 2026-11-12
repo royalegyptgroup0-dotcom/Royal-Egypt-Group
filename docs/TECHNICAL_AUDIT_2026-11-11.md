@@ -197,7 +197,7 @@ This addendum records later read-only checks against the Cloudflare account conn
 - /markets was added through PR #67 after confirming it is a public navigation route. PR #67 passed GitHub checks, its Cloudflare Preview deployment succeeded, and the merge's Production deployment succeeded.
 - The Royal Egypt Group /notes/ mirror is intentionally omitted from this sitemap because its page declares the standalone CEO Notes canonical URL. This avoids presenting the same editorial page as two canonical locations.
 - The autonomous-tech-company site has its own robots.txt and sitemap, with English / and Arabic /ar/ canonical/hreflang entries.
-- No custom domain or DNS zone is configured in the target Cloudflare account. The Pages hostnames above remain the active canonical hosts; no DNS change was made.
+- The target Cloudflare account has no DNS zone, but it does retain deactivated custom-domain attachments for royalegyptgroup.com and www. In the other Cloudflare account, the same two domain attachments remain pending with a “CNAME record not set” verification error, and the zone is pending. Neither account currently has an active custom-domain mapping. The active canonical host remains royalegyptgroup-vy7.pages.dev. Do not change DNS, nameservers, domain attachments, or canonical host until the owner selects the authoritative account/project; no DNS change was made.
 
 ### GitHub search indexing versus web indexing
 
