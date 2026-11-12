@@ -176,6 +176,17 @@ test("feed publication is idempotent and refuses conflicting content for an exis
   assert.equal(conflict.status, 409);
 });
 
+
+test("preview public image URLs use the configured preview Worker origin", async () => {
+  const env = makeEnv();
+  env.PUBLIC_BASE = "https://ceo-notes-ai-preview.example.workers.dev";
+  const { generated, image, publish } = await createPublishedPost(env);
+  assert.equal(image.imageUrl, env.PUBLIC_BASE + "/image/1");
+  const feed = JSON.parse(await env.CEO_NOTES_KV.get("feed"));
+  assert.equal(feed.posts[0].imageUrl, env.PUBLIC_BASE + "/image/1");
+  assert.equal(publish.alreadyPublished, false);
+});
+
 test("outbox reserves, starts and stores an independently verifiable receipt", async () => {
   const env = makeEnv();
   const { generated } = await createPublishedPost(env);
