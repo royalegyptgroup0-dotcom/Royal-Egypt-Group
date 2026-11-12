@@ -301,7 +301,7 @@ export class CEOOutboxCoordinator {
     const url=new URL(request.url),action=url.pathname.slice(1),storage=this.state.storage.kv;
     if(request.method==="GET"&&action==="snapshot"){
       const entries=storage.list({prefix:"outbox:"});
-      return J({ok:true,records:[...entries.entries()].map(([key,value])=>({key,value}))});
+      return J({ok:true,records:[...entries].map(([key,value])=>({key,value}))});
     }
     if(request.method!=="POST")return J({error:"method_not_allowed"},405);
     let body;
