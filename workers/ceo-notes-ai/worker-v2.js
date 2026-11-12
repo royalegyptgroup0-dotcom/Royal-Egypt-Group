@@ -90,8 +90,19 @@ async function createBackup(env,scheduledTime){
       else outboxKeys.push(entry);
     }
   }
+  let coordinatorOutboxCount=0,coordinatorOutboxSha256=null;
+  if(env.OUTBOX_COORDINATOR){
+    const coordinator=env.OUTBOX_COORDINATOR.get(env.OUTBOX_COORDINATOR.idFromName("ceo-notes-global"));
+    const snapshotResponse=await coordinator.fetch("https://outbox-coordinator/snapshot");
+    if(!snapshotResponse.ok)throw new Error("outbox_coordinator_backup_failed");
+    const snapshot=await snapshotResponse.json();
+    const snapshotValue=JSON.stringify(snapshot.records||[]);
+    coordinatorOutboxCount=(snapshot.records||[]).length;
+    coordinatorOutboxSha256=await backupHash(snapshotValue);
+    await env.CEO_NOTES_KV.put("backup:"+date+":outbox-coordinator",snapshotValue);
+  }
   const manifest={
-    version:2,
+    version:3,
     date,
     createdAt:now.toISOString(),
     feedSha256,
@@ -99,7 +110,9 @@ async function createBackup(env,scheduledTime){
     imageKeys,
     imageMetaKeys,
     draftKeys,
-    outboxKeys
+    outboxKeys,
+    coordinatorOutboxCount,
+    coordinatorOutboxSha256
   };
   await env.CEO_NOTES_KV.put("backup:"+date+":manifest",JSON.stringify(manifest));
   const all=await env.CEO_NOTES_KV.list({prefix:"backup:",limit:1000});
@@ -340,8 +353,8 @@ export class CEOOutboxCoordinator {
         }
         if(body.action==="not_published"){
           const record={version:2,day,platform,identity,contentHash:hash,status:"reserved",createdAt:current.createdAt||now,updatedAt:now,reconciledAt:now,lastOutcome:"confirmed_not_published"};
-          await this.state.storage.put(key,record);
-          return J({ok:true,status:"reserved",retryAllowed:true});
+          await this.state.storage.delete(key);
+          return J({ok:true,status:"cleared_for_retry",retryAllowed:true});
         }
         return J({error:"invalid_reconciliation_action"},400);
       }
