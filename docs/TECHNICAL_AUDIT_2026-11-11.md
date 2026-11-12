@@ -176,3 +176,38 @@ Do not treat the custom domain as active until DNS verification and certificate 
 - No live AI prompt was sent, no Make webhook was called, no R2 bucket was enabled, and no paid service or recurring charge was added.
 
 **Final assessment:** GitHub ownership, Cloudflare Git integration, Production deployment, D1 environment isolation, schema parity, approved-only catalogue behavior, and unauthenticated admin rejection are verified. The platform remains controlled pre-launch. The remaining P0 gates are successful owner authentication, reliable lead review/notification, verified property inventory, and browser-level acceptance.
+
+---
+
+## 10. Current-state addendum — 13 November 2026
+
+This addendum records later read-only checks against the Cloudflare account connected to royalegyptgroup0@gmail.com. It does not rewrite the historical 11 November snapshot above.
+
+### Production deployment and bindings
+
+- Latest verified Production Pages deployment: ba11e978-7eb9-4d48-ba02-adf24f9d2b11, commit 481e5db3651ea16093e9c70f436344a58a0c68e3; Cloudflare reports the deploy stage as successful.
+- Production D1 remains royal-eg-listings (fec37fa6-9406-4bb9-aba1-25f03a7cb2ed).
+- Preview D1 remains royal-eg-listings-preview (2d8c26ad-041e-4a51-aa13-ddb2120ce836).
+- Workers AI binding difference: the current Production Pages configuration contains AI; the current Preview Pages configuration does not. The earlier statement above that both environments contain AI is not true of the currently read-back configuration. Do not treat Preview AI as available until the binding is configured and read back.
+
+### SEO and sitemap
+
+- Production robots.txt allows crawling and points to https://royalegyptgroup-vy7.pages.dev/sitemap.xml.
+- The current sitemap uses the active royalegyptgroup-vy7.pages.dev host and lists /, /properties, /markets, /coffee, /transportation, and /developers.
+- /markets was added through PR #67 after confirming it is a public navigation route. PR #67 passed GitHub checks, its Cloudflare Preview deployment succeeded, and the merge's Production deployment succeeded.
+- The Royal Egypt Group /notes/ mirror is intentionally omitted from this sitemap because its page declares the standalone CEO Notes canonical URL. This avoids presenting the same editorial page as two canonical locations.
+- The autonomous-tech-company site has its own robots.txt and sitemap, with English / and Arabic /ar/ canonical/hreflang entries.
+- No custom domain or DNS zone is configured in the target Cloudflare account. The Pages hostnames above remain the active canonical hosts; no DNS change was made.
+
+### GitHub search indexing versus web indexing
+
+- GitHub's repository metadata currently reports code-search indexing unavailable for the public repositories Royal-Egypt-Group, autonomous-tech-company, d1-get-started, and ceo-notes-publisher; it reports indexing available for OCTOPUSA and RoyalMediaPlayer.
+- This GitHub Code Search metadata is separate from Google/Bing search-engine indexing. No Google Search Console URL-inspection result was available in this review, so actual Google index inclusion is not claimed or inferred.
+
+### Separate CEO Notes hosting account
+
+- The standalone ceo-notes.pages.dev Pages project exists in the other Cloudflare account associated with yasser.abdelaziz83@gmail.com, not in the target royalegyptgroup0@gmail.com Cloudflare account.
+- That standalone project has no GitHub source connection in its current Cloudflare project metadata and its last recorded deployment was an ad-hoc deployment from ceo-notes-site on 10 November 2026.
+- The current CEO Notes social-link and outbox changes are present in the Royal Egypt Group PR #66 Preview, but have not been deployed to the standalone ceo-notes.pages.dev production project.
+
+**Current assessment:** Royal Egypt Group sitemap/robots host alignment and /markets sitemap coverage are now deployed. Production/Preview D1 isolation remains in place. Preview AI availability, standalone CEO Notes deployment integration, custom-domain setup, and actual Google Search Console index confirmation remain separate open items.
