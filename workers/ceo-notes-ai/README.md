@@ -26,7 +26,7 @@ Do not add a publishing Cron Trigger until the full end-to-end workflow is imple
 
 The staged `worker-v2.js` implementation requires a Durable Object binding named `OUTBOX_COORDINATOR` targeting the exported `CEOOutboxCoordinator` class. Use a SQLite-backed Durable Object migration (`new_sqlite_classes`) for this class. Do not point a preview Worker at the production feed/KV namespace; provision an isolated preview namespace and validate the full deployment plan before binding anything.
 
-The coordinator serializes each outbox transition inside `blockConcurrencyWhile` and stores per-platform records in strongly consistent Durable Object storage. A reservation can be claimed only once; repeated concurrent reserve calls are blocked. Ambiguous publish outcomes remain blocked until reconciled. A receipt is first recorded as `receipt_recorded` and is not considered successful until the separate `/api/outbox/verify` action receives an authoritative platform lookup result matching the recorded post ID.
+The coordinator serializes each outbox transition inside `blockConcurrencyWhile` and stores per-platform records in strongly consistent Durable Object storage. A reservation can be claimed only once; repeated concurrent reserve calls are blocked. Ambiguous publish outcomes remain blocked until reconciled. A receipt is first recorded as `receipt_recorded` and is not considered successful until the separate `/api/outbox/verify` action receives a matching platform lookup attestation (post ID, permalink, platform-specific Graph API source, and published status). The Worker validates the attestation fields; it does not call Meta itself. Make must perform the actual Graph API read-back before submitting the attestation, so this remains an integration trust boundary until that step is implemented and tested.
 
 Supported CEO Notes identities are Facebook `ceo-page` and Instagram `ceo-notes`. Corporate Royal Egypt Properties identities are deliberately rejected. The daily backup snapshots coordinator records into the existing KV backup and records their count and SHA-256 in manifest version 3.
 
@@ -36,5 +36,7 @@ Before enabling a deployment:
 3. Set `ADMIN_TOKEN` as a Worker secret (32+ characters); never put its value in source, Make logs, or chat.
 4. Update Make to call `receipt` followed by authoritative platform verification and `verify`. A receipt payload or a successful HTTP response alone is not proof of a public post.
 5. Run concurrency, recovery, backup/restore, and preview-only integration tests before any production migration or scenario activation.
+
+Cloudflare documents SQLite-backed Durable Objects on Workers Free with daily limits of 5 million rows read, 100,000 rows written, and 5 GB total stored data. Free-plan overages fail rather than charging, but usage must still be monitored. See [Cloudflare Durable Objects pricing](https://developers.cloudflare.com/durable-objects/platform/pricing/).
 
 No production Worker binding, secret, deployment, or Make scenario was changed by this staged code update.
