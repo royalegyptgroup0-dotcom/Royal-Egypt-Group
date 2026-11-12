@@ -137,80 +137,19 @@ async function validateOutboxContext(env,body){
   return {day,platform,identity,hash,key:outboxKey(platform,identity,day)};
 }
 async function handleOutbox(req,env,path){
+  if(!env.OUTBOX_COORDINATOR)return J({error:"outbox_coordinator_unavailable"},503);
   const body=await req.json();
   const context=await validateOutboxContext(env,body);
   if(context.error)return context.error;
-  const {day,platform,identity,hash,key}=context;
-  const currentRaw=await env.CEO_NOTES_KV.get(key);
-  let current=null;
-  if(currentRaw){
-    try{current=JSON.parse(currentRaw);}catch(error){return J({error:"outbox_record_corrupt"},409);}
-  }
-  const now=new Date().toISOString();
   const action=path.slice(OUTBOX_PREFIX.length);
-  if(action==="reserve"){
-    if(current&&current.contentHash!==hash)return J({error:"outbox_content_conflict",status:current.status},409);
-    if(current?.status==="succeeded")return J({ok:true,decision:"skip",status:"succeeded",receipt:current});
-    if(current?.status==="attempting"||current?.status==="unknown")return J({error:"reconciliation_required",decision:"blocked",status:current.status},409);
-    if(current?.status==="reserved")return J({ok:true,decision:"publish",status:"reserved",key});
-    const record={version:1,day,platform,identity,contentHash:hash,status:"reserved",createdAt:now,updatedAt:now};
-    await env.CEO_NOTES_KV.put(key,JSON.stringify(record));
-    return J({ok:true,decision:"publish",status:"reserved",key});
-  }
-  if(action==="start"){
-    if(!current)return J({error:"reservation_missing"},409);
-    if(current.contentHash!==hash)return J({error:"outbox_content_conflict"},409);
-    if(current.status==="succeeded")return J({ok:true,decision:"skip",status:"succeeded",receipt:current});
-    if(current.status!=="reserved")return J({error:"reconciliation_required",status:current.status},409);
-    const record={...current,status:"attempting",attemptedAt:now,updatedAt:now};
-    await env.CEO_NOTES_KV.put(key,JSON.stringify(record));
-    return J({ok:true,decision:"publish",status:"attempting"});
-  }
-  if(action==="receipt"){
-    if(!current)return J({error:"reservation_missing"},409);
-    if(current.contentHash!==hash)return J({error:"outbox_content_conflict"},409);
-    const postId=String(body.postId||"").trim();
-    const permalink=String(body.permalink||"").trim();
-    if(!postId||!permalink.startsWith("https://"))return J({error:"verified_post_id_and_permalink_required"},400);
-    if(current.status==="succeeded"){
-      if(current.postId===postId)return J({ok:true,idempotent:true,receipt:current});
-      return J({error:"receipt_conflict",postId:current.postId},409);
-    }
-    if(current.status!=="attempting"&&current.status!=="unknown")return J({error:"publish_attempt_not_started",status:current.status},409);
-    const record={...current,status:"succeeded",postId,permalink,publishedAt:String(body.publishedAt||now),verifiedAt:now,updatedAt:now};
-    await env.CEO_NOTES_KV.put(key,JSON.stringify(record));
-    return J({ok:true,receiptStored:true,receipt:record});
-  }
-  if(action==="unknown"){
-    if(!current)return J({error:"reservation_missing"},409);
-    if(current.status==="succeeded")return J({ok:true,status:"succeeded",receipt:current});
-    if(current.status!=="attempting"&&current.status!=="reserved")return J({error:"invalid_outbox_transition",status:current.status},409);
-    const record={...current,status:"unknown",reason:String(body.reason||"ambiguous_publish_outcome").slice(0,180),updatedAt:now};
-    await env.CEO_NOTES_KV.put(key,JSON.stringify(record));
-    return J({ok:true,status:"unknown",reconciliationRequired:true});
-  }
-  if(action==="reconcile"){
-    if(!current)return J({error:"reservation_missing"},409);
-    if(current.contentHash!==hash)return J({error:"outbox_content_conflict"},409);
-    if(current.status==="succeeded")return J({ok:true,status:"succeeded",receipt:current});
-    if(current.status!=="attempting"&&current.status!=="unknown")return J({error:"reconciliation_not_required",status:current.status},409);
-    if(body.action==="published"){
-      const postId=String(body.postId||"").trim();
-      const permalink=String(body.permalink||"").trim();
-      if(!postId||!permalink.startsWith("https://"))return J({error:"verified_post_id_and_permalink_required"},400);
-      const record={...current,status:"succeeded",postId,permalink,publishedAt:String(body.publishedAt||now),verifiedAt:now,reconciledAt:now,updatedAt:now};
-      await env.CEO_NOTES_KV.put(key,JSON.stringify(record));
-      return J({ok:true,status:"succeeded",receipt:record});
-    }
-    if(body.action==="not_published"){
-      const record={version:1,day,platform,identity,contentHash:hash,status:"reserved",createdAt:current.createdAt||now,updatedAt:now,reconciledAt:now,lastOutcome:"confirmed_not_published"};
-      await env.CEO_NOTES_KV.put(key,JSON.stringify(record));
-      return J({ok:true,status:"reserved",retryAllowed:true});
-    }
-    return J({error:"invalid_reconciliation_action"},400);
-  }
-  if(action==="status")return J({ok:true,receipt:current});
-  return J({error:"not_found"},404);
+  const id=env.OUTBOX_COORDINATOR.idFromName("ceo-notes-global");
+  const stub=env.OUTBOX_COORDINATOR.get(id);
+  const response=await stub.fetch("https://outbox-coordinator/"+action,{
+    method:"POST",
+    headers:{"content-type":"application/json"},
+    body:JSON.stringify({day:context.day,platform:context.platform,identity:context.identity,contentHash:context.hash,...body})
+  });
+  return new Response(response.body,{status:response.status,headers:response.headers});
 }
 async function generatePost(env){
   const date=cairoDate();
@@ -312,6 +251,114 @@ async function publishPost(req,env){
   await env.CEO_NOTES_KV.put("feed",JSON.stringify(next));
   await env.CEO_NOTES_KV.put("draft:"+date,JSON.stringify({...draft,status:"published",publishedAt:published.publishedAt}));
   return J({ok:true,alreadyPublished:false,day,posts:next.posts.length,imageUrl:published.imageUrl,contentHash:hash});
+}
+
+export class CEOOutboxCoordinator {
+  constructor(state,env){
+    this.state=state;
+    this.env=env;
+  }
+  async fetch(request){
+    const url=new URL(request.url);
+    const action=url.pathname.slice(1);
+    if(request.method==="GET"&&action==="snapshot"){
+      return await this.state.blockConcurrencyWhile(async()=>{
+        const entries=await this.state.storage.list({prefix:"outbox:"});
+        return J({ok:true,records:[...entries.entries()].map(([key,value])=>({key,value}))});
+      });
+    }
+    if(request.method!=="POST")return J({error:"method_not_allowed"},405);
+    let body;
+    try{body=await request.json();}catch(error){return J({error:"invalid_json"},400);}
+    const day=Number(body.day),platform=String(body.platform||""),identity=String(body.identity||""),hash=String(body.contentHash||"");
+    if(!Number.isInteger(day)||day<1||!hash||!outboxAllowed(platform,identity))return J({error:"invalid_outbox_identity_or_payload"},400);
+    const key=outboxKey(platform,identity,day),now=new Date().toISOString();
+    return await this.state.blockConcurrencyWhile(async()=>{
+      const current=await this.state.storage.get(key)||null;
+      const actionName=action;
+      if(actionName==="reserve"){
+        if(current&&current.contentHash!==hash)return J({error:"outbox_content_conflict",status:current.status},409);
+        if(current?.status==="succeeded")return J({ok:true,decision:"skip",status:"succeeded",receipt:current});
+        if(current?.status==="attempting"||current?.status==="unknown")return J({error:"reconciliation_required",decision:"blocked",status:current.status},409);
+        if(current?.status==="reserved")return J({ok:true,decision:"publish",status:"reserved",key});
+        const record={version:2,day,platform,identity,contentHash:hash,status:"reserved",createdAt:now,updatedAt:now};
+        await this.state.storage.put(key,record);
+        return J({ok:true,decision:"publish",status:"reserved",key});
+      }
+      if(actionName==="start"){
+        if(!current)return J({error:"reservation_missing"},409);
+        if(current.contentHash!==hash)return J({error:"outbox_content_conflict"},409);
+        if(current.status==="succeeded")return J({ok:true,decision:"skip",status:"succeeded",receipt:current});
+        if(current.status!=="reserved")return J({error:"reconciliation_required",status:current.status},409);
+        const record={...current,status:"attempting",attemptedAt:now,updatedAt:now};
+        await this.state.storage.put(key,record);
+        return J({ok:true,decision:"publish",status:"attempting"});
+      }
+      if(actionName==="receipt"){
+        if(!current)return J({error:"reservation_missing"},409);
+        if(current.contentHash!==hash)return J({error:"outbox_content_conflict"},409);
+        const postId=String(body.postId||"").trim(),permalink=String(body.permalink||"").trim();
+        if(!postId||!validPlatformPermalink(platform,permalink))return J({error:"platform_post_id_and_permalink_required"},400);
+        if(current.status==="succeeded"){
+          if(current.postId===postId)return J({ok:true,idempotent:true,receipt:current});
+          return J({error:"receipt_conflict",postId:current.postId},409);
+        }
+        if(current.status!=="attempting"&&current.status!=="unknown")return J({error:"publish_attempt_not_started",status:current.status},409);
+        const record={...current,status:"receipt_recorded",postId,permalink,publishedAt:String(body.publishedAt||now),receiptRecordedAt:now,updatedAt:now};
+        await this.state.storage.put(key,record);
+        return J({ok:true,receiptStored:true,verificationRequired:true,receipt:record});
+      }
+      if(actionName==="verify"){
+        if(!current)return J({error:"reservation_missing"},409);
+        if(current.contentHash!==hash)return J({error:"outbox_content_conflict"},409);
+        if(current.status==="succeeded")return J({ok:true,status:"succeeded",receipt:current});
+        if(current.status!=="receipt_recorded")return J({error:"receipt_verification_required",status:current.status},409);
+        if(body.verified!==true||String(body.verifiedPostId||"")!==current.postId)return J({error:"authoritative_platform_verification_required"},403);
+        const record={...current,status:"succeeded",verifiedAt:now,updatedAt:now};
+        await this.state.storage.put(key,record);
+        return J({ok:true,status:"succeeded",receipt:record});
+      }
+      if(actionName==="unknown"){
+        if(!current)return J({error:"reservation_missing"},409);
+        if(current.status==="succeeded"||current.status==="receipt_recorded")return J({ok:true,status:current.status,receipt:current});
+        if(current.status!=="attempting"&&current.status!=="reserved")return J({error:"invalid_outbox_transition",status:current.status},409);
+        const record={...current,status:"unknown",reason:String(body.reason||"ambiguous_publish_outcome").slice(0,180),updatedAt:now};
+        await this.state.storage.put(key,record);
+        return J({ok:true,status:"unknown",reconciliationRequired:true});
+      }
+      if(actionName==="reconcile"){
+        if(!current)return J({error:"reservation_missing"},409);
+        if(current.contentHash!==hash)return J({error:"outbox_content_conflict"},409);
+        if(current.status==="succeeded")return J({ok:true,status:"succeeded",receipt:current});
+        if(current.status!=="attempting"&&current.status!=="unknown"&&current.status!=="receipt_recorded")return J({error:"reconciliation_not_required",status:current.status},409);
+        if(body.action==="published"){
+          const postId=String(body.postId||"").trim(),permalink=String(body.permalink||"").trim();
+          if(!postId||!validPlatformPermalink(platform,permalink))return J({error:"platform_post_id_and_permalink_required"},400);
+          const record={...current,status:"receipt_recorded",postId,permalink,publishedAt:String(body.publishedAt||now),receiptRecordedAt:now,reconciledAt:now,updatedAt:now};
+          await this.state.storage.put(key,record);
+          return J({ok:true,status:"receipt_recorded",verificationRequired:true,receipt:record});
+        }
+        if(body.action==="not_published"){
+          const record={version:2,day,platform,identity,contentHash:hash,status:"reserved",createdAt:current.createdAt||now,updatedAt:now,reconciledAt:now,lastOutcome:"confirmed_not_published"};
+          await this.state.storage.put(key,record);
+          return J({ok:true,status:"reserved",retryAllowed:true});
+        }
+        return J({error:"invalid_reconciliation_action"},400);
+      }
+      if(actionName==="status")return J({ok:true,receipt:current});
+      return J({error:"not_found"},404);
+    });
+  }
+}
+function validPlatformPermalink(platform,value){
+  try{
+    const url=new URL(value);
+    if(url.protocol!=="https:")return false;
+    const host=url.hostname.toLowerCase();
+    if(platform==="facebook")return (host==="facebook.com"||host.endsWith(".facebook.com"))&&/^\/(?:[^/]+\/)?(?:posts\/|permalink\.php|[^/]+_\d+)/i.test(url.pathname);
+    if(platform==="instagram")return (host==="instagram.com"||host.endsWith(".instagram.com"))&&/^\/(?:p|reel|tv)\/[A-Za-z0-9_-]+\/?$/i.test(url.pathname);
+    return false;
+  }catch(error){return false;}
 }
 export default {
   async fetch(req,env){
