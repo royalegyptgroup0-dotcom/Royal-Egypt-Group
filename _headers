@@ -12,3 +12,13 @@
 
 /*.html
   Cache-Control: no-cache
+
+/admin-inbox.html
+  Cache-Control: no-store
+  Referrer-Policy: no-referrer
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'
+
+/admin-listings.html
+  Cache-Control: no-store
+  Referrer-Policy: no-referrer
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'
