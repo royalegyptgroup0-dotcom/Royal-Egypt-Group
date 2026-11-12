@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://royalegyptgroup.pages.dev/sitemap.xml
+Sitemap: https://royalegyptgroup-vy7.pages.dev/sitemap.xml
