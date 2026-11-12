@@ -279,8 +279,8 @@ export class CEOOutboxCoordinator {
       if(actionName==="reserve"){
         if(current&&current.contentHash!==hash)return J({error:"outbox_content_conflict",status:current.status},409);
         if(current?.status==="succeeded")return J({ok:true,decision:"skip",status:"succeeded",receipt:current});
-        if(current?.status==="attempting"||current?.status==="unknown")return J({error:"reconciliation_required",decision:"blocked",status:current.status},409);
-        if(current?.status==="reserved")return J({ok:true,decision:"publish",status:"reserved",key});
+        if(current?.status==="attempting"||current?.status==="unknown"||current?.status==="receipt_recorded")return J({error:"reconciliation_required",decision:"blocked",status:current.status},409);
+        if(current?.status==="reserved")return J({error:"reservation_already_claimed",decision:"blocked",status:"reserved"},409);
         const record={version:2,day,platform,identity,contentHash:hash,status:"reserved",createdAt:now,updatedAt:now};
         await this.state.storage.put(key,record);
         return J({ok:true,decision:"publish",status:"reserved",key});
