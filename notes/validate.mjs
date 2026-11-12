@@ -64,7 +64,10 @@ const htmlMarkers = [
   'post.tags',
   'property="og:image"',
   'name="twitter:card"',
-  'article:published_time'
+  'article:published_time',
+  'class="social-links"',
+  'href="https://www.linkedin.com/in/yasser-abdelaziz-a0440550/"',
+  'href="https://www.instagram.com/kiritoon/"'
 ];
 for (const marker of htmlMarkers) assert.ok(html.includes(marker), `homepage is missing: ${marker}`);
 
