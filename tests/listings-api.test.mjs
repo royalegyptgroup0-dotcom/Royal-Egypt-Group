@@ -12,6 +12,12 @@ class FakeDB {
 
   prepare(sql) {
     return {
+      all: async () => {
+        if (sql.includes("WHERE status='approved'")) {
+          return { results: this.rows.filter(row => row.status === "approved") };
+        }
+        return { results: [] };
+      },
       bind: (...values) => ({
         first: async () => {
           if (!sql.includes("intake_rate_limits")) return null;
@@ -22,12 +28,6 @@ class FakeDB {
             : 1;
           this.rateLimits.set(ipHash, { windowStart, count });
           return { request_count: count };
-        },
-        all: async () => {
-          if (sql.includes("WHERE status='approved'")) {
-            return { results: this.rows.filter(row => row.status === "approved") };
-          }
-          return { results: [] };
         },
         run: async () => {
           if (sql.includes("INSERT INTO listings")) {
