@@ -1,0 +1,39 @@
+name: CEO Notes Preview Worker Deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ceo-notes-preview-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy-preview:
+    name: Deploy isolated CEO Notes Preview Worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out reviewed Preview branch
+        uses: actions/checkout@v6
+        with:
+          ref: feature/ceo-notes-outbox-v2-2026-11-12
+          persist-credentials: false
+
+      - name: Verify Preview configuration exists
+        shell: bash
+        run: |
+          test -f workers/ceo-notes-ai/worker-v2.js
+          test -f workers/ceo-notes-ai/wrangler.preview.jsonc
+          grep -q '"name": "ceo-notes-ai-preview"' workers/ceo-notes-ai/wrangler.preview.jsonc
+          grep -q '"PREVIEW_MODE": "true"' workers/ceo-notes-ai/wrangler.preview.jsonc
+
+      - name: Deploy Preview Worker only
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4.161.0"
+          command: deploy --config workers/ceo-notes-ai/wrangler.preview.jsonc
