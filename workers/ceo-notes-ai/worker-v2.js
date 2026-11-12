@@ -415,7 +415,17 @@ export default {
       if(req.method!=="POST")return J({error:"method_not_allowed"},405);
       if(!authorized(req,env))return J({error:"unauthorized"},401);
     }
-    if(url.pathname==="/health"&&req.method==="GET")return J({ok:true,service:"CEO Notes AI Publisher"});
+    if(url.pathname==="/health"&&req.method==="GET"){
+      const health={ok:true,service:"CEO Notes AI Publisher",kvConfigured:!!env.CEO_NOTES_KV,aiConfigured:!!env.AI,outboxCoordinatorConfigured:!!env.OUTBOX_COORDINATOR,outboxCoordinatorReady:false};
+      if(env.OUTBOX_COORDINATOR){
+        const stub=env.OUTBOX_COORDINATOR.get(env.OUTBOX_COORDINATOR.idFromName("ceo-notes-health"));
+        const check=await stub.fetch("https://outbox-coordinator/snapshot");
+        health.outboxCoordinatorReady=check.ok;
+        if(!check.ok)health.ok=false;
+      }else health.ok=false;
+      if(!health.kvConfigured)health.ok=false;
+      return J(health,health.ok?200:503);
+    }
     try{
       if(req.method==="GET"&&(url.pathname==="/"||url.pathname==="/notes"||url.pathname==="/notes/")){
         const page=await fetch("https://raw.githubusercontent.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/main/notes/index.html",{cf:{cacheTtl:0}});
