@@ -119,6 +119,22 @@ test("health and canonical feed remain public and health checks runtime bindings
   assert.deepEqual((await feed.json()).posts, []);
 });
 
+test("preview mode never seeds its isolated KV from the production feed", async () => {
+  const env = makeEnv();
+  env.PREVIEW_MODE = "true";
+  env.CEO_NOTES_KV.values.delete("feed");
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => { throw new Error("preview attempted production feed fetch"); };
+  try {
+    const response = await call("/feed", {}, env);
+    assert.equal(response.status, 200);
+    assert.deepEqual((await response.json()).posts, []);
+    assert.deepEqual(JSON.parse(await env.CEO_NOTES_KV.get("feed")).posts, []);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("all API routes fail closed without the configured bearer secret", async () => {
   const env = makeEnv({ adminToken: null });
   for (const path of ["/api/generate", "/api/image", "/api/publish", "/api/outbox/reserve"]) {
