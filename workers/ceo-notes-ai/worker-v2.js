@@ -4,6 +4,7 @@ const API_PUBLISH_PATH="/api/publish";
 const OUTBOX_PREFIX="/api/outbox/";
 const FEED_URL="https://raw.githubusercontent.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/ceo-notes-site/notes/posts.json";
 const PUBLIC_BASE="https://ceo-notes-ai.yasser-abdelaziz83.workers.dev";
+function publicBase(env){return String(env.PUBLIC_BASE||PUBLIC_BASE).replace(/\\/+$/,"");}
 
 function authorized(req,env){
   const token=env.ADMIN_TOKEN;
@@ -220,7 +221,7 @@ async function generateImage(req,env){
   const imageKey="image:"+day;
   const existing=await env.CEO_NOTES_KV.get(imageKey);
   const imageMetaRaw=await env.CEO_NOTES_KV.get("image-meta:"+day);
-  const imageUrl=PUBLIC_BASE+"/image/"+day;
+  const imageUrl=publicBase(env)+"/image/"+day;
   if(existing){
     if(!imageMetaRaw)return J({error:"existing_image_unverified"},409);
     const imageMeta=JSON.parse(imageMetaRaw);
@@ -257,9 +258,9 @@ async function publishPost(req,env){
   if(existing){
     const existingHash=String(existing.contentHash||await contentHash(existing));
     if(existingHash!==hash)return J({error:"day_content_conflict",day},409);
-    return J({ok:true,alreadyPublished:true,day,post:existing,imageUrl:existing.imageUrl||PUBLIC_BASE+"/image/"+day,contentHash:hash});
+    return J({ok:true,alreadyPublished:true,day,post:existing,imageUrl:existing.imageUrl||publicBase(env)+"/image/"+day,contentHash:hash});
   }
-  const published={...draft.post,status:"Published",publishedAt:String(post.publishedAt||new Date().toISOString()),imageUrl:PUBLIC_BASE+"/image/"+day,contentHash:hash};
+  const published={...draft.post,status:"Published",publishedAt:String(post.publishedAt||new Date().toISOString()),imageUrl:publicBase(env)+"/image/"+day,contentHash:hash};
   const next={version:1,posts:[...posts,published].sort((a,b)=>Number(a.day)-Number(b.day))};
   await env.CEO_NOTES_KV.put("feed",JSON.stringify(next));
   await env.CEO_NOTES_KV.put("draft:"+date,JSON.stringify({...draft,status:"published",publishedAt:published.publishedAt}));
