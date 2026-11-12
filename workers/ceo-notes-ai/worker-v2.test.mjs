@@ -105,11 +105,15 @@ async function createPublishedPost(env) {
   return { generated, image, publish: await publishResponse.json() };
 }
 
-test("health and canonical feed remain public", async () => {
+test("health and canonical feed remain public and health checks runtime bindings", async () => {
   const env = makeEnv();
-  const health = await call("/health", {}, env);
-  assert.equal(health.status, 200);
-  assert.equal((await health.json()).ok, true);
+  const healthResponse = await call("/health", {}, env);
+  assert.equal(healthResponse.status, 200);
+  const health = await healthResponse.json();
+  assert.equal(health.ok, true);
+  assert.equal(health.kvConfigured, true);
+  assert.equal(health.outboxCoordinatorConfigured, true);
+  assert.equal(health.outboxCoordinatorReady, true);
   const feed = await call("/feed", {}, env);
   assert.equal(feed.status, 200);
   assert.deepEqual((await feed.json()).posts, []);
