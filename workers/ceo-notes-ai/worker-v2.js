@@ -160,7 +160,7 @@ async function handleOutbox(req,env,path){
   const response=await stub.fetch("https://outbox-coordinator/"+action,{
     method:"POST",
     headers:{"content-type":"application/json"},
-    body:JSON.stringify({day:context.day,platform:context.platform,identity:context.identity,contentHash:context.hash,...body})
+    body:JSON.stringify({...body,day:context.day,platform:context.platform,identity:context.identity,contentHash:context.hash})
   });
   return new Response(response.body,{status:response.status,headers:response.headers});
 }
