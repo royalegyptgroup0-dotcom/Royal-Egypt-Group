@@ -89,7 +89,7 @@ test("health and canonical feed remain public", async () => {
 });
 
 test("all API routes fail closed without the configured bearer secret", async () => {
-  const env = makeEnv({ adminToken: undefined });
+  const env = makeEnv({ adminToken: null });
   for (const path of ["/api/generate", "/api/image", "/api/publish", "/api/outbox/reserve"]) {
     const response = await call(path, { method: "POST", headers: auth, body: {} }, env);
     assert.equal(response.status, 401, path);
