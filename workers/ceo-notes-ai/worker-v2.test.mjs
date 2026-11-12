@@ -66,7 +66,7 @@ function makeEnv({ posts = [], adminToken = token } = {}) {
   const coordinatorObject = new CEOOutboxCoordinator(state, {});
   const coordinatorNamespace = {
     idFromName(name) { return name; },
-    get() { return { fetch(request) { return coordinatorObject.fetch(request); } }; }
+    get() { return { fetch(input, init) { return coordinatorObject.fetch(input instanceof Request ? input : new Request(input, init)); } }; }
   };
   return { ADMIN_TOKEN: adminToken, CEO_NOTES_KV: kv, AI: ai, OUTBOX_COORDINATOR: coordinatorNamespace, coordinatorValues, calls };
 }
