@@ -49,24 +49,29 @@ function makeEnv({ posts = [], adminToken = token } = {}) {
     }
   };
   const coordinatorValues = new Map();
-  let queue = Promise.resolve();
-  const state = {
-    storage: {
-      async get(key) { return coordinatorValues.get(key); },
-      async put(key, value) { coordinatorValues.set(key, structuredClone(value)); },
-      async delete(key) { coordinatorValues.delete(key); },
-      async list({ prefix = "" } = {}) { return new Map([...coordinatorValues.entries()].filter(([key]) => key.startsWith(prefix))); }
-    },
-    blockConcurrencyWhile(callback) {
-      const run = queue.then(callback);
-      queue = run.catch(() => {});
-      return run;
-    }
-  };
-  const coordinatorObject = new CEOOutboxCoordinator(state, {});
+  const coordinatorValuesById = new Map([["ceo-notes-day:1", coordinatorValues]]);
+  const coordinatorObjects = new Map();
   const coordinatorNamespace = {
     idFromName(name) { return name; },
-    get() { return { fetch(input, init) { return coordinatorObject.fetch(input instanceof Request ? input : new Request(input, init)); } }; }
+    get(id) {
+      if (!coordinatorObjects.has(id)) {
+        let values = coordinatorValuesById.get(id);
+        if (!values) {
+          values = new Map();
+          coordinatorValuesById.set(id, values);
+        }
+        const kv = {
+          get(key) { return values.get(key); },
+          put(key, value) { values.set(key, structuredClone(value)); },
+          delete(key) { values.delete(key); },
+          list({ prefix = "" } = {}) { return new Map([...values.entries()].filter(([key]) => key.startsWith(prefix))); }
+        };
+        const coordinatorObject = new CEOOutboxCoordinator({ storage: { kv } }, {});
+        coordinatorObjects.set(id, coordinatorObject);
+      }
+      const coordinatorObject = coordinatorObjects.get(id);
+      return { fetch(input, init) { return coordinatorObject.fetch(input instanceof Request ? input : new Request(input, init)); } };
+    }
   };
   return { ADMIN_TOKEN: adminToken, CEO_NOTES_KV: kv, AI: ai, OUTBOX_COORDINATOR: coordinatorNamespace, coordinatorValues, calls };
 }
