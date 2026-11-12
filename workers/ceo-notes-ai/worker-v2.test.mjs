@@ -179,7 +179,7 @@ test("outbox reserves, starts and stores an independently verifiable receipt", a
   assert.equal(stored.permalink, "https://www.facebook.com/123_456");
 });
 
-test("platform identities remain isolated", async () => {
+test("CEO Notes identities remain isolated from corporate Facebook", async () => {
   const env = makeEnv();
   const { generated } = await createPublishedPost(env);
   const shared = { day: generated.post.day, contentHash: generated.contentHash };
@@ -192,7 +192,7 @@ test("platform identities remain isolated", async () => {
   const excludedInstagram = await call("/api/outbox/reserve", {
     method: "POST", headers: auth, body: { ...shared, platform: "instagram", identity: "royal-egypt-properties" }
   }, env);
-  assert.equal(facebook.status, 200);
+  assert.equal(facebook.status, 400);
   assert.equal(instagram.status, 200);
   assert.equal(excludedInstagram.status, 400);
 });
