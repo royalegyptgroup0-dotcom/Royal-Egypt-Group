@@ -1,125 +1,213 @@
 # Royal Egypt Group — Technical Audit
 
-**Verified:** 11 November 2026  
+**Verified:** 11 November 2026, 06:42 Egypt time (UTC+2)  
 **Repository:** https://github.com/royalegyptgroup0-dotcom/Royal-Egypt-Group  
-**Default branch:** main  
-**Current Production hostname:** https://royalegyptgroup-vy7.pages.dev  
-**Production commit:** b34dc939ee440ab393e72e43e36084ccb1c3360f  
-**Production deployment:** 9b6559e2-1c6c-4b68-82b1-a352efe08a5f — deploy stage successful  
+**Default branch:** `main`  
+**Production hostname:** https://royalegyptgroup-vy7.pages.dev  
+**Production commit:** `03a7a3aa6c10190a00d01866353a5ed12031086e`  
+**Production deployment:** `abeaa066-d4f5-421a-83b0-0fe3d1e1b48b` — deploy stage successful  
 **Decision:** Controlled pre-launch; not ready for unrestricted commercial lead collection.
 
-This audit supersedes the 9 November launch-readiness snapshot where later changes or live checks differ. It records read-only verification performed on 11 November. No Production data, secrets, DNS records, or deployment settings were changed during this review.
+This refresh supersedes the earlier 11 November snapshot after the Sophia integration was merged and deployed. Findings below distinguish live configuration, source review, synthetic tests, and items that remain unverified. The review was read-only: no Production D1 writes, secret changes, DNS changes, deployment-setting changes, or production code changes were performed.
 
 ## 1. Source control and deployment
 
-- GitHub repository ownership and Admin/Push access are confirmed for royalegyptgroup0-dotcom/Royal-Egypt-Group.
-- Cloudflare Pages project royalegyptgroup is connected to that same owner and repository; production branch is main.
-- Production deployment for commit b34dc939... completed successfully.
-- Pull Request #50 was merged into main. Its final head passed:
-  - Functions and Intake Tests — [run 42697491845](https://github.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/actions/runs/42697491845)
-  - Jekyll site CI — [run 42697491725](https://github.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/actions/runs/42697491725)
-  - Cloudflare Pages Preview — [successful Preview](https://88b5ea1b.royalegyptgroup-vy7.pages.dev)
-- PR #9 is merged. PR #10 was closed without merging. PRs #12, #13 and #14 were closed as superseded; do not reopen or merge them without a fresh review.
-- Git/Cloudflare source metadata now points to the new GitHub owner. Automatic deployments are enabled.
+- GitHub repository: `royalegyptgroup0-dotcom/Royal-Egypt-Group`.
+- Repository owner and Admin/Push permissions were confirmed for the new account.
+- Cloudflare Pages project `royalegyptgroup` is connected to the same GitHub owner and repository; production branch is `main`.
+- Cloudflare automatic deployments are enabled. The current project configuration points to the new owner, not the former GitHub owner.
+- Current Production deployment was triggered by a GitHub push to `main` and completed successfully on commit `03a7a3aa...`.
+- PR #50 (release candidate), #55 (technical audit), #56 (bounded intake webhook timeout), #58 (Sophia branding), and #59 (Sophia backend integration) are merged.
+- PR #59 checks passed on its final head:
+  - Functions and Intake Tests — [run 42957798006](https://github.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/actions/runs/42957798006)
+  - Jekyll site CI — [run 42957798155](https://github.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/actions/runs/42957798155)
+  - Cloudflare Pages Preview — [successful Preview](https://7fb2d4ce.royalegyptgroup-vy7.pages.dev)
+  - Production deployment after merge — successful, deployment `abeaa066-d4f5-421a-83b0-0fe3d1e1b48b`.
+- The merged assistant integration connects the Sophia chat UI to the same-origin `/api/assistant` endpoint. It does not introduce a client-side credential.
 
-## 2. Production and Preview data isolation
+## 2. Cloudflare bindings and Production/Preview isolation
 
-| Environment | D1 database | Database ID |
-|---|---|---|
-| Production | royal-eg-listings | fec37fa6-9406-4bb9-aba1-25f03a7cb2ed |
-| Preview | royal-eg-listings-preview | 2d8c26ad-041e-4a51-aa13-ddb2120ce836 |
+Cloudflare's live project configuration and the repository's `wrangler.toml` agree:
 
-- The Production and Preview bindings are distinct.
-- Read-only schema inspection found the same application tables and compatible definitions in both databases: customers, opportunities, listings, intake_rate_limits, and orders.
-- No Production migrations or writes were performed during this audit.
+| Environment | D1 binding | Database | Database ID | Workers AI |
+|---|---|---|---|---|
+| Production | `DB` | `royal-eg-listings` | `fec37fa6-9406-4bb9-aba1-25f03a7cb2ed` | `AI` present |
+| Preview | `DB` | `royal-eg-listings-preview` | `2d8c26ad-041e-4a51-aa13-ddb2120ce836` | `AI` present |
 
-### Aggregate data snapshot
+- The two environments use distinct D1 database IDs.
+- A successful current Preview deployment for PR #59 also showed the Preview D1 ID and AI binding.
+- GitHub/Cloudflare source ownership and Preview/Production bindings are now consistent.
+- The previous Preview isolation and stale Git-owner findings are resolved in the current live configuration.
 
-Only counts and schema definitions were queried. Customer names, phone numbers, emails, notes, and order details were not read.
+## 3. D1 schema and aggregate data
 
-| Production table | Current count |
+Only schema definitions, index definitions, and aggregate counts were queried. No customer names, phone numbers, emails, notes, listing contact details, or order details were read.
+
+### Schema parity
+
+The five application tables exist in both databases:
+
+- `customers`
+- `intake_rate_limits`
+- `listings`
+- `opportunities`
+- `orders`
+
+The current read-only comparison found matching application-table columns, types, nullability, defaults, primary-key definitions, and explicit index definitions across Production and Preview. Both databases also contain the Cloudflare-managed `_cf_KV` table. The prior reported schema mismatch is not present in the current comparison.
+
+### Aggregate snapshot
+
+| Production metric | Count |
 |---|---:|
-| listings — rejected | 2 |
-| listings — approved | 0 |
-| customers | 0 |
-| opportunities | 0 |
-| orders — pending | 3 |
-| intake_rate_limits | 0 |
+| Listings — approved | 0 |
+| Listings — rejected | 2 |
+| Customers | 0 |
+| Opportunities | 0 |
+| Orders — pending | 3 |
+| Rate-limit rows | 1 |
 
-Preview currently has 0 listings and 0 orders; the inspected customer, opportunity, and rate-limit tables are also empty.
+The Preview aggregate query returned no listing or order status rows and zero customers, opportunities, and rate-limit rows. Counts can change as the application receives traffic.
 
-## 3. Public website and catalogue
+D1 query metadata confirmed `changed_db=false` and `rows_written=0` for the schema and aggregate inspections.
 
-- The Production homepage and property page load from the current Pages hostname.
-- The Production homepage and property page canonical URLs point to royalegyptgroup-vy7.pages.dev.
-- GET /api/listings returned {"listings":[]}.
-- The current properties.html source fetches /api/listings; the former three hard-coded property offers are absent from the current homepage and property-page source.
-- This is the expected safe state while Production has no approved listings. Do not advertise the old offers as currently available.
-- The property submission endpoint keeps new records in pending; image uploads remain disabled and are rejected until a secure storage pipeline exists.
+## 4. Public website and catalogue smoke checks
 
-## 4. Authentication and lead handling
+Read-only checks against the active Production hostname confirmed:
 
-### Verified
+- Homepage loads and presents the three business divisions.
+- Property page loads and describes manual review before publication.
+- `GET /api/listings` returned `{"listings":[]}`.
+- The current property-page source loads the catalogue from `/api/listings`; the former three hard-coded offers are absent.
+- The empty catalogue is consistent with the Production D1 snapshot: zero approved listings.
+- New property submissions are kept in `pending`; image uploads remain disabled and are rejected until a secure storage pipeline is available.
 
-- Unauthenticated requests to /api/admin/inbox and /api/admin/listings returned HTTP 401.
-- Both admin APIs require a server-side Bearer token.
-- The owner-inbox page keeps the entered token in page memory and clears it on logout; it does not write the token to browser local or session storage.
-- The generic inbox endpoint allows only an allowlist of customer/opportunity statuses and keeps orders read-only.
-- Listing moderation allows only approved or rejected transitions from pending.
+Unauthenticated access checks returned:
+
+- `GET /api/admin/inbox` — HTTP 401.
+- `GET /api/admin/listings` — HTTP 401.
+
+These 401 responses confirm that unauthenticated requests are rejected. They do **not** prove that the owner credential is configured or that a valid owner login succeeds.
+
+## 5. Authentication and lead handling
+
+### Verified from source
+
+- Both admin APIs require `Authorization: Bearer <ADMIN_TOKEN>`.
+- The owner inbox page keeps its token in page memory, clears the input after successful login, and clears the token on logout. It does not use browser local/session storage.
+- Listing moderation permits only `approved` or `rejected` transitions from `pending`.
+- The generic inbox permits an allowlist of customer/opportunity statuses and keeps orders read-only.
+- Public intake validates consent, request type, language, field lengths, phone digits, and a bounded request body.
+- Intake persistence is D1-first. Optional Make notification failure does not discard the stored request.
+- The Make webhook call is bounded to five seconds and reports `delivery_failed` on failure.
 
 ### Not yet verified — launch blockers
 
 - A successful authenticated owner-inbox session has not been tested.
-- The current Pages project configuration response did not expose an ADMIN_TOKEN key; this does not prove whether a secret exists because secret values are not readable. Treat owner authentication as unverified until a safe authenticated test succeeds.
-- The optional MAKE_INTAKE_WEBHOOK_URL notification route has not been verified or tested end-to-end. The intake code stores the request in D1 independently of notification delivery and reports delivery_failed when the webhook request fails.
-- There is no durable notification retry/outbox queue. D1 persistence alone does not guarantee that an owner will see a new lead promptly.
-- Do not start collecting real leads until the owner can reliably access and review them or a notification/review route is proven.
+- The Pages project API response does not expose a readable `ADMIN_TOKEN` value. Secret values cannot be read back; do not infer that the secret is present or absent from that response. Owner authentication remains unverified until a controlled valid login succeeds.
+- The optional `MAKE_INTAKE_WEBHOOK_URL` configuration and end-to-end notification delivery have not been verified.
+- There is no durable notification outbox/retry queue. D1 persistence alone does not guarantee prompt owner awareness of a new lead.
+- Do not begin unrestricted real-lead collection until owner access and a reliable review/notification path are proven.
 
-## 5. AI assistant
+## 6. Sophia AI assistant
 
-- Production Pages has a Workers AI binding named AI.
-- The main wrangler.toml declares the Preview AI binding; the successful PR #50 Preview deployment also showed an AI binding and the isolated Preview D1 database.
-- The assistant queries approved listings only, uses a D1-backed rate limiter, caps request size, filters browser-supplied history to user messages, and labels listing content as untrusted context.
-- Synthetic tests verify prompt/context separation and fail-closed rate limiting. They use a fake AI implementation; they do not prove that the live model will resist every prompt-injection attempt.
-- A real live AI response test and multilingual browser QA have not been completed. Do not run usage-heavy tests without checking the current Workers AI free allocation and possible overage charges.
+### Verified from source and synthetic tests
 
-## 6. Current functional limitations
+- Production and Preview Pages configurations contain a Workers AI binding named `AI`.
+- The backend uses `@cf/meta/llama-3.1-8b-instruct-fast`.
+- The endpoint enforces a same-site origin allowlist, JSON content type, a 12 KB body cap, and a D1-backed limit of ten requests per IP per minute.
+- IP values are SHA-256 hashed before storage; these are pseudonymous identifiers, not guaranteed anonymous data.
+- Only approved listings are queried for assistant context.
+- Browser-supplied assistant history is not trusted: the backend rebuilds context from user messages only.
+- Listing content is passed separately and explicitly labeled untrusted data, not merged into system instructions.
+- Synthetic tests cover approved-listing filtering, prompt/context separation, rate-limit enforcement, fail-closed behavior, malformed history, untrusted origins, and body-size limits.
+- PR #59 adds the browser client and synthetic UI/API tests; its CI checks passed and its Production deployment succeeded.
 
-- No R2 bucket or property-image storage pipeline is configured. Image uploads are not active.
-- Royal Egypt Coffee and Royal Egypt Transportation remain interest-registration pages, not operational shops, transport booking, payment, or availability systems.
-- The owner inbox shows orders read-only; this does not make the underlying divisions operational.
-- The listing price value is stored as text and bounded by length, not normalized as a numeric amount. Confirm whether free-text pricing is intentional before tightening validation.
-- Rate limiting stores SHA-256 IP digests rather than raw IPs. These are pseudonymous identifiers, not guaranteed anonymous data.
-- The shared admin Bearer token is an owner-only arrangement, not a multi-user role-based staff system.
+### Still unverified
 
-## 7. Domain and launch readiness
+- No live Workers AI response has been tested after the Production deployment.
+- Synthetic fake-AI tests do not prove resistance to every prompt-injection attempt.
+- Arabic, English, and Russian behavior has not completed full browser/mobile acceptance.
+- Do not run usage-heavy live tests until current free allocation and possible overage charges are checked. The project remains subject to the owner's free-first cost rule.
 
-- royalegyptgroup.com and www.royalegyptgroup.com are attached to Pages but both remain pending because the required CNAME records are not set.
-- Keep https://royalegyptgroup-vy7.pages.dev as the active public hostname until DNS and certificate validation complete.
-- Full desktop/mobile browser QA, successful authenticated admin access, real Preview-to-D1 submission, live AI behavior, and owner notification delivery remain unverified.
+## 7. Functional scope and limitations
 
-## 8. Required next actions
+- Royal Egypt Properties is the active business focus, but the Production catalogue currently contains no approved listings.
+- No R2 bucket or secure property-image storage pipeline is configured; website image upload is not active.
+- Royal Egypt Coffee and Royal Egypt Transportation are interest-registration pages, not operational shops, booking, payment, dispatch, or availability systems.
+- The forms for those divisions submit customer-interest requests; they do not confirm an order or reservation.
+- The listing `price` field is stored as text and bounded by length, not normalized as a numeric amount. Confirm whether free-text pricing is intentional before changing it.
+- The shared Bearer token is an owner-only access model, not a multi-user role-based staff system.
+- The current `_headers` file sets X-Content-Type-Options, Referrer-Policy, Permissions-Policy, and X-Frame-Options. A Content-Security-Policy header is not currently defined; adding one safely requires accounting for existing inline scripts and third-party embeds rather than applying a breaking policy blindly.
+
+## 8. Domain status
+
+Cloudflare currently reports:
+
+- `royalegyptgroup.com` — pending; CNAME record not set.
+- `www.royalegyptgroup.com` — pending; CNAME record not set.
+- Active fallback hostname: https://royalegyptgroup-vy7.pages.dev
+
+Do not treat the custom domain as active until DNS verification and certificate validation complete.
+
+## 9. Required next actions
 
 ### P0 — before collecting real leads
 
-1. Configure and safely verify the Production and Preview ADMIN_TOKEN secrets; never place their values in Git or frontend storage.
-2. Establish and test the owner review/notification path, including failure handling.
-3. Decide whether the custom domain will be activated; if yes, set the required CNAME records at the DNS provider.
-4. Confirm genuine property inventory and publish only after owner verification and explicit approval.
-5. Complete a controlled end-to-end Preview test with synthetic data only.
+1. Verify that the Production and Preview `ADMIN_TOKEN` secrets are configured, then perform a controlled authenticated owner login without exposing the token in Git, logs, or browser storage.
+2. Verify the owner review path and the configured notification route end-to-end using synthetic Preview data.
+3. Decide whether to activate the custom domain; if yes, set the required CNAME records at the DNS provider.
+4. Confirm genuine property inventory, ownership/document status, prices, and availability with the owner; publish only after explicit approval.
+5. Complete one controlled Preview intake test and confirm D1 persistence plus the resulting notification status.
 
 ### P1 — before broader release
 
-1. Complete Arabic, English and Russian visual/browser QA on desktop and mobile.
-2. Test the live AI assistant with a bounded request budget and explicit free-tier/overage review.
-3. Decide whether listing prices should remain free text or receive numeric/currency validation.
-4. Add retention/cleanup and monitoring for rate-limit and notification failures.
-5. Define a documented privacy/retention process and a staff-access model if additional operators are added.
+1. Complete Arabic, English, and Russian desktop/mobile browser QA.
+2. Test one bounded live AI interaction only after checking free-tier limits and potential charges.
+3. Decide whether property prices remain free text or receive numeric/currency validation.
+4. Define cleanup/retention for rate-limit records and monitoring for notification failures.
+5. Define a privacy/retention process and a staff-access model if additional operators are added.
+6. Plan a safe Content-Security-Policy improvement after reviewing inline scripts and third-party resources.
 
-## 9. Safety record
+## 10. Safety record
 
-- No Production D1 writes, migrations, listing approvals, customer-data exports, secret changes, DNS changes, or Production deployment changes were made during this audit.
-- Production D1 inspection was aggregate-only and read-only.
-- No paid service, R2 bucket, or recurring charge was enabled.
+- This review made no Production D1 writes, migrations, listing approvals, customer-data exports, secret changes, DNS changes, or deployment-setting changes.
+- D1 inspection was schema-only and aggregate-only; query metadata showed zero rows written.
+- Public smoke checks were read-only. Admin checks were unauthenticated and returned 401.
+- No live AI prompt was sent, no Make webhook was called, no R2 bucket was enabled, and no paid service or recurring charge was added.
 
-**Final assessment:** the repository, GitHub integration, Production deployment, approved-only catalogue, and Production/Preview D1 separation are in good condition. The platform remains a controlled pre-launch site. The outstanding P0 gates are owner authentication, reliable lead review/notification, verified inventory, and browser-level acceptance.
+**Final assessment:** GitHub ownership, Cloudflare Git integration, Production deployment, D1 environment isolation, schema parity, approved-only catalogue behavior, and unauthenticated admin rejection are verified. The platform remains controlled pre-launch. The remaining P0 gates are successful owner authentication, reliable lead review/notification, verified property inventory, and browser-level acceptance.
+
+---
+
+## 10. Current-state addendum — 13 November 2026
+
+This addendum records later read-only checks against the Cloudflare account connected to royalegyptgroup0@gmail.com. It does not rewrite the historical 11 November snapshot above.
+
+### Production deployment and bindings
+
+- Latest verified Production Pages deployment: ba11e978-7eb9-4d48-ba02-adf24f9d2b11, commit 481e5db3651ea16093e9c70f436344a58a0c68e3; Cloudflare reports the deploy stage as successful.
+- Production D1 remains royal-eg-listings (fec37fa6-9406-4bb9-aba1-25f03a7cb2ed).
+- Preview D1 remains royal-eg-listings-preview (2d8c26ad-041e-4a51-aa13-ddb2120ce836).
+- Workers AI binding difference: the current Production Pages configuration contains AI; the current Preview Pages configuration does not. The earlier statement above that both environments contain AI is not true of the currently read-back configuration. Do not treat Preview AI as available until the binding is configured and read back.
+
+### SEO and sitemap
+
+- Production robots.txt allows crawling and points to https://royalegyptgroup-vy7.pages.dev/sitemap.xml.
+- The current sitemap uses the active royalegyptgroup-vy7.pages.dev host and lists /, /properties, /markets, /coffee, /transportation, and /developers.
+- /markets was added through PR #67 after confirming it is a public navigation route. PR #67 passed GitHub checks, its Cloudflare Preview deployment succeeded, and the merge's Production deployment succeeded.
+- The Royal Egypt Group /notes/ mirror is intentionally omitted from this sitemap because its page declares the standalone CEO Notes canonical URL. This avoids presenting the same editorial page as two canonical locations.
+- The autonomous-tech-company site has its own robots.txt and sitemap, with English / and Arabic /ar/ canonical/hreflang entries.
+- No custom domain or DNS zone is configured in the target Cloudflare account. The Pages hostnames above remain the active canonical hosts; no DNS change was made.
+
+### GitHub search indexing versus web indexing
+
+- GitHub's repository metadata currently reports code-search indexing unavailable for the public repositories Royal-Egypt-Group, autonomous-tech-company, d1-get-started, and ceo-notes-publisher; it reports indexing available for OCTOPUSA and RoyalMediaPlayer.
+- This GitHub Code Search metadata is separate from Google/Bing search-engine indexing. No Google Search Console URL-inspection result was available in this review, so actual Google index inclusion is not claimed or inferred.
+
+### Separate CEO Notes hosting account
+
+- The standalone ceo-notes.pages.dev Pages project exists in the other Cloudflare account associated with yasser.abdelaziz83@gmail.com, not in the target royalegyptgroup0@gmail.com Cloudflare account.
+- That standalone project has no GitHub source connection in its current Cloudflare project metadata and its last recorded deployment was an ad-hoc deployment from ceo-notes-site on 10 November 2026.
+- The CEO Notes social-link change is present in the Royal Egypt Group PR #66 Pages Preview. The outbox Worker code is staged in PR #66 but has not been deployed to a Worker. Neither change has been deployed to the standalone ceo-notes.pages.dev production project.
+
+**Current assessment:** Royal Egypt Group sitemap/robots host alignment and /markets sitemap coverage are now deployed. Production/Preview D1 isolation remains in place. Preview AI availability, standalone CEO Notes deployment integration, custom-domain setup, and actual Google Search Console index confirmation remain separate open items.
