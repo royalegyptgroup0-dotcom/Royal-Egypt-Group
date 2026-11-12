@@ -150,6 +150,28 @@ async function validateOutboxContext(env,body){
   if(savedHash!==hash)return {error:J({error:"content_hash_mismatch"},409)};
   return {day,platform,identity,hash,key:outboxKey(platform,identity,day)};
 }
+async function withEditorialLock(env,date,work){
+  if(!env.OUTBOX_COORDINATOR)return J({error:"outbox_coordinator_unavailable"},503);
+  const token=crypto.randomUUID();
+  const stub=env.OUTBOX_COORDINATOR.get(env.OUTBOX_COORDINATOR.idFromName("ceo-notes-global"));
+  const key="editorial:"+String(date);
+  const locked=await stub.fetch("https://outbox-coordinator/lock",{
+    method:"POST",
+    headers:{"content-type":"application/json"},
+    body:JSON.stringify({key,token,ttlMs:900000})
+  });
+  if(!locked.ok)return new Response(locked.body,{status:locked.status,headers:locked.headers});
+  try{
+    return await work();
+  }finally{
+    await stub.fetch("https://outbox-coordinator/unlock",{
+      method:"POST",
+      headers:{"content-type":"application/json"},
+      body:JSON.stringify({key,token})
+    });
+  }
+}
+
 async function handleOutbox(req,env,path){
   if(!env.OUTBOX_COORDINATOR)return J({error:"outbox_coordinator_unavailable"},503);
   const body=await req.json();
@@ -284,6 +306,24 @@ export class CEOOutboxCoordinator {
     if(request.method!=="POST")return J({error:"method_not_allowed"},405);
     let body;
     try{body=await request.json();}catch(error){return J({error:"invalid_json"},400);}
+    if(action==="lock"||action==="unlock"){
+      const key=String(body.key||"");
+      const token=String(body.token||"");
+      if(!/^editorial:\\d{4}-\\d{2}-\\d{2}$/.test(key)||token.length<16)return J({error:"invalid_editorial_lock"},400);
+      const storageKey="editorial-lock:"+key;
+      return await this.state.blockConcurrencyWhile(async()=>{
+        const current=await this.state.storage.get(storageKey)||null;
+        if(action==="lock"){
+          const ttlMs=Math.max(30000,Math.min(900000,Number(body.ttlMs)||900000));
+          if(current&&current.expiresAt>Date.now()&&current.token!==token)return J({error:"editorial_operation_in_progress"},409);
+          await this.state.storage.put(storageKey,{token,expiresAt:Date.now()+ttlMs});
+          return J({ok:true,locked:true});
+        }
+        if(!current||current.token!==token)return J({error:"editorial_lock_not_owned"},409);
+        await this.state.storage.delete(storageKey);
+        return J({ok:true,released:true});
+      });
+    }
     const day=Number(body.day),platform=String(body.platform||""),identity=String(body.identity||""),hash=String(body.contentHash||"");
     if(!Number.isInteger(day)||day<1||!hash||!outboxAllowed(platform,identity))return J({error:"invalid_outbox_identity_or_payload"},400);
     const key=outboxKey(platform,identity,day),now=new Date().toISOString();
@@ -407,9 +447,12 @@ export default {
         const binary=Uint8Array.from(atob(base64),character=>character.charCodeAt(0));
         return new Response(binary,{headers:{"content-type":"image/jpeg","cache-control":"public, max-age=31536000","Access-Control-Allow-Origin":"*"}});
       }
-      if(req.method==="POST"&&url.pathname===API_GEN_PATH)return await generatePost(env);
-      if(req.method==="POST"&&url.pathname===API_IMAGE_PATH)return await generateImage(req,env);
-      if(req.method==="POST"&&url.pathname===API_PUBLISH_PATH)return await publishPost(req,env);
+      if(req.method==="POST"&&url.pathname===API_GEN_PATH)return await withEditorialLock(env,cairoDate(),()=>generatePost(env));
+      if(req.method==="POST"&&(url.pathname===API_IMAGE_PATH||url.pathname===API_PUBLISH_PATH)){
+        const payload=await req.clone().json();
+        const date=String(payload.date||cairoDate());
+        return await withEditorialLock(env,date,()=>url.pathname===API_IMAGE_PATH?generateImage(req,env):publishPost(req,env));
+      }
       if(req.method==="POST"&&url.pathname.startsWith(OUTBOX_PREFIX))return await handleOutbox(req,env,url.pathname);
       return J({error:"not_found"},404);
     }catch(error){
