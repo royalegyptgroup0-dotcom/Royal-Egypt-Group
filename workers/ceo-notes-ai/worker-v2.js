@@ -326,8 +326,9 @@ export class CEOOutboxCoordinator {
         if(current.contentHash!==hash)return J({error:"outbox_content_conflict"},409);
         if(current.status==="succeeded")return J({ok:true,status:"succeeded",receipt:current});
         if(current.status!=="receipt_recorded")return J({error:"receipt_verification_required",status:current.status},409);
-        if(body.verified!==true||String(body.verifiedPostId||"")!==current.postId)return J({error:"authoritative_platform_verification_required"},403);
-        const record={...current,status:"succeeded",verifiedAt:now,updatedAt:now};
+        const expectedSource=platform==="facebook"?"facebook_graph_api":"instagram_graph_api";
+        if(body.verified!==true||String(body.verifiedPostId||"")!==current.postId||String(body.verifiedPermalink||"")!==current.permalink||body.verificationSource!==expectedSource||body.verificationStatus!=="published")return J({error:"platform_lookup_attestation_required"},403);
+        const record={...current,status:"succeeded",verifiedAt:now,verificationSource:expectedSource,updatedAt:now};
         await this.state.storage.put(key,record);
         return J({ok:true,status:"succeeded",receipt:record});
       }
