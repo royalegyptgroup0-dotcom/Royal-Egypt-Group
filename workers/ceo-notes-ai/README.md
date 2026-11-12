@@ -40,3 +40,9 @@ Before enabling a deployment:
 Cloudflare documents SQLite-backed Durable Objects on Workers Free with daily limits of 5 million rows read, 100,000 rows written, and 5 GB total stored data. Free-plan overages fail rather than charging, but usage must still be monitored. See [Cloudflare Durable Objects pricing](https://developers.cloudflare.com/durable-objects/platform/pricing/).
 
 No production Worker binding, secret, deployment, or Make scenario was changed by this staged code update.
+
+### Preview configuration
+
+`wrangler.preview.jsonc` is a standalone, isolated Worker configuration. It deploys `worker-v2.js` as `ceo-notes-ai-preview`, binds only the dedicated preview KV namespace `CEO_NOTES_PREVIEW_2026_11_12`, and declares the SQLite Durable Object migration for `CEOOutboxCoordinator`. It intentionally has no AI binding and no cron trigger, so preview validation cannot spend Workers AI quota or run production-style scheduled backups. The preview KV namespace ID is `8dabeef7884e4c68bb50e48f51e82389`; it is not the production namespace. CI asserts that the preview config never points at the production KV ID.
+
+The preview config is source-only until a controlled deployment. Do not deploy until a separate preview `ADMIN_TOKEN` has been provisioned and the target Worker configuration, namespace binding, and migration plan have been reviewed. Never reuse the production token in preview.
