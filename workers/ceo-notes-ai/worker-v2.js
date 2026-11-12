@@ -309,7 +309,7 @@ export class CEOOutboxCoordinator {
     if(action==="lock"||action==="unlock"){
       const key=String(body.key||"");
       const token=String(body.token||"");
-      if(!/^editorial:\\d{4}-\\d{2}-\\d{2}$/.test(key)||token.length<16)return J({error:"invalid_editorial_lock"},400);
+      if(!/^editorial:\d{4}-\d{2}-\d{2}$/.test(key)||token.length<16)return J({error:"invalid_editorial_lock"},400);
       const storageKey="editorial-lock:"+key;
       return await this.state.blockConcurrencyWhile(async()=>{
         const current=await this.state.storage.get(storageKey)||null;
