@@ -195,6 +195,10 @@ test("outbox reserves, starts and stores an independently verifiable receipt", a
   assert.equal((await receipt.json()).receipt.status, "receipt_recorded");
   const blockedBeforeVerification = await call("/api/outbox/reserve", { method: "POST", headers: auth, body: base }, env);
   assert.equal(blockedBeforeVerification.status, 409);
+  const rejectedVerification = await call("/api/outbox/verify", {
+    method: "POST", headers: auth, body: { ...base, verified: true, verifiedPostId: "123_456", verificationSource: "manual_assertion", verificationStatus: "published" }
+  }, env);
+  assert.equal(rejectedVerification.status, 403);
   const verify = await call("/api/outbox/verify", {
     method: "POST", headers: auth, body: { ...base, verified: true, verifiedPostId: "123_456", verifiedPermalink: "https://www.facebook.com/123_456", verificationSource: "facebook_graph_api", verificationStatus: "published" }
   }, env);
