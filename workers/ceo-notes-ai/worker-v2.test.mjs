@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const source = await readFile(new URL("./worker-v2.js", import.meta.url), "utf8");
-const worker = (await import("data:text/javascript;base64," + Buffer.from(source).toString("base64"))).default;
+const workerModule = await import("data:text/javascript;base64," + Buffer.from(source).toString("base64"));
+const worker = workerModule.default;
+const CEOOutboxCoordinator = workerModule.CEOOutboxCoordinator;
 const token = "test-only-admin-token-with-at-least-32-characters";
 const auth = { Authorization: "Bearer " + token };
 
@@ -46,7 +48,27 @@ function makeEnv({ posts = [], adminToken = token } = {}) {
       };
     }
   };
-  return { ADMIN_TOKEN: adminToken, CEO_NOTES_KV: kv, AI: ai, calls };
+  const coordinatorValues = new Map();
+  let queue = Promise.resolve();
+  const state = {
+    storage: {
+      async get(key) { return coordinatorValues.get(key); },
+      async put(key, value) { coordinatorValues.set(key, structuredClone(value)); },
+      async delete(key) { coordinatorValues.delete(key); },
+      async list({ prefix = "" } = {}) { return new Map([...coordinatorValues.entries()].filter(([key]) => key.startsWith(prefix))); }
+    },
+    blockConcurrencyWhile(callback) {
+      const run = queue.then(callback);
+      queue = run.catch(() => {});
+      return run;
+    }
+  };
+  const coordinatorObject = new CEOOutboxCoordinator(state, {});
+  const coordinatorNamespace = {
+    idFromName(name) { return name; },
+    get() { return { fetch(request) { return coordinatorObject.fetch(request); } }; }
+  };
+  return { ADMIN_TOKEN: adminToken, CEO_NOTES_KV: kv, AI: ai, OUTBOX_COORDINATOR: coordinatorNamespace, coordinatorValues, calls };
 }
 
 async function call(path, { method = "GET", headers = {}, body } = {}, env = makeEnv()) {
@@ -170,11 +192,18 @@ test("outbox reserves, starts and stores an independently verifiable receipt", a
     body: { ...base, postId: "123_456", permalink: "https://www.facebook.com/123_456", publishedAt: "2026-11-12T18:00:00.000Z" }
   }, env);
   assert.equal(receipt.status, 200);
-  assert.equal((await receipt.json()).receipt.status, "succeeded");
+  assert.equal((await receipt.json()).receipt.status, "receipt_recorded");
+  const blockedBeforeVerification = await call("/api/outbox/reserve", { method: "POST", headers: auth, body: base }, env);
+  assert.equal(blockedBeforeVerification.status, 409);
+  const verify = await call("/api/outbox/verify", {
+    method: "POST", headers: auth, body: { ...base, verified: true, verifiedPostId: "123_456" }
+  }, env);
+  assert.equal(verify.status, 200);
+  assert.equal((await verify.json()).status, "succeeded");
   const retry = await call("/api/outbox/reserve", { method: "POST", headers: auth, body: base }, env);
   assert.equal(retry.status, 200);
   assert.equal((await retry.json()).decision, "skip");
-  const stored = JSON.parse(await env.CEO_NOTES_KV.get("outbox:facebook:ceo-page:1"));
+  const stored = env.coordinatorValues.get("outbox:facebook:ceo-page:1");
   assert.equal(stored.postId, "123_456");
   assert.equal(stored.permalink, "https://www.facebook.com/123_456");
 });
@@ -220,6 +249,19 @@ test("ambiguous publication is blocked until explicit reconciliation", async () 
   assert.equal((await retry.json()).decision, "publish");
 });
 
+test("concurrent reserve requests grant exactly one publication claim", async () => {
+  const env = makeEnv();
+  const { generated } = await createPublishedPost(env);
+  const base = { day: generated.post.day, platform: "facebook", identity: "ceo-page", contentHash: generated.contentHash };
+  const responses = await Promise.all(Array.from({ length: 24 }, () =>
+    call("/api/outbox/reserve", { method: "POST", headers: auth, body: base }, env)
+  ));
+  assert.equal(responses.filter(response => response.status === 200).length, 1);
+  assert.equal(responses.filter(response => response.status === 409).length, 23);
+  const body = await Promise.all(responses.map(response => response.json()));
+  assert.equal(body.filter(item => item.decision === "publish").length, 1);
+});
+
 test("backup includes feed, images, image metadata, drafts and per-platform outbox records", async () => {
   const env = makeEnv();
   const { generated } = await createPublishedPost(env);
@@ -231,9 +273,12 @@ test("backup includes feed, images, image metadata, drafts and per-platform outb
   });
   await Promise.all(pending);
   const manifest = JSON.parse(await env.CEO_NOTES_KV.get("backup:2026-11-12:manifest"));
-  assert.equal(manifest.version, 2);
+  assert.equal(manifest.version, 3);
+  assert.equal(manifest.coordinatorOutboxCount, 1);
+  assert.ok(manifest.coordinatorOutboxSha256);
   assert.equal(manifest.postDays.includes(generated.post.day), true);
   assert.equal(manifest.imageMetaKeys.some(item => item.name === "image-meta:1"), true);
-  assert.equal(manifest.outboxKeys.some(item => item.name === "outbox:facebook:ceo-page:1"), true);
+  assert.equal(manifest.outboxKeys.some(item => item.name === "outbox:facebook:ceo-page:1"), false);
+  assert.equal(await env.CEO_NOTES_KV.get("backup:2026-11-12:outbox-coordinator") !== null, true);
   assert.equal(manifest.draftKeys.some(item => item.name.startsWith("draft:")), true);
 });
