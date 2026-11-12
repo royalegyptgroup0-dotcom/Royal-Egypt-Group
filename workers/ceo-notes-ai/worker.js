@@ -75,8 +75,8 @@ async function createBackup(env,scheduledTime){
   const feedValue=JSON.stringify(feed);
   const feedSha256=await backupHash(feedValue);
   await env.CEO_NOTES_KV.put("backup:"+date+":feed",feedValue);
-  const imageKeys=[],draftKeys=[],outboxKeys=[];
-  for(const prefix of ["image:","draft:","outbox:"]){
+  const imageKeys=[],imageMetaKeys=[],draftKeys=[],outboxKeys=[];
+  for(const prefix of ["image:","image-meta:","draft:","outbox:"]){
     const page=await env.CEO_NOTES_KV.list({prefix,limit:1000});
     for(const item of page.keys||[]){
       const value=await env.CEO_NOTES_KV.get(item.name);
@@ -85,6 +85,7 @@ async function createBackup(env,scheduledTime){
       await env.CEO_NOTES_KV.put("backup:"+date+":"+item.name,stored);
       const entry={name:item.name,length:stored.length,sha256:await backupHash(stored)};
       if(prefix==="image:")imageKeys.push(entry);
+      else if(prefix==="image-meta:")imageMetaKeys.push(entry);
       else if(prefix==="draft:")draftKeys.push(entry);
       else outboxKeys.push(entry);
     }
@@ -96,6 +97,7 @@ async function createBackup(env,scheduledTime){
     feedSha256,
     postDays:(feed.posts||[]).map(post=>Number(post.day)),
     imageKeys,
+    imageMetaKeys,
     draftKeys,
     outboxKeys
   };
@@ -265,15 +267,20 @@ async function generateImage(req,env){
   const day=Number(draft.post.day);
   const imageKey="image:"+day;
   const existing=await env.CEO_NOTES_KV.get(imageKey);
+  const imageMetaRaw=await env.CEO_NOTES_KV.get("image-meta:"+day);
   const imageUrl=PUBLIC_BASE+"/image/"+day;
   if(existing){
-    return J({ok:true,post:{...draft.post,status:"Ready",publishedAt:draft.createdAt,imageUrl},imageUrl,date,contentHash:draft.contentHash,reused:true});
+    if(!imageMetaRaw)return J({error:"existing_image_unverified"},409);
+    const imageMeta=JSON.parse(imageMetaRaw);
+    if(imageMeta.contentHash!==draft.contentHash)return J({error:"existing_image_content_conflict"},409);
+    return J({ok:true,post:{...draft.post,status:"Ready",publishedAt:imageMeta.generatedAt,imageUrl},imageUrl,date,contentHash:draft.contentHash,reused:true});
   }
   const prompt=String(body.imagePrompt||draft.imagePrompt||"Cinematic editorial portrait, modern executive office, black and warm gold palette, no text or logos.").slice(0,2048);
   const image=await env.AI.run("@cf/black-forest-labs/flux-1-schnell",{prompt,steps:4});
   if(!image.image)return J({error:"image_generation_failed"},502);
   await env.CEO_NOTES_KV.put(imageKey,image.image);
   const publishedAt=new Date().toISOString();
+  await env.CEO_NOTES_KV.put("image-meta:"+day,JSON.stringify({version:1,date,day,contentHash:draft.contentHash,generatedAt:publishedAt}));
   return J({ok:true,post:{...draft.post,status:"Ready",publishedAt,imageUrl},imageUrl,date,contentHash:draft.contentHash,reused:false,usage:{imageNeurons:image.usage?.neurons}});
 }
 async function publishPost(req,env){
@@ -288,6 +295,10 @@ async function publishPost(req,env){
   const day=Number(draft.post.day);
   const image=await env.CEO_NOTES_KV.get("image:"+day);
   if(!image)return J({error:"image_missing"},400);
+  const imageMetaRaw=await env.CEO_NOTES_KV.get("image-meta:"+day);
+  if(!imageMetaRaw)return J({error:"image_metadata_missing"},409);
+  const imageMeta=JSON.parse(imageMetaRaw);
+  if(imageMeta.contentHash!==hash)return J({error:"image_content_hash_mismatch"},409);
   const feed=await getFeed(env);
   const posts=Array.isArray(feed.posts)?feed.posts:[];
   const existing=posts.find(item=>Number(item.day)===day);
