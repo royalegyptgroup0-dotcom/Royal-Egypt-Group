@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ceo-notes-ai-preview",
+  "main": "worker-v2.js",
+  "compatibility_date": "2026-11-12",
+  "workers_dev": true,
+  "kv_namespaces": [
+    {
+      "binding": "CEO_NOTES_KV",
+      "id": "8dabeef7884e4c68bb50e48f51e82389"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "OUTBOX_COORDINATOR",
+        "class_name": "CEOOutboxCoordinator"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "CEOOutboxCoordinator"
+      ]
+    }
+  ]
+}
