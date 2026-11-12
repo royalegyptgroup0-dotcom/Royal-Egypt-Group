@@ -248,7 +248,7 @@ test("ambiguous publication is blocked until explicit reconciliation", async () 
   assert.equal(blocked.status, 409);
   assert.equal((await blocked.json()).status, "unknown");
   const reconcile = await call("/api/outbox/reconcile", {
-    method: "POST", headers: auth, body: { ...base, action: "not_published", verificationSource: "facebook_graph_api", verificationStatus: "not_found" }
+    method: "POST", headers: auth, body: { ...base, action: "not_published", verificationSource: "instagram_graph_api", verificationStatus: "not_found" }
   }, env);
   assert.equal(reconcile.status, 200);
   assert.equal((await reconcile.json()).retryAllowed, true);
