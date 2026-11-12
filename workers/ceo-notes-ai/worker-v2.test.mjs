@@ -140,6 +140,25 @@ test("editorial generation is reused for the same Cairo date", async () => {
   assert.equal(env.calls.text, 1);
 });
 
+test("concurrent same-day editorial generation is serialized by the Durable Object lock", async () => {
+  const env = makeEnv();
+  const originalRun = env.AI.run.bind(env.AI);
+  env.AI.run = async (model, input) => {
+    if (!model.includes("flux")) await new Promise(resolve => setTimeout(resolve, 25));
+    return originalRun(model, input);
+  };
+  const responses = await Promise.all([
+    call("/api/generate", { method: "POST", headers: auth, body: {} }, env),
+    call("/api/generate", { method: "POST", headers: auth, body: {} }, env)
+  ]);
+  assert.deepEqual(responses.map(response => response.status).sort(), [200, 409]);
+  assert.equal(env.calls.text, 1);
+  const retry = await call("/api/generate", { method: "POST", headers: auth, body: {} }, env);
+  assert.equal(retry.status, 200);
+  assert.equal((await retry.json()).reused, true);
+  assert.equal(env.calls.text, 1);
+});
+
 test("image generation is POST-only and idempotent for the same draft hash", async () => {
   const env = makeEnv();
   const generatedResponse = await call("/api/generate", { method: "POST", headers: auth, body: {} }, env);
