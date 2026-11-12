@@ -101,7 +101,7 @@ test("protected API uses POST and no longer exposes path-token routes", async ()
   assert.equal((await call("/api/generate", {}, env)).status, 405);
   assert.equal((await call("/api/image?day=28", {}, env)).status, 405);
   assert.equal((await call("/api/publish", {}, env)).status, 405);
-  assert.match(source, /const API_GEN_PATH="\\/api\\/generate"/);
+  assert.ok(source.includes('const API_GEN_PATH="/api/generate";'));
 });
 
 test("editorial generation is reused for the same Cairo date", async () => {
