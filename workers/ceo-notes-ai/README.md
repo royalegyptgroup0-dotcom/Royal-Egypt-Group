@@ -21,3 +21,20 @@ Set `ADMIN_TOKEN` as a Cloudflare Worker Secret before using the protected route
 This Worker currently generates content/images and writes the local feed archive. It does **not** call the Facebook Graph API. No Facebook Page access tokens are currently bound to this Worker, so Facebook publishing must remain disabled until credentials are added securely and each Page's result can be recorded independently with retry-safe idempotency.
 
 Do not add a publishing Cron Trigger until the full end-to-end workflow is implemented and verified. The current Cron is backup-only.
+
+## Outbox coordination (staged v2)
+
+The staged `worker-v2.js` implementation requires a Durable Object binding named `OUTBOX_COORDINATOR` targeting the exported `CEOOutboxCoordinator` class. Use a SQLite-backed Durable Object migration (`new_sqlite_classes`) for this class. Do not point a preview Worker at the production feed/KV namespace; provision an isolated preview namespace and validate the full deployment plan before binding anything.
+
+The coordinator serializes each outbox transition inside `blockConcurrencyWhile` and stores per-platform records in strongly consistent Durable Object storage. A reservation can be claimed only once; repeated concurrent reserve calls are blocked. Ambiguous publish outcomes remain blocked until reconciled. A receipt is first recorded as `receipt_recorded` and is not considered successful until the separate `/api/outbox/verify` action receives an authoritative platform lookup result matching the recorded post ID.
+
+Supported CEO Notes identities are Facebook `ceo-page` and Instagram `ceo-notes`. Corporate Royal Egypt Properties identities are deliberately rejected. The daily backup snapshots coordinator records into the existing KV backup and records their count and SHA-256 in manifest version 3.
+
+Before enabling a deployment:
+1. Create an isolated preview KV namespace and bind it as `CEO_NOTES_KV`; keep `AI` disabled or quota-checked in preview.
+2. Add `OUTBOX_COORDINATOR` and a SQLite-class migration for `CEOOutboxCoordinator` in the preview Worker configuration.
+3. Set `ADMIN_TOKEN` as a Worker secret (32+ characters); never put its value in source, Make logs, or chat.
+4. Update Make to call `receipt` followed by authoritative platform verification and `verify`. A receipt payload or a successful HTTP response alone is not proof of a public post.
+5. Run concurrency, recovery, backup/restore, and preview-only integration tests before any production migration or scenario activation.
+
+No production Worker binding, secret, deployment, or Make scenario was changed by this staged code update.
