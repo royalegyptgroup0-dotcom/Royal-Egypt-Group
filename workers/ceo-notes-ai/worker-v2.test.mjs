@@ -287,6 +287,25 @@ test("concurrent reserve requests grant exactly one publication claim", async ()
   assert.equal(body.filter(item => item.decision === "publish").length, 1);
 });
 
+
+test("outbox coordinator identity and content fields cannot be overridden by request payload", async () => {
+  const env = makeEnv();
+  const { generated } = await createPublishedPost(env);
+  const trusted = { day: generated.post.day, platform: "facebook", identity: "ceo-page", contentHash: generated.contentHash };
+  const response = await call("/api/outbox/reserve", {
+    method: "POST",
+    headers: auth,
+    body: { ...trusted, day: 999, platform: "instagram", identity: "ceo-notes", contentHash: "forged-content-hash" }
+  }, env);
+  assert.equal(response.status, 200);
+  const expected = env.coordinatorValues.get("outbox:facebook:ceo-page:1");
+  assert.equal(expected.day, generated.post.day);
+  assert.equal(expected.platform, "facebook");
+  assert.equal(expected.identity, "ceo-page");
+  assert.equal(expected.contentHash, generated.contentHash);
+  assert.equal(env.coordinatorValues.has("outbox:instagram:ceo-notes:999"), false);
+});
+
 test("backup includes feed, images, image metadata, drafts and per-platform outbox records", async () => {
   const env = makeEnv();
   const { generated } = await createPublishedPost(env);
