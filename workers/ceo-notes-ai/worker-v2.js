@@ -113,7 +113,7 @@ async function createBackup(env,scheduledTime){
 }
 function outboxAllowed(platform,identity){
   const allowed={
-    facebook:["ceo-page","royal-egypt-properties"],
+    facebook:["ceo-page"],
     instagram:["ceo-notes"]
   };
   return Array.isArray(allowed[platform])&&allowed[platform].includes(identity);
