@@ -1,6 +1,7 @@
-const GEN_PATH="/api/generate";
-const IMAGE_PATH="/api/image";
-const PUBLISH_PATH="/api/publish";
+const GEN_PATH="/generate-29c05f7671553fc8deca920ac4cc832479fc22c01d5691a2",IMAGE_PATH="/image-29c05f7671553fc8deca920ac4cc832479fc22c01d5691a2",PUBLISH_PATH="/publish-29c05f7671553fc8deca920ac4cc832479fc22c01d5691a2";
+const API_GEN_PATH="/api/generate";
+const API_IMAGE_PATH="/api/image";
+const API_PUBLISH_PATH="/api/publish";
 const OUTBOX_PREFIX="/api/outbox/";
 const FEED_URL="https://raw.githubusercontent.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/ceo-notes-site/notes/posts.json";
 const PUBLIC_BASE="https://ceo-notes-ai.yasser-abdelaziz83.workers.dev";
@@ -344,9 +345,9 @@ export default {
         const binary=Uint8Array.from(atob(base64),character=>character.charCodeAt(0));
         return new Response(binary,{headers:{"content-type":"image/jpeg","cache-control":"public, max-age=31536000","Access-Control-Allow-Origin":"*"}});
       }
-      if(req.method==="POST"&&url.pathname===GEN_PATH)return await generatePost(env);
-      if(req.method==="POST"&&url.pathname===IMAGE_PATH)return await generateImage(req,env);
-      if(req.method==="POST"&&url.pathname===PUBLISH_PATH)return await publishPost(req,env);
+      if(req.method==="POST"&&url.pathname===API_GEN_PATH)return await generatePost(env);
+      if(req.method==="POST"&&url.pathname===API_IMAGE_PATH)return await generateImage(req,env);
+      if(req.method==="POST"&&url.pathname===API_PUBLISH_PATH)return await publishPost(req,env);
       if(req.method==="POST"&&url.pathname.startsWith(OUTBOX_PREFIX))return await handleOutbox(req,env,url.pathname);
       return J({error:"not_found"},404);
     }catch(error){
