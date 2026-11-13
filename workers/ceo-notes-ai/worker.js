@@ -20,7 +20,8 @@ async function createBackup(env,scheduledTime){
 export default {async fetch(req,env){
  const u=new URL(req.url);
  if(req.method==="OPTIONS")return new Response(null,{status:204,headers:{"Access-Control-Allow-Origin":"https://royalegyptgroup.pages.dev","Access-Control-Allow-Methods":"GET, OPTIONS","Access-Control-Allow-Headers":"Content-Type"}});
- if((req.method==="POST"&&(u.pathname===GEN_PATH||u.pathname===PUBLISH_PATH))||(req.method==="GET"&&(u.pathname===IMAGE_PATH||u.pathname===PUBLISH_PATH))){if(!authorized(req,env))return J({error:"unauthorized"},401);}
+ if(req.method==="GET"&&(u.pathname===IMAGE_PATH||u.pathname===PUBLISH_PATH))return J({error:"method_not_allowed"},405);
+ if(req.method==="POST"&&(u.pathname===GEN_PATH||u.pathname===IMAGE_PATH||u.pathname===PUBLISH_PATH)){if(!authorized(req,env))return J({error:"unauthorized"},401);}
  if(u.pathname==="/health")return J({ok:true,service:"CEO Notes AI Publisher"});
  try{
   if(req.method==="GET"&&(u.pathname==="/"||u.pathname==="/notes"||u.pathname==="/notes/")){const page=await fetch("https://raw.githubusercontent.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/main/notes/index.html",{cf:{cacheTtl:0}});if(!page.ok)return new Response("CEO Notes page unavailable",{status:502});let html=await page.text();html=html.replace("https://royalegyptgroup.pages.dev/notes/","https://ceo-notes-ai.yasser-abdelaziz83.workers.dev/notes");return new Response(html,{headers:{"content-type":"text/html; charset=utf-8","cache-control":"no-store"}});}if(req.method==="GET"&&u.pathname==="/notes/posts.json")return J(await getFeed(env),200,true);if(req.method==="GET"&&u.pathname==="/feed")return J(await getFeed(env),200,true);
@@ -54,39 +55,35 @@ imagePrompt باللغة الإنجليزية، صورة تحريرية فوتو
    if(!post.title||!post.article||String(post.article).length<500||!post.imagePrompt)return J({error:"quality_check_failed",length:String(post.article||"").length,post},502);
    return J({post,imagePrompt:post.imagePrompt,usage:{textNeurons:ai.usage?.neurons}});
   }
-  if(req.method==="GET"&&u.pathname===IMAGE_PATH){
-   const day=Number(u.searchParams.get("day")),post={day,title:u.searchParams.get("title")||"",article:u.searchParams.get("article")||"",ideaOfTheDay:u.searchParams.get("ideaOfTheDay")||"",ceoChallenge:u.searchParams.get("ceoChallenge")||"",discussionQuestion:u.searchParams.get("discussionQuestion")||"",hashtags:u.searchParams.get("hashtags")||""};
-   const prompt=u.searchParams.get("imagePrompt")||"Cinematic editorial portrait, modern executive office, black and warm gold palette, no text or logos.";
+  if(req.method==="POST"&&u.pathname===IMAGE_PATH){
+   const body=await req.json(),source=body?.post&&typeof body.post==="object"&&!Array.isArray(body.post)?body.post:body;
+   const day=Number(source.day),post={day,title:source.title||"",article:source.article||"",ideaOfTheDay:source.ideaOfTheDay||"",ceoChallenge:source.ceoChallenge||"",discussionQuestion:source.discussionQuestion||"",hashtags:source.hashtags||""};
+   const prompt=body?.imagePrompt||source.imagePrompt||"Cinematic editorial portrait, modern executive office, black and warm gold palette, no text or logos.";
    if(!Number.isInteger(day)||day<26||!post.title||!post.article)return J({error:"missing_post_fields"},400);
-   const image=await env.AI.run("@cf/black-forest-labs/flux-1-schnell",{prompt:prompt.slice(0,2048),steps:4});
+   const image=await env.AI.run("@cf/black-forest-labs/flux-1-schnell",{prompt:String(prompt).slice(0,2048),steps:4});
    if(!image.image)return J({error:"image_generation_failed"},502);
    await env.CEO_NOTES_KV.put("image:"+day,image.image);
    const imageUrl=PUBLIC_BASE+"/image/"+day,published={...post,status:"Published",publishedAt:new Date().toISOString(),imageUrl};
    return J({post:published,imageUrl,usage:{imageNeurons:image.usage?.neurons}});
   }
-  if((req.method==="POST"||req.method==="GET")&&u.pathname===PUBLISH_PATH){
+  if(req.method==="POST"&&u.pathname===PUBLISH_PATH){
    let post;
-   if(req.method==="GET"){
-    const q=u.searchParams;
-    post={day:Number(q.get("day")),title:q.get("title")||"",article:q.get("article")||"",ideaOfTheDay:q.get("ideaOfTheDay")||"",ceoChallenge:q.get("ceoChallenge")||"",discussionQuestion:q.get("discussionQuestion")||"",hashtags:q.get("hashtags")||"",publishedAt:q.get("publishedAt")||""};
-   }else{
-    const ct=req.headers.get("content-type")||"";
-    if(ct.includes("multipart/form-data")){const f=await req.formData();post=JSON.parse(String(f.get("post")||"{}"));}
-    else {
-     const body=await req.json();
-     if(body?.receiptOnly===true){
-      const day=Number(body.day),ceoPostId=String(body.ceoPostId||""),royalPostId=String(body.royalPostId||""),ceoPageId=String(body.ceoPageId||""),royalPageId=String(body.royalPageId||"");
-      if(!Number.isInteger(day)||!ceoPostId||!royalPostId||!ceoPageId||!royalPageId)return J({error:"invalid_receipt_payload"},400);
-      const feed=await getFeed(env),posts=Array.isArray(feed.posts)?feed.posts:[],index=posts.findIndex(p=>Number(p.day)===day&&p.status==="Published");
-      if(index<0)return J({error:"published_post_not_found"},404);
-      const now=new Date().toISOString(),previous=posts[index].publishingReceipts||{};
-      const publishingReceipts={...previous,ceoNotes:{...(previous.ceoNotes||{}),pageId:ceoPageId,postId:ceoPostId,recordedAt:now},royalEgyptProperties:{...(previous.royalEgyptProperties||{}),pageId:royalPageId,postId:royalPostId,recordedAt:now}};
-      const next={...feed,posts:posts.map((p,i)=>i===index?{...p,publishingReceipts}:p)};
-      await env.CEO_NOTES_KV.put("feed",JSON.stringify(next));
-      return J({ok:true,receiptStored:true,day,receiptCount:2});
-     }
-     post=body.post||body;
+   const ct=req.headers.get("content-type")||"";
+   if(ct.includes("multipart/form-data")){const f=await req.formData();post=JSON.parse(String(f.get("post")||"{}"));}
+   else {
+    const body=await req.json();
+    if(body?.receiptOnly===true){
+     const day=Number(body.day),ceoPostId=String(body.ceoPostId||""),royalPostId=String(body.royalPostId||""),ceoPageId=String(body.ceoPageId||""),royalPageId=String(body.royalPageId||"");
+     if(!Number.isInteger(day)||!ceoPostId||!royalPostId||!ceoPageId||!royalPageId)return J({error:"invalid_receipt_payload"},400);
+     const feed=await getFeed(env),posts=Array.isArray(feed.posts)?feed.posts:[],index=posts.findIndex(p=>Number(p.day)===day&&p.status==="Published");
+     if(index<0)return J({error:"published_post_not_found"},404);
+     const now=new Date().toISOString(),previous=posts[index].publishingReceipts||{};
+     const publishingReceipts={...previous,ceoNotes:{...(previous.ceoNotes||{}),pageId:ceoPageId,postId:ceoPostId,recordedAt:now},royalEgyptProperties:{...(previous.royalEgyptProperties||{}),pageId:royalPageId,postId:royalPostId,recordedAt:now}};
+     const next={...feed,posts:posts.map((p,i)=>i===index?{...p,publishingReceipts}:p)};
+     await env.CEO_NOTES_KV.put("feed",JSON.stringify(next));
+     return J({ok:true,receiptStored:true,day,receiptCount:2});
     }
+    post=body.post||body;
    }
    const day=Number(post.day),image=await env.CEO_NOTES_KV.get("image:"+day);
    if(!Number.isInteger(day)||day<26||!post.title||!post.article||!image)return J({error:"invalid_publish_payload_or_image_missing"},400);
