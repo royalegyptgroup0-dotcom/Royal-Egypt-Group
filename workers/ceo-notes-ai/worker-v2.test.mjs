@@ -414,3 +414,18 @@ test("outbox verification rejects a post found under a different Facebook identi
   }, env);
   assert.equal(correctIdentity.status, 200);
 });
+
+
+test("API Worker root is JSON-only and never fetches HTML from the Royal Egypt main branch", async () => {
+  const env = makeEnv();
+  env.PREVIEW_MODE = "true";
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => { throw new Error("root route attempted external HTML fetch"); };
+  try {
+    const response = await call("/", {}, env);
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { ok: true, service: "CEO Notes AI Publisher", mode: "preview" });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

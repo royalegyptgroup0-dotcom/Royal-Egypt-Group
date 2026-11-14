@@ -51,3 +51,8 @@ The preview config is source-only until a controlled deployment. Do not deploy u
 ## Review state
 
 The v2 worker and preview configuration are staged for review only. No production Worker, production KV, live feed, Pages deployment, Make scenario, or social account is changed by this source branch.
+
+
+## Serving boundary
+
+The canonical editorial website is the separate Cloudflare Pages project `ceo-notes`. This AI Worker is API-only: it serves health, feed, and image endpoints, and does not fetch or serve HTML from the Royal Egypt Group `main` branch or any other site branch.

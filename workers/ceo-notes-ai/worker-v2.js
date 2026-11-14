@@ -434,13 +434,7 @@ export default {
       return J(health,health.ok?200:503);
     }
     try{
-      if(req.method==="GET"&&(url.pathname==="/"||url.pathname==="/notes"||url.pathname==="/notes/")){
-        const page=await fetch("https://raw.githubusercontent.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/main/notes/index.html",{cf:{cacheTtl:0}});
-        if(!page.ok)return new Response("CEO Notes page unavailable",{status:502});
-        let html=await page.text();
-        html=html.replace("https://royalegyptgroup.pages.dev/notes/","https://ceo-notes-ai.yasser-abdelaziz83.workers.dev/notes");
-        return new Response(html,{headers:{"content-type":"text/html; charset=utf-8","cache-control":"no-store"}});
-      }
+      if(req.method==="GET"&&url.pathname==="/")return J({ok:true,service:"CEO Notes AI Publisher",mode:env.PREVIEW_MODE==="true"?"preview":"production"});
       if(req.method==="GET"&&(url.pathname==="/notes/posts.json"||url.pathname==="/feed"))return J(await getFeed(env),200,true);
       if(req.method==="GET"&&url.pathname.startsWith("/image/")){
         const day=Number(url.pathname.split("/").pop());
