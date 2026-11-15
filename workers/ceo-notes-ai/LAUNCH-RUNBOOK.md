@@ -65,6 +65,7 @@ Native publishing:
 Store independently authorized tokens only as Worker Secrets:
 - `META_FACEBOOK_PAGE_ACCESS_TOKEN`
 - `META_INSTAGRAM_ACCESS_TOKEN`
+- `META_APP_SECRET`
 
 Facebook Page publishing requires an authorized Page access token and Page task permissions, including `pages_manage_posts` and `pages_read_engagement`. Instagram publishing uses the official Instagram Graph API flow for the professional account and requires `instagram_basic` and `instagram_content_publish` plus the appropriate Page/account access and Meta app configuration. The app must be authorized for the actual Page and professional Instagram account; complete any Meta app review or role requirements that apply.
 
@@ -73,7 +74,7 @@ Official documentation:
 - https://developers.facebook.com/docs/graph-api/reference/photo/
 - https://developers.facebook.com/docs/instagram-platform/reference/instagram-media/
 
-Never place tokens in Git, KV, D1, Make, request bodies, browser storage, logs, receipts, screenshots or chat. Never reuse a Production token in Preview. Do not assume the existing Make connection proves that a separate Worker token is valid.
+Every Graph API call sends the access token only to Meta over TLS and includes a server-generated HMAC-SHA256 `appsecret_proof` derived from `META_APP_SECRET`. Enable Meta's Require App Secret setting for the app. Never place tokens or the App Secret in Git, KV, D1, Make, request bodies to this Worker, browser storage, logs, receipts, screenshots or chat. Never reuse a Production token in Preview. Do not assume the existing Make connection proves that a separate Worker token is valid.
 
 ## 5. Scheduler and backup policy
 
