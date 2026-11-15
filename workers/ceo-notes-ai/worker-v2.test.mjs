@@ -98,6 +98,69 @@ async function withMetaReadBack(data, work) {
   finally { globalThis.fetch = originalFetch; }
 }
 
+async function withMetaPublish(platform, work) {
+  const originalFetch = globalThis.fetch;
+  const requests = [];
+  globalThis.fetch = async (input, init = {}) => {
+    const url = new URL(input);
+    requests.push({ method: init.method || "GET", path: url.pathname, body: init.body });
+    assert.equal(url.hostname, "graph.facebook.com");
+    assert.match(String(init.headers?.Authorization || ""), /^Bearer test-only-/);
+    if (platform === "facebook") {
+      if (init.method === "POST" && url.pathname.endsWith("/115226621594988/photos")) {
+        assert.equal(init.body.get("published"), "true");
+        assert.ok(init.body.get("caption").includes("#CEO_Notes"));
+        return new Response(JSON.stringify({ id: "photo-123", post_id: "115226621594988_123456" }), { status: 200 });
+      }
+      if ((init.method || "GET") === "GET" && url.pathname.endsWith("/115226621594988_123456")) {
+        return new Response(JSON.stringify({
+          id: "115226621594988_123456",
+          from: { id: "115226621594988" },
+          permalink_url: "https://www.facebook.com/115226621594988_123456",
+          is_published: true
+        }), { status: 200 });
+      }
+    } else {
+      if (init.method === "POST" && url.pathname.endsWith("/17841402949410977/media")) {
+        assert.ok(init.body.get("image_url").includes("/image/1"));
+        return new Response(JSON.stringify({ id: "ig-container-1" }), { status: 200 });
+      }
+      if ((init.method || "GET") === "GET" && url.pathname.endsWith("/ig-container-1")) {
+        return new Response(JSON.stringify({ status_code: "FINISHED" }), { status: 200 });
+      }
+      if (init.method === "POST" && url.pathname.endsWith("/17841402949410977/media_publish")) {
+        assert.equal(init.body.get("creation_id"), "ig-container-1");
+        return new Response(JSON.stringify({ id: "17912345678901234" }), { status: 200 });
+      }
+      if ((init.method || "GET") === "GET" && url.pathname.endsWith("/17912345678901234")) {
+        return new Response(JSON.stringify({
+          id: "17912345678901234",
+          owner: { id: "17841402949410977" },
+          permalink: "https://www.instagram.com/p/AbC123/",
+          timestamp: "2026-11-15T17:30:00+0000"
+        }), { status: 200 });
+      }
+    }
+    throw new Error("Unexpected Meta API request: " + (init.method || "GET") + " " + url.pathname);
+  };
+  try { return { result: await work(), requests }; }
+  finally { globalThis.fetch = originalFetch; }
+}
+
+async function approvePost(env, generated, platform = "facebook", scheduledFor = null) {
+  const identity = platform === "facebook" ? "ceo-page" : "ceo-notes";
+  const body = {
+    day: generated.post.day,
+    platform,
+    identity,
+    contentHash: generated.contentHash,
+    confirm: "APPROVE_CEO_NOTES_PUBLICATION",
+    ...(scheduledFor ? { scheduledFor } : {})
+  };
+  const response = await call("/api/approval/approve", { method: "POST", headers: auth, body }, env);
+  return { response, data: await response.json(), body };
+}
+
 async function createPublishedPost(env) {
   const generatedResponse = await call("/api/generate", { method: "POST", headers: auth, body: {} }, env);
   assert.equal(generatedResponse.status, 200);
@@ -117,6 +180,113 @@ async function createPublishedPost(env) {
   assert.equal(publishResponse.status, 200);
   return { generated, image, publish: await publishResponse.json() };
 }
+
+test("native social publishing is blocked until the owner approves the exact published content hash", async () => {
+  const env = makeEnv();
+  const { generated } = await createPublishedPost(env);
+  const response = await call("/api/social/publish", {
+    method: "POST", headers: auth,
+    body: { day: 1, platform: "facebook", identity: "ceo-page", contentHash: generated.contentHash }
+  }, env);
+  assert.equal(response.status, 403);
+  assert.equal((await response.json()).error, "owner_approval_required_for_exact_content");
+  assert.equal(env.coordinatorValues.has("outbox:facebook:ceo-page:1"), false);
+});
+
+test("owner approval is explicit, idempotent and bound to the exact content hash", async () => {
+  const env = makeEnv();
+  const { generated } = await createPublishedPost(env);
+  const missingConfirmation = await call("/api/approval/approve", {
+    method: "POST", headers: auth,
+    body: { day: 1, platform: "facebook", identity: "ceo-page", contentHash: generated.contentHash }
+  }, env);
+  assert.equal(missingConfirmation.status, 400);
+  const approved = await approvePost(env, generated, "facebook");
+  assert.equal(approved.response.status, 200);
+  assert.equal(approved.data.approval.contentHash, generated.contentHash);
+  assert.equal(approved.data.approval.approvedBy, "owner");
+  const repeat = await approvePost(env, generated, "facebook");
+  assert.equal(repeat.response.status, 200);
+  assert.equal(repeat.data.idempotent, true);
+  const stored = env.coordinatorValues.get("approval:facebook:ceo-page:1");
+  assert.equal(stored.contentHash, generated.contentHash);
+});
+
+test("Facebook native publishing uploads the approved image, verifies Page identity and stores a successful outbox receipt", async () => {
+  const env = makeEnv();
+  const { generated } = await createPublishedPost(env);
+  await approvePost(env, generated, "facebook");
+  const { result, requests } = await withMetaPublish("facebook", () => call("/api/social/publish", {
+    method: "POST", headers: auth,
+    body: { day: 1, platform: "facebook", identity: "ceo-page", contentHash: generated.contentHash }
+  }, env));
+  assert.equal(result.status, 200);
+  const data = await result.json();
+  assert.equal(data.status, "succeeded");
+  assert.equal(data.postId, "115226621594988_123456");
+  assert.equal(requests.length, 2);
+  assert.equal(env.coordinatorValues.get("outbox:facebook:ceo-page:1").status, "succeeded");
+  const duplicate = await call("/api/social/publish", {
+    method: "POST", headers: auth,
+    body: { day: 1, platform: "facebook", identity: "ceo-page", contentHash: generated.contentHash }
+  }, env);
+  assert.equal(duplicate.status, 200);
+  assert.equal((await duplicate.json()).alreadyPublished, true);
+});
+
+test("Instagram native publishing waits for a finished container and verifies the pinned professional account", async () => {
+  const env = makeEnv();
+  const { generated } = await createPublishedPost(env);
+  await approvePost(env, generated, "instagram");
+  const { result, requests } = await withMetaPublish("instagram", () => call("/api/social/publish", {
+    method: "POST", headers: auth,
+    body: { day: 1, platform: "instagram", identity: "ceo-notes", contentHash: generated.contentHash }
+  }, env));
+  assert.equal(result.status, 200);
+  const data = await result.json();
+  assert.equal(data.status, "succeeded");
+  assert.equal(data.postId, "17912345678901234");
+  assert.equal(requests.length, 4);
+  assert.equal(env.coordinatorValues.get("outbox:instagram:ceo-notes:1").status, "succeeded");
+});
+
+test("native publishing fails closed without Meta credentials and before reserving an outbox attempt", async () => {
+  const env = makeEnv();
+  const { generated } = await createPublishedPost(env);
+  await approvePost(env, generated, "facebook");
+  delete env.META_FACEBOOK_PAGE_ACCESS_TOKEN;
+  const response = await call("/api/social/publish", {
+    method: "POST", headers: auth,
+    body: { day: 1, platform: "facebook", identity: "ceo-page", contentHash: generated.contentHash }
+  }, env);
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).error, "meta_credentials_unavailable");
+  assert.equal(env.coordinatorValues.has("outbox:facebook:ceo-page:1"), false);
+});
+
+test("feed tampering that preserves a stale contentHash invalidates approval and publication", async () => {
+  const env = makeEnv();
+  const { generated } = await createPublishedPost(env);
+  await approvePost(env, generated, "facebook");
+  const feed = JSON.parse(await env.CEO_NOTES_KV.get("feed"));
+  feed.posts[0].title = "تعديل غير معتمد على المحتوى";
+  await env.CEO_NOTES_KV.put("feed", JSON.stringify(feed));
+  const response = await call("/api/social/publish", {
+    method: "POST", headers: auth,
+    body: { day: 1, platform: "facebook", identity: "ceo-page", contentHash: generated.contentHash }
+  }, env);
+  assert.equal(response.status, 409);
+  assert.equal((await response.json()).error, "content_hash_mismatch");
+  assert.equal(env.coordinatorValues.has("outbox:facebook:ceo-page:1"), false);
+});
+
+test("scheduled publishing is disabled in Preview even when a flag is accidentally present", async () => {
+  const env = makeEnv({ previewMode: true });
+  env.PUBLISHING_ENABLED = "true";
+  const pending = [];
+  await worker.scheduled({ cron: "*/15 * * * *", scheduledTime: "2026-11-15T17:30:00.000Z" }, env, { waitUntil(promise) { pending.push(promise); } });
+  assert.equal(pending.length, 0);
+});
 
 test("health and canonical feed remain public and health checks runtime bindings", async () => {
   const env = makeEnv();
