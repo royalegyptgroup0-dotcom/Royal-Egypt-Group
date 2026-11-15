@@ -884,7 +884,7 @@ button.secondary{background:#34343a;color:#eee}button.danger{background:#7d3636;
 <script>
 (function(){
 "use strict";
-var state={date:"",draft:null,post:null,contentHash:"",imageUrl:""};
+var state={date:"",draft:null,post:null,contentHash:"",imageUrl:"",dirty:false};
 var el=function(id){return document.getElementById(id)};
 var status=function(message){el("status").textContent=String(message||"")};
 var api=async function(path,body){
@@ -912,7 +912,7 @@ var readForm=function(){
   return {day:Number(el("day").value),title:el("title").value,article:el("article").value,ideaOfTheDay:el("idea").value,ceoChallenge:el("challenge").value,discussionQuestion:el("question").value,hashtags:el("hashtags").value};
 };
 var showDraft=function(draft){
-  state.draft=draft;state.post=draft.post;state.contentHash=draft.contentHash;state.date=draft.date;
+  state.draft=draft;state.post=draft.post;state.contentHash=draft.contentHash;state.date=draft.date;state.dirty=false;
   el("date").value=draft.date;el("day").value=draft.post.day;el("title").value=draft.post.title||"";
   el("article").value=draft.post.article||"";el("idea").value=draft.post.ideaOfTheDay||"";
   el("challenge").value=draft.post.ceoChallenge||"";el("question").value=draft.post.discussionQuestion||"";
@@ -931,11 +931,13 @@ var load=async function(){
 };
 var save=async function(){
   if(!state.draft)throw new Error("أنشئ مسودة أولًا");
+  if(!state.dirty)return;
   var data=await api("/api/draft/update",{date:state.date,post:readForm(),imagePrompt:el("prompt").value});
   showDraft(data.draft);status("تم حفظ التعديلات وتحديث بصمة المحتوى. إذا تغير المقال ستحتاج إلى إنشاء صورة جديدة وإعادة الاعتماد.");
 };
 var approve=async function(platform){
   if(!state.post||!state.contentHash)throw new Error("لا توجد مسودة محفوظة");
+  if(state.dirty)await save();
   var name=platform==="facebook"?"صفحة CEO على Facebook":"حساب CEO Notes على Instagram";
   if(!window.confirm("اعتماد اليوم "+state.post.day+" على "+name+" للمحتوى الحالي؟"))return;
   var scheduled=el("scheduled").value?cairoIso(el("scheduled").value):null;
@@ -944,6 +946,7 @@ var approve=async function(platform){
 };
 var publish=async function(platform){
   if(!state.post||!state.contentHash)throw new Error("لا توجد مسودة محفوظة");
+  if(state.dirty)await save();
   var name=platform==="facebook"?"Facebook":"Instagram";
   if(!window.confirm("تنفيذ نشر عام الآن على "+name+" لليوم "+state.post.day+"؟"))return;
   var data=await api("/api/social/publish",{day:state.post.day,platform:platform,identity:platform==="facebook"?"ceo-page":"ceo-notes",contentHash:state.contentHash});
@@ -961,6 +964,7 @@ el("approveFb").addEventListener("click",function(){run(function(){return approv
 el("approveIg").addEventListener("click",function(){run(function(){return approve("instagram")})});
 el("publishFb").addEventListener("click",function(){run(function(){return publish("facebook")})});
 el("publishIg").addEventListener("click",function(){run(function(){return publish("instagram")})});
+["title","article","idea","challenge","question","hashtags","prompt"].forEach(function(id){el(id).addEventListener("input",function(){state.dirty=true})});
 run(load);
 })();
 </script></body></html>\`;
