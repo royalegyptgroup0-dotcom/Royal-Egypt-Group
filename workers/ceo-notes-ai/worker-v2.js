@@ -186,7 +186,7 @@ async function restoreBackup(req,env){
     if(!match||!value||typeof value!=="object")return J({error:"backup_coordinator_record_invalid"},409);
     const [platform,identity]=match[1].split(":");
     const day=Number(match[2]);
-    if(value.day!==day||value.platform!==platform||value.identity!==identity||value.targetId!==outboxTarget(platform,identity)||! /^[a-f0-9]{64}$/i.test(String(value.contentHash||""))||!allowedStatuses.has(value.status))return J({error:"backup_coordinator_identity_invalid",key},409);
+    if(!manifest.postDays.includes(day)||value.version!==2||value.day!==day||value.platform!==platform||value.identity!==identity||value.targetId!==outboxTarget(platform,identity)||! /^[a-f0-9]{64}$/i.test(String(value.contentHash||""))||!allowedStatuses.has(value.status))return J({error:"backup_coordinator_identity_invalid",key},409);
     const list=byDay.get(day)||[];
     list.push({key,value});
     byDay.set(day,list);
@@ -197,6 +197,12 @@ async function restoreBackup(req,env){
       const parsed=JSON.parse(currentFeed);
       if(!Array.isArray(parsed.posts)||parsed.posts.length!==0)return J({error:"preview_target_not_empty"},409);
     }catch(error){return J({error:"preview_target_not_empty"},409);}
+  }
+  const restoredNames=new Set(entries.map(([key])=>key));
+  for(const prefix of ["image:","image-meta:","draft:","outbox:"]){
+    const page=await env.CEO_NOTES_KV.list({prefix,limit:1000});
+    if(page.list_complete===false)return J({error:"preview_target_scan_incomplete",prefix},409);
+    for(const item of page.keys||[])if(!restoredNames.has(item.name))return J({error:"preview_target_not_empty",key:item.name},409);
   }
   for(const [key,value] of entries){
     if(key==="feed")continue;
