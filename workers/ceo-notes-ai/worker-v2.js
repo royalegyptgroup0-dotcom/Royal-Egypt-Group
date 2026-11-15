@@ -298,7 +298,7 @@ async function metaPublicationReadBack(env,platform,postId){
   const token=platform==="facebook"?env.META_FACEBOOK_PAGE_ACCESS_TOKEN:env.META_INSTAGRAM_ACCESS_TOKEN;
   if(typeof token!=="string"||token.length<20)return {ok:false,status:503,error:"meta_credentials_unavailable"};
   const version=String(env.META_GRAPH_API_VERSION||"v27.0");
-  if(!/^v\\d+\\.\\d+$/.test(version))return {ok:false,status:503,error:"meta_api_version_invalid"};
+  if(!/^v\d+\.\d+$/.test(version))return {ok:false,status:503,error:"meta_api_version_invalid"};
   const fields=platform==="facebook"?"id,from{id},permalink_url,is_published":"id,owner,permalink,timestamp";
   const endpoint=new URL("https://graph.facebook.com/"+version+"/"+encodeURIComponent(postId));
   endpoint.searchParams.set("fields",fields);
