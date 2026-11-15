@@ -427,9 +427,10 @@ async function metaDebugToken(env,token,platform){
   if(!response.ok||data?.error)return {ok:false,error:"meta_token_check_failed",status:502,metaErrorCode:Number(data?.error?.code)||response.status};
   const info=data?.data||{};
   if(info.is_valid!==true||String(info.app_id||"")!==String(env.META_APP_ID))return {ok:false,error:"meta_token_invalid_or_wrong_app",status:401};
+  if((platform==="facebook"||platform==="facebook_link")&&info.type!=="PAGE")return {ok:false,error:"meta_page_access_token_required",status:403};
   const now=Math.floor(Date.now()/1000),expiry=Number(info.expires_at||0),dataExpiry=Number(info.data_access_expires_at||0);
   if((expiry>0&&expiry<now+86400)||(dataExpiry>0&&dataExpiry<now+86400))return {ok:false,error:"meta_token_expires_within_24_hours",status:409};
-  const required=platform==="facebook"?["pages_manage_posts","pages_read_engagement"]:["instagram_basic","instagram_content_publish","pages_show_list","pages_read_engagement"];
+  const required=platform==="facebook"?["pages_manage_posts","pages_read_engagement"]:platform==="facebook_link"?["pages_read_engagement","pages_show_list","instagram_basic"]:["instagram_basic","instagram_content_publish","pages_show_list","pages_read_engagement"];
   const scopes=new Set(Array.isArray(info.scopes)?info.scopes.map(String):[]);
   const missing=required.filter(scope=>!scopes.has(scope));
   if(missing.length)return {ok:false,error:"meta_permissions_missing",missingPermissions:missing,status:403};
@@ -448,6 +449,8 @@ async function verifyMetaCredential(env,platform){
     }
     const account=await metaGraphRequest(env,"instagram",outboxTarget("instagram","ceo-notes"),"GET",{fields:"id,username"});
     if(String(account.id||"")!=="17841402949410977")return {ok:false,error:"meta_instagram_identity_mismatch",status:409};
+    const pageTokenCheck=await metaDebugToken(env,env.META_FACEBOOK_PAGE_ACCESS_TOKEN,"facebook_link");
+    if(!pageTokenCheck.ok)return pageTokenCheck;
     const page=await metaGraphRequest(env,"facebook",outboxTarget("facebook","ceo-page"),"GET",{fields:"id,instagram_business_account"});
     if(String(page.id||"")!=="115226621594988"||String(page.instagram_business_account?.id||"")!=="17841402949410977")return {ok:false,error:"meta_instagram_account_not_linked_to_ceo_page",status:409};
     return {ok:true,platform,identity:"ceo-notes",targetId:String(account.id),username:String(account.username||""),linkedPageId:String(page.id),expiresAt:debug.expiresAt,scopes:debug.scopes};
