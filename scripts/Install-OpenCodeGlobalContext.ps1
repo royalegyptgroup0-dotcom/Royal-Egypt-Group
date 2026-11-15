@@ -28,7 +28,7 @@ This file is intended for %USERPROFILE%\.config\opencode\AGENTS.md. It is a shor
 ## Separate project registry
 
 - **Royal Egypt Group:** business platform and divisions Royal Egypt Properties, Royal Egypt Coffee, Royal Egypt Transportation. Last-known Windows checkout: C:\Users\yasse\Desktop\royalegyptgroup.pages.dev. Use that repository's AGENTS.md and docs/PROJECT_CONTEXT.md.
-- **OCTOPUSA:** independent agent-engineering platform. Last-known Windows checkout: D:\OCTOPUSA-main-latest-20261112. Do not import Royal Egypt context into OCTOPUSA. Read OCTOPUSA's own project instructions and mission files before acting.
+- **OCTOPUSA:** independent AI-agent engineering platform spanning Windows desktop services and Android client/testing, including FastAPI and OpenCode integration. Last-known Windows checkout: D:\OCTOPUSA-main-latest-20261112. Read its latest MISSION-### files, delivery reports, README, and local instructions before acting. Treat the newest accepted mission and current machine evidence as authoritative; old PIDs, endpoints, and test results may be stale. Preserve authentication tokens and local app state; never restart, kill, overwrite, or redeploy services without the task's explicit approval. Do not import Royal Egypt context into OCTOPUSA.
 - **CEO Notes:** independent editorial/social project. It may share hosting or source repository locations with other work, but its editorial identity, audience, social accounts, and publishing approvals remain separate.
 - **RoyalMediaPlayer:** separate desktop media-player project. Use its own repository and instructions.
 - **Painty Creator:** separate creative application project. Use its own repository and instructions.
