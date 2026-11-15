@@ -514,6 +514,10 @@ async function handleApproval(req,env,action){
     const scheduledFor=body.scheduledFor?String(body.scheduledFor):null;
     if(scheduledFor&&(!Number.isFinite(Date.parse(scheduledFor))||!/(Z|[+-]\d{2}:\d{2})$/i.test(scheduledFor)))return J({error:"scheduled_for_must_be_offset_aware_iso"},400);
     if(scheduledFor&&Date.parse(scheduledFor)<=Date.now())return J({error:"scheduled_for_must_be_in_the_future"},400);
+    if(scheduledFor){
+      const localClock=new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Cairo",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(new Date(scheduledFor));
+      if(localClock!=="19:30")return J({error:"scheduled_for_must_be_1930_cairo"},400);
+    }
   }
   const stub=env.OUTBOX_COORDINATOR.get(env.OUTBOX_COORDINATOR.idFromName("ceo-notes-day:"+context.day));
   const response=await stub.fetch("https://outbox-coordinator/"+action,{
