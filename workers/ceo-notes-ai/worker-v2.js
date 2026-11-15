@@ -312,7 +312,7 @@ async function metaPublicationReadBack(env,platform,postId){
   try{proof=await metaAppSecretProof(env,token);}catch(error){return {ok:false,status:503,error:String(error?.message||"meta_app_secret_unavailable")};}
   const version=String(env.META_GRAPH_API_VERSION||"v27.0");
   if(!/^v\d+\.\d+$/.test(version))return {ok:false,status:503,error:"meta_api_version_invalid"};
-  const fields=platform==="facebook"?"id,from{id},permalink_url,is_published":"id,owner,permalink,timestamp";
+  const fields=platform==="facebook"?"id,from{id},permalink_url,is_published,created_time":"id,owner,permalink,timestamp";
   const endpoint=new URL("https://graph.facebook.com/"+version+"/"+encodeURIComponent(postId));
   endpoint.searchParams.set("fields",fields);
   endpoint.searchParams.set("access_token",token);
@@ -331,7 +331,7 @@ async function metaPublicationReadBack(env,platform,postId){
   const permalink=String(platform==="facebook"?data?.permalink_url||"":data?.permalink||"");
   const published=platform==="facebook"?data?.is_published===true:Boolean(data?.timestamp&&permalink);
   if(!id||!targetId||!permalink||!published)return {ok:false,status:409,error:"meta_publication_not_verified"};
-  return {ok:true,id,targetId,permalink,published};
+  return {ok:true,id,targetId,permalink,published,timestamp:String(platform==="facebook"?data?.created_time||"":data?.timestamp||"")};
 }
 async function handleOutbox(req,env,path){
   if(!env.OUTBOX_COORDINATOR)return J({error:"outbox_coordinator_unavailable"},503);
@@ -370,7 +370,7 @@ async function handleOutbox(req,env,path){
       return J({error:"platform_readback_mismatch"},409);
     }
     const expectedSource=context.platform==="facebook"?"facebook_graph_api":"instagram_graph_api";
-    const response=await internal("reconcile",{...scoped,action:"published",postId:proof.id,permalink:proof.permalink,verifiedTargetId:proof.targetId,verificationSource:expectedSource,verificationStatus:"published"});
+    const response=await internal("reconcile",{...scoped,action:"published",postId:proof.id,permalink:proof.permalink,publishedAt:proof.timestamp||new Date().toISOString(),verifiedTargetId:proof.targetId,verificationSource:expectedSource,verificationStatus:"published"});
     return new Response(response.body,{status:response.status,headers:response.headers});
   }
   if(action==="reconcile"&&body.action==="not_published"){
@@ -716,15 +716,15 @@ async function generateImage(req,env){
     if(!imageMetaRaw)return J({error:"existing_image_unverified"},409);
     const imageMeta=JSON.parse(imageMetaRaw);
     if(imageMeta.contentHash!==draft.contentHash)return J({error:"existing_image_content_conflict"},409);
-    return J({ok:true,post:{...draft.post,status:"Ready",publishedAt:imageMeta.generatedAt,imageUrl},imageUrl,date,contentHash:draft.contentHash,reused:true});
+    return J({ok:true,post:{...draft.post,status:"Ready",imageGeneratedAt:imageMeta.generatedAt,imageUrl},imageUrl,date,contentHash:draft.contentHash,reused:true});
   }
   const prompt=String(body.imagePrompt||draft.imagePrompt||"Cinematic editorial portrait, modern executive office, black and warm gold palette, no text or logos.").slice(0,2048);
   const image=await env.AI.run("@cf/black-forest-labs/flux-1-schnell",{prompt,steps:4});
   if(!image.image)return J({error:"image_generation_failed"},502);
   await env.CEO_NOTES_KV.put(imageKey,image.image);
-  const publishedAt=new Date().toISOString();
-  await env.CEO_NOTES_KV.put("image-meta:"+day,JSON.stringify({version:1,date,day,contentHash:draft.contentHash,generatedAt:publishedAt}));
-  return J({ok:true,post:{...draft.post,status:"Ready",publishedAt,imageUrl},imageUrl,date,contentHash:draft.contentHash,reused:false,usage:{imageNeurons:image.usage?.neurons}});
+  const generatedAt=new Date().toISOString();
+  await env.CEO_NOTES_KV.put("image-meta:"+day,JSON.stringify({version:1,date,day,contentHash:draft.contentHash,generatedAt}));
+  return J({ok:true,post:{...draft.post,status:"Ready",imageGeneratedAt:generatedAt,imageUrl},imageUrl,date,contentHash:draft.contentHash,reused:false,usage:{imageNeurons:image.usage?.neurons}});
 }
 async function publishPost(req,env){
   const body=await req.json();
@@ -752,7 +752,7 @@ async function publishPost(req,env){
     if(computedExistingHash!==hash)return J({error:"day_content_conflict",day},409);
     return J({ok:true,alreadyPublished:true,day,post:existing,imageUrl:existing.imageUrl||publicBase(env)+"/image/"+day,contentHash:hash});
   }
-  const published={...draft.post,status:"Published",publishedAt:String(post.publishedAt||new Date().toISOString()),imageUrl:publicBase(env)+"/image/"+day,contentHash:hash};
+  const published={...draft.post,status:"Published",publishedAt:new Date().toISOString(),imageGeneratedAt:String(imageMeta.generatedAt||""),imageUrl:publicBase(env)+"/image/"+day,contentHash:hash};
   const next={version:1,posts:[...posts,published].sort((a,b)=>Number(a.day)-Number(b.day))};
   await env.CEO_NOTES_KV.put("feed",JSON.stringify(next));
   await env.CEO_NOTES_KV.put("draft:"+date,JSON.stringify({...draft,status:"published",publishedAt:published.publishedAt}));
