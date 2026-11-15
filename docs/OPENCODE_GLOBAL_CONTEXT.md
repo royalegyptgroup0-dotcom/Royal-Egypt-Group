@@ -23,4 +23,4 @@ The script creates or updates only the marked project-routing block in %USERPROF
 
 ## Important limitation
 
-This repository's project-specific context applies only when OpenCode is working inside the Royal Egypt Group checkout. The global routing block helps it identify separate project roots, but OCTOPUSA, RoyalMediaPlayer, and Painty Creator still need their own local AGENTS.md and project-context files. Do not copy this repository's business details into those projects.
+This repository's project-specific context applies only when OpenCode is working inside the Royal Egypt Group checkout. The global routing block identifies OCTOPUSA as a separate Windows/Android AI-agent engineering project and tells OpenCode to inspect its latest MISSION-### files and delivery reports. OCTOPUSA, RoyalMediaPlayer, and Painty Creator still need their own local AGENTS.md and project-context files. Do not copy this repository's business details into those projects.
