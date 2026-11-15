@@ -104,14 +104,14 @@ The correct account is now authenticated and can be queried. The production `ceo
 - No Durable Object binding in the current live configuration.
 - No `ADMIN_TOKEN`, Facebook token or Instagram token listed among its Worker Secrets.
 
-The isolated `ceo-notes-ai-preview` Worker has now received the tested v2 source (deployment version created 2026-11-15):
+The isolated `ceo-notes-ai-preview` Worker is deployed with the tested v2 source (version `5842579f-d70c-4ee4-a60a-140843425c3e`, deployment `d3a788c2-d213-499f-a239-5812bcdf0052`, created 2026-11-15):
 - Dedicated Preview KV `CEO_NOTES_PREVIEW_2026_11_12`.
 - Existing SQLite Durable Object binding `OUTBOX_COORDINATOR` / `CEOOutboxCoordinator` (migration tag `v1` preserved).
 - `PREVIEW_MODE=true` and Preview public base URL.
 - No AI binding, no Cron Trigger, no Meta credentials and no `ADMIN_TOKEN`.
 - New `/admin` dashboard route checks `ctx.access`; all API routes accept Access identity or Bearer auth. The account's Cloudflare Access feature is not enabled yet, so the dashboard remains intentionally inaccessible until the owner enables Access and owner-only path policies are created.
 
-Do not confuse a Cloudflare Pages Preview URL with a deployed Worker runtime. The code has passed CI, but live Worker Preview deployment and runtime HTTP checks are still separate release gates.
+Do not confuse a Cloudflare Pages Preview URL with a deployed Worker runtime. The Worker itself is deployed. GitHub Actions run `43709104478` passed the live HTTP smoke test: `/health` returned 200 with KV and Durable Object ready, AI remained disabled, the unauthenticated publishing API was rejected, and `/admin` remained inaccessible without Access.
 
 ## 7. Release gates
 
@@ -123,8 +123,9 @@ Do not confuse a Cloudflare Pages Preview URL with a deployed Worker runtime. Th
 - [x] Unit tests cover Facebook and Instagram API sequences, exact-hash approval, missing credentials, stale content hash, ambiguous outcomes and Preview schedule isolation.
 - [x] Deploy the tested source to the isolated Preview Worker only; Cloudflare API confirmed successful upload, `fetch` + `scheduled` handlers, DO class and preserved migration tag.
 - [ ] Enable Cloudflare Access in the account; create owner-only policies for Preview `/admin*` and `/api/*` using the Cloudflare-account-member identity rule. Do not use Everyone or broad Gmail-domain access.
-- [ ] Verify Preview `/health` returns 200 with KV and Durable Object ready, AI disabled, and no Cron.
-- [ ] Verify protected APIs are blocked without Access and work only after owner Access authentication (or a valid Bearer secret for a controlled service client).
+- [x] Verify Preview `/health` returns 200 with KV and Durable Object ready, AI disabled, and no Cron.
+- [x] Verify unauthenticated publishing API requests and `/admin` are rejected. Owner-authenticated Access flow remains pending until Access is enabled.
+- [ ] Verify protected APIs and the dashboard work after owner Cloudflare Access authentication.
 - [ ] Test the Access-protected dashboard and authenticated editorial flow with synthetic Preview content only. Do not create a client-side admin token.
 - [ ] Configure separately authorized Preview Meta test credentials only if a non-public/test-only Meta destination is available. Never publish a test post publicly as part of unattended testing.
 - [ ] Verify Page and Instagram permissions, token expiry, wrong destination, read-back mismatch, container failure and timeout-after-remote-success handling.
