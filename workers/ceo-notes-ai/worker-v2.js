@@ -484,6 +484,7 @@ async function publishSocialPostCore(env,body){
   const token=context.platform==="facebook"?env.META_FACEBOOK_PAGE_ACCESS_TOKEN:env.META_INSTAGRAM_ACCESS_TOKEN;
   if(typeof token!=="string"||token.length<20)return J({error:"meta_credentials_unavailable"},503);
   if(typeof env.META_APP_SECRET!=="string"||env.META_APP_SECRET.length<20)return J({error:"meta_app_secret_unavailable"},503);
+  try{await metaAppSecretProof(env,token);}catch(error){return J({error:"meta_app_secret_unavailable"},503);}
   const imageMetaRaw=await env.CEO_NOTES_KV.get("image-meta:"+context.day);
   if(!imageMetaRaw)return J({error:"approved_image_metadata_missing"},409);
   let imageMeta;
