@@ -29,7 +29,7 @@ Editorial workflow:
 - `POST /api/publish`: publish the approved editorial item into the canonical site feed. This is not social-network publishing.
 
 Native social workflow:
-- `POST /api/approval/approve`: records an explicit owner approval for one platform, pinned identity, day and exact SHA-256 content hash. Requires `confirm: "APPROVE_CEO_NOTES_PUBLICATION"`. An optional offset-aware `scheduledFor` timestamp must be in the future.
+- `POST /api/approval/approve`: records an explicit owner approval for one platform, pinned identity, day and exact SHA-256 content hash. Requires `confirm: "APPROVE_CEO_NOTES_PUBLICATION"`. An optional offset-aware `scheduledFor` timestamp must be in the future and resolve to exactly 19:30 Africa/Cairo.
 - `POST /api/approval/status`: read the approval for the exact hash.
 - `POST /api/meta/verify`: read-only validation of both Meta tokens, app ID, scopes, expiry and pinned Page/Instagram identities.
 - `POST /api/social/publish`: manually publish one approved post to one platform.
