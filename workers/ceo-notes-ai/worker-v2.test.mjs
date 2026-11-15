@@ -493,3 +493,25 @@ test("backup restore rejects tampered backup data without partial writes", async
   assert.equal(target.coordinatorValues.size, 0);
 });
 
+test("backup restore refuses unrelated pre-existing preview keys", async () => {
+  const source = makeEnv({ previewMode: true });
+  await createPublishedPost(source);
+  const pending = [];
+  worker.scheduled({ scheduledTime: Date.parse("2026-11-12T02:00:00.000Z") }, source, {
+    waitUntil(promise) { pending.push(promise); }
+  });
+  await Promise.all(pending);
+  const backupSeed = Object.fromEntries([...source.CEO_NOTES_KV.values.entries()].filter(([key]) => key.startsWith("backup:")));
+  backupSeed["image:999"] = "unrelated-preview-state";
+  const target = makeEnv({ previewMode: true, seedKV: backupSeed });
+  const response = await call("/api/backup/restore", {
+    method: "POST",
+    headers: auth,
+    body: { date: "2026-11-12", confirm: "RESTORE_PREVIEW_BACKUP" }
+  }, target);
+  assert.equal(response.status, 409);
+  assert.equal((await response.json()).error, "preview_target_not_empty");
+  assert.equal(JSON.parse(await target.CEO_NOTES_KV.get("feed")).posts.length, 0);
+  assert.equal(target.coordinatorValues.size, 0);
+});
+
