@@ -91,7 +91,7 @@ async function withMetaReadBack(data, work) {
     const url = new URL(input);
     assert.equal(url.hostname, "graph.facebook.com");
     assert.match(String(init.headers?.Authorization || ""), /^Bearer test-only-/);
-    assert.match(url.pathname, /^\\/v27\\.0\\//);
+    assert.ok(url.pathname.startsWith("/v27.0/"));
     return new Response(JSON.stringify(data), { status: 200, headers: { "content-type": "application/json" } });
   };
   try { return await work(); }
