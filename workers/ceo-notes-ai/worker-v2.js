@@ -509,7 +509,7 @@ async function publishSocialPostCore(env,body){
 }
 async function runDueSocialPublications(env,scheduledTime){
   if(env.PREVIEW_MODE==="true"||env.PUBLISHING_ENABLED!=="true")return {skipped:true,reason:"publishing_disabled"};
-  const feed=await getFeed(env),now=Date.parse(scheduledTime||Date.now()),results=[];
+  const feed=await getFeed(env),scheduledMs=typeof scheduledTime==="number"?scheduledTime:Date.parse(scheduledTime||Date.now()),now=Number.isFinite(scheduledMs)?scheduledMs:Date.now(),results=[];
   for(const post of feed.posts||[]){
     const day=Number(post.day),hash=String(post.contentHash||await contentHash(post));
     if(!Number.isInteger(day)||day<1||post.status!=="Published")continue;
