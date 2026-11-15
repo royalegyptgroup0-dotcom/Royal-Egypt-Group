@@ -293,7 +293,7 @@ test("Facebook native publishing uploads the approved image, verifies Page ident
   const data = await result.json();
   assert.equal(data.status, "succeeded");
   assert.equal(data.postId, "115226621594988_123456");
-  assert.equal(requests.length, 2);
+  assert.equal(requests.length, 4);
   assert.equal(env.coordinatorValues.get("outbox:facebook:ceo-page:1").status, "succeeded");
   const duplicate = await call("/api/social/publish", {
     method: "POST", headers: auth,
@@ -315,7 +315,7 @@ test("Instagram native publishing waits for a finished container and verifies th
   const data = await result.json();
   assert.equal(data.status, "succeeded");
   assert.equal(data.postId, "17912345678901234");
-  assert.equal(requests.length, 4);
+  assert.equal(requests.length, 6);
   assert.equal(env.coordinatorValues.get("outbox:instagram:ceo-notes:1").status, "succeeded");
 });
 
@@ -323,32 +323,19 @@ test("a remote publish followed by failed read-back becomes unknown and cannot b
   const env = makeEnv();
   const { generated } = await createPublishedPost(env);
   await approvePost(env, generated, "facebook");
-  const originalFetch = globalThis.fetch;
-  let remoteCreates = 0;
-  globalThis.fetch = async (input, init = {}) => {
-    const url = new URL(input);
-    assert.equal(url.hostname, "graph.facebook.com");
-    if (init.method === "POST" && url.pathname.endsWith("/115226621594988/photos")) {
-      remoteCreates++;
-      return new Response(JSON.stringify({ id: "photo-123", post_id: "115226621594988_123456" }), { status: 200 });
-    }
-    return new Response(JSON.stringify({ error: { code: 190 } }), { status: 401 });
-  };
-  try {
-    const first = await call("/api/social/publish", {
-      method: "POST", headers: auth,
-      body: { day: 1, platform: "facebook", identity: "ceo-page", contentHash: generated.contentHash }
-    }, env);
-    assert.equal(first.status, 502);
-    assert.equal((await first.json()).manualReviewRequired, true);
-    assert.equal(env.coordinatorValues.get("outbox:facebook:ceo-page:1").status, "unknown");
-    const retry = await call("/api/social/publish", {
-      method: "POST", headers: auth,
-      body: { day: 1, platform: "facebook", identity: "ceo-page", contentHash: generated.contentHash }
-    }, env);
-    assert.equal(retry.status, 409);
-    assert.equal(remoteCreates, 1);
-  } finally { globalThis.fetch = originalFetch; }
+  const { result: first, requests } = await withMetaPublish("facebook", () => call("/api/social/publish", {
+    method: "POST", headers: auth,
+    body: { day: 1, platform: "facebook", identity: "ceo-page", contentHash: generated.contentHash }
+  }, env), "readback-fail");
+  assert.equal(first.status, 502);
+  assert.equal((await first.json()).manualReviewRequired, true);
+  assert.equal(env.coordinatorValues.get("outbox:facebook:ceo-page:1").status, "unknown");
+  const retry = await call("/api/social/publish", {
+    method: "POST", headers: auth,
+    body: { day: 1, platform: "facebook", identity: "ceo-page", contentHash: generated.contentHash }
+  }, env);
+  assert.equal(retry.status, 409);
+  assert.equal(requests.filter(x => x.method === "POST" && x.path.endsWith("/photos")).length, 1);
 });
 
 test("Facebook and Instagram publication states remain independent after a partial channel failure", async () => {
@@ -361,17 +348,13 @@ test("Facebook and Instagram publication states remain independent after a parti
     body: { day: 1, platform: "facebook", identity: "ceo-page", contentHash: generated.contentHash }
   }, env));
   assert.equal(facebook.result.status, 200);
-  const originalFetch = globalThis.fetch;
-  globalThis.fetch = async () => new Response(JSON.stringify({ error: { code: 190 } }), { status: 401 });
-  try {
-    const instagram = await call("/api/social/publish", {
-      method: "POST", headers: auth,
-      body: { day: 1, platform: "instagram", identity: "ceo-notes", contentHash: generated.contentHash }
-    }, env);
-    assert.equal(instagram.status, 502);
-    assert.equal(env.coordinatorValues.get("outbox:facebook:ceo-page:1").status, "succeeded");
-    assert.equal(env.coordinatorValues.get("outbox:instagram:ceo-notes:1").status, "unknown");
-  } finally { globalThis.fetch = originalFetch; }
+  const instagram = await withMetaPublish("instagram", () => call("/api/social/publish", {
+    method: "POST", headers: auth,
+    body: { day: 1, platform: "instagram", identity: "ceo-notes", contentHash: generated.contentHash }
+  }, env), "publish-fail");
+  assert.equal(instagram.result.status, 502);
+  assert.equal(env.coordinatorValues.get("outbox:facebook:ceo-page:1").status, "succeeded");
+  assert.equal(env.coordinatorValues.get("outbox:instagram:ceo-notes:1").status, "unknown");
 });
 
 test("native publishing requires the Meta App Secret for appsecret_proof before reserving an attempt", async () => {
