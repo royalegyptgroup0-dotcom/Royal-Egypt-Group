@@ -92,3 +92,13 @@ If Mobile is connected to an OCTOPUSA workspace, it should remain there for OCTO
 - For cloud operations, verify exact account, project, environment, bindings, and least-privilege access. If permissions cannot be proven safe, stop before mutation.
 - Do not merge, publish, activate automation, access customer records, alter billing, or deploy production without explicit authorization.
 - Finish with evidence: changed files, commit/PR, test results, preview URL if any, and unresolved blockers.
+
+## 9. Additional live findings (2026-11-15)
+
+- Make scenario `8423033` (Concurrency Lab) was revalidated by Make's activation check successfully, then immediately deactivated. It is now paused, has zero incomplete executions, zero queued webhook deliveries, and no executions were started during the check. This proves configuration validation can pass; it does not prove a synthetic row-reservation test has run.
+- Make scenario `8333266` (legacy Daily CEO Notes | Royal Egypt) is not active. Its trigger is daily 19:30 and its modules still use OpenAI text generation, OpenAI image generation, and direct Facebook publishing. It must remain inactive; do not reactivate or use it as the new architecture.
+- Make scenario `8438190` remains paused. Its three HTTP modules still point to legacy path-token routes on the production Worker: `/generate-<token>`, `/image-<token>` (GET), and `/publish-<token>`. The staged v2 Worker expects authenticated POST requests to `/api/generate`, `/api/image`, and `/api/publish`, followed by independent outbox reservation/start/receipt/read-back/verify actions. Do not change the Make URLs to v2 until the matching Worker version and required bindings/secrets are deployed and verified in the correct environment.
+- The existing Make HTTP API-key connection is referenced by ID in module configuration. Never retrieve or print its secret. Its existence alone does not prove that the production Worker has the required Bearer authorization configuration.
+- Both connected Cloudflare integrations (the personal and Royal Egypt Group profiles) returned HTTP 401 `Invalid API Token` from the read-only `GET /user/tokens/verify` endpoint. Reauthorization is required before Cloudflare API reads or writes can be trusted. Do not attempt production Worker deployment, secret changes, binding changes, or migrations through those invalid connections.
+- PR #79 adds this project context and the OpenCode Mobile guide. Its Pages Preview deployment succeeded at `https://8c229f2a.royalegyptgroup-vy7.pages.dev`. The PR remains Draft and unmerged.
+
