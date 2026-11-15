@@ -934,6 +934,7 @@ button.secondary{background:#34343a;color:#eee}button.danger{background:#7d3636;
   <p class="muted">كل قناة مستقلة. الاعتماد مرتبط ببصمة المحتوى الحالية، وأي تعديل يبطل الاعتماد السابق.</p>
   <label for="scheduled">موعد النشر المجدول (اختياري، بتوقيت القاهرة)</label><input id="scheduled" type="datetime-local">
   <div class="actions">
+    <button class="secondary" id="verifyMeta">فحص اتصال وصلاحيات Meta</button>
     <button id="approveFb">اعتماد Facebook</button><button class="secondary" id="publishFb">نشر Facebook الآن</button>
     <button id="approveIg">اعتماد Instagram</button><button class="secondary" id="publishIg">نشر Instagram الآن</button>
   </div>
@@ -1021,6 +1022,11 @@ el("generate").addEventListener("click",function(){run(async function(){var d=aw
 el("save").addEventListener("click",function(){run(save)});
 el("makeImage").addEventListener("click",function(){run(async function(){await save();var d=await api("/api/image",{date:state.date,post:readForm(),imagePrompt:el("prompt").value});state.imageUrl=d.imageUrl;el("image").src=d.imageUrl;el("image").style.display="block";status("تم إنشاء الصورة وربطها ببصمة المحتوى الحالية.")})});
 el("publishFeed").addEventListener("click",function(){run(async function(){await save();var d=await api("/api/publish",{date:state.date,post:readForm()});status(d.alreadyPublished?"المقال موجود بالفعل في الموقع.":"تم حفظ المقال في موقع CEO Notes. لم يتم نشره اجتماعيًا.")})});
+el("verifyMeta").addEventListener("click",function(){run(async function(){
+  var response=await fetch("/api/meta/verify",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:"{}"});
+  var data={};try{data=await response.json()}catch(e){}
+  status("نتيجة فحص Meta:\\n"+JSON.stringify(data,null,2));
+})});
 el("approveFb").addEventListener("click",function(){run(function(){return approve("facebook")})});
 el("approveIg").addEventListener("click",function(){run(function(){return approve("instagram")})});
 el("publishFb").addEventListener("click",function(){run(function(){return publish("facebook")})});
