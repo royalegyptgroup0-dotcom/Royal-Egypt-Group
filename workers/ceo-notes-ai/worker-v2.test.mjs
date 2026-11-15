@@ -123,15 +123,18 @@ async function withMetaPublish(platform, work, mode = "success") {
         scopes
       }}), { status: 200 });
     }
+    const pageRequest = url.pathname.endsWith("/115226621594988") && method === "GET";
+    const expectedRequestToken = pageRequest || url.pathname.endsWith("/photos") || url.pathname.endsWith("/115226621594988_123456")
+      ? "test-only-facebook-token-123456789" : expectedToken;
     const token = method === "POST" ? init.body.get("access_token") : url.searchParams.get("access_token");
     const proof = method === "POST" ? init.body.get("appsecret_proof") : url.searchParams.get("appsecret_proof");
-    assert.equal(token, expectedToken);
+    assert.equal(token, expectedRequestToken);
     assert.match(proof || "", /^[a-f0-9]{64}$/);
     assert.equal(init.headers?.Authorization, undefined);
+    if (pageRequest && url.searchParams.get("fields")?.includes("instagram_business_account")) {
+      return new Response(JSON.stringify({ id: "115226621594988", name: "CEO", instagram_business_account: { id: "17841402949410977" } }), { status: 200 });
+    }
     if (platform === "facebook") {
-      if (method === "GET" && url.pathname.endsWith("/115226621594988") && url.searchParams.get("fields")?.includes("instagram_business_account")) {
-        return new Response(JSON.stringify({ id: "115226621594988", name: "CEO", instagram_business_account: { id: "17841402949410977" } }), { status: 200 });
-      }
       if (method === "POST" && url.pathname.endsWith("/115226621594988/photos")) {
         assert.equal(init.body.get("published"), "true");
         assert.ok(init.body.get("caption").includes("#CEO_Notes"));
@@ -315,7 +318,7 @@ test("Instagram native publishing waits for a finished container and verifies th
   const data = await result.json();
   assert.equal(data.status, "succeeded");
   assert.equal(data.postId, "17912345678901234");
-  assert.equal(requests.length, 6);
+  assert.equal(requests.length, 7);
   assert.equal(env.coordinatorValues.get("outbox:instagram:ceo-notes:1").status, "succeeded");
 });
 
