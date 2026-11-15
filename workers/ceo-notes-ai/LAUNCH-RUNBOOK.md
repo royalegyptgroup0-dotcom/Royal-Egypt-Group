@@ -1,143 +1,131 @@
 # CEO Notes Official Launch Runbook
 
-**Status:** PREPARATION ONLY — NOT AUTHORIZED FOR PUBLICATION
+**Status:** STAGED IMPLEMENTATION — LIVE SOCIAL PUBLISHING NOT YET AUTHORIZED
 
-Target site: https://ceo-notes.pages.dev  
-Pages project: `ceo-notes`  
-Repository branch: `ceo-notes-site`  
-Worker: `ceo-notes-ai`  
-Legacy Make publisher scenario: `8438190` (must remain paused; do not use as the native runtime)
+- Website: https://ceo-notes.pages.dev
+- Pages project: `ceo-notes`
+- Production Worker: `ceo-notes-ai`
+- Isolated Preview Worker: `ceo-notes-ai-preview`
+- Legacy Make publisher scenario: `8438190` (must remain paused)
 
 ## 1. Project and identity boundary
 
-CEO Notes is an independent editorial identity. It is not Royal Egypt Group corporate publishing and must never publish to Royal Egypt Properties destinations.
+CEO Notes is an independent editorial project. It is not Royal Egypt Group corporate publishing and must never publish to Royal Egypt Properties destinations.
 
-| Channel | Authorized identity | Target |
+| Channel | Pinned identity | ID |
 |---|---|---|
-| Facebook | CEO Page | Page ID `115226621594988` |
-| Instagram | CEO Notes / @kiritoon | Professional account ID `17841402949410977` |
+| Facebook | CEO Page | `115226621594988` |
+| Instagram | CEO Notes / @kiritoon | `17841402949410977` |
 
-Explicit exclusions:
-- Royal Egypt Properties Facebook Page and Instagram account are separate corporate identities and are never CEO Notes destinations.
-- Royal Egypt Group LinkedIn Company Page must never receive CEO Notes articles.
-- LinkedIn personal-profile publishing is a separate, not-yet-authorized integration track.
-- Do not add BulkPublish, Tareno, scraping connectors, unofficial LinkedIn tools, or another social scheduler.
+Never route CEO Notes content to Royal Egypt Properties, Royal Egypt Group LinkedIn Company Page, or any other corporate identity. LinkedIn personal-profile publishing is a separate project and is not authorized here.
 
-Keep existing Make connections intact while its publisher scenarios remain paused. Do not delete credentials or connections as a cleanup shortcut. Do not copy their secrets into Cloudflare or source code; authorize the native Meta integration independently.
+Keep existing Make connections intact while all Make publisher scenarios remain paused. Do not copy Make credentials into Cloudflare. Do not delete Make scenarios until the native system has passed acceptance and the owner separately authorizes retirement.
 
-## 2. Selected automation runtime
+## 2. Selected zero-new-service runtime
 
-Use Cloudflare-native automation:
-- Cloudflare Worker for the API and orchestration.
-- SQLite-backed Durable Object `OUTBOX_COORDINATOR` for serialized state, per-day reservations and receipts.
-- Dedicated preview KV for all preview-only feed and draft data.
-- Cloudflare Cron Triggers for scheduled work only after the explicit release gates pass.
-- GitHub Actions for CI only.
+- Cloudflare Worker: orchestration and Meta API adapter.
+- SQLite-backed Durable Object: per-day locks, approvals and publication outbox.
+- Dedicated Cloudflare KV: editorial feed, drafts, images and backups.
+- Cloudflare Cron Triggers: backup and the guarded Cairo-time scheduler.
+- GitHub Actions: CI and validation only.
 
-Activepieces and n8n are not part of this deployment. Their self-hosted editions require a continuously available host and maintenance; the standard Activepieces production-oriented Docker Compose deployment requires PostgreSQL, Redis, Docker Compose v2 and at least 2 vCPU / 4 GB RAM. A free license does not make hosting and uptime free. GitHub Actions is not the social-publishing runtime.
+Activepieces and n8n are not part of the selected architecture. Their self-hosted editions still require a continuously available host and maintenance. No new paid service, paid plan, payment card, R2, paid image API, recurring charge or automatic plan upgrade is allowed.
 
-No new paid services, cards, Workers Paid plan, R2, paid image APIs, paid connectors or recurring charges are allowed.
+## 3. Staged native API
 
-## 3. Worker API and outbox contract
+All state-changing `/api/*` endpoints require POST JSON and `Authorization: Bearer <ADMIN_TOKEN>`. The secret must be at least 32 characters and stored only in Worker Secrets.
 
-Current staged API:
-- `POST /api/generate`
-- `POST /api/image`
-- `POST /api/publish` (canonical feed save, not a social-network post)
-- `POST /api/outbox/reserve`
-- `POST /api/outbox/start`
-- `POST /api/outbox/receipt`
-- `POST /api/outbox/verify`
-- `POST /api/outbox/unknown`
-- `POST /api/outbox/reconcile`
-- `POST /api/backup/restore` (Preview-only, explicit confirmation)
+Editorial flow:
+1. `POST /api/generate` creates or reuses the current Cairo-date draft.
+2. `POST /api/image` creates or reuses the matching image.
+3. `POST /api/publish` saves the item to the canonical CEO Notes feed. This does not publish to social networks.
 
-All state-changing routes require Bearer authorization and POST JSON. Never use legacy path-token routes or GET requests for mutations. Never log authorization headers or secret values.
+Approval flow:
+1. `POST /api/approval/approve` requires day, platform, pinned identity, exact content hash and `confirm: "APPROVE_CEO_NOTES_PUBLICATION"`.
+2. An optional `scheduledFor` must be an offset-aware ISO timestamp in the future.
+3. Approval is persisted in the day-specific Durable Object, with owner label, timestamp, platform, target identity and content hash.
+4. An approval for one channel does not approve the other channel. Any change to the article fields invalidates the hash and blocks publication.
 
-Outbox states are durable and per destination. A receipt is not success. A successful HTTP create response is not proof of publication. The staged Worker now performs its own Meta Graph API read-back on `/api/outbox/verify`; caller-supplied verification assertions are ignored. It checks the returned ID, pinned destination identity, permalink and published state before marking a receipt successful.
+Native publishing:
+- `POST /api/social/publish` publishes one approved day to one pinned destination.
+- Facebook uses the official Page Photos edge with the public generated JPEG URL and caption, then reads the returned Page post back.
+- Instagram creates a media container, waits for `FINISHED`, publishes it, then reads the resulting media back.
+- The Worker verifies post/media ID, pinned destination identity, permalink and published state before marking the outbox `succeeded`.
+- A caller cannot self-attest success. A receipt or HTTP 200 alone is not proof of a public post.
+- Any ambiguous result remains blocked for reconciliation. Never blindly retry a request that may already have published remotely.
 
-Unknown results after a publish attempt remain blocked. A caller cannot clear an unknown attempt by claiming `not_found`; if authoritative absence cannot be established safely, stop for manual review. Never blindly retry a request that may already have published remotely.
+## 4. Meta credentials and permissions
 
-## 4. Native Meta integration target (not yet complete)
-
-The following is the implementation contract, not a claim that social publishing is already wired into the Worker.
-
-### Credentials
-
-Store independently authorized tokens only as Cloudflare Worker Secrets:
+Store independently authorized tokens only as Worker Secrets:
 - `META_FACEBOOK_PAGE_ACCESS_TOKEN`
 - `META_INSTAGRAM_ACCESS_TOKEN`
 
-Never store tokens in Git, KV, D1, request bodies, client-side code, Make, logs, receipts, screenshots or chat. Never reuse a production token in Preview. The current Preview must remain without Meta secrets.
+Facebook Page publishing requires an authorized Page access token and Page task permissions, including `pages_manage_posts` and `pages_read_engagement`. Instagram publishing uses the official Instagram Graph API flow for the professional account and requires `instagram_basic` and `instagram_content_publish` plus the appropriate Page/account access and Meta app configuration. The app must be authorized for the actual Page and professional Instagram account; complete any Meta app review or role requirements that apply.
 
-### Facebook CEO Page
+Official documentation:
+- https://developers.facebook.com/docs/graph-api/reference/page/feed/
+- https://developers.facebook.com/docs/graph-api/reference/photo/
+- https://developers.facebook.com/docs/instagram-platform/reference/instagram-media/
 
-The native adapter must:
-1. Require an owner approval record for the exact content hash.
-2. Reserve `facebook / ceo-page` for the day and content hash.
-3. Start the reservation before the remote side effect.
-4. Publish through the official Meta Graph API to Page `115226621594988`.
-5. Record the returned post ID as a receipt.
-6. Let the Worker read back the post using the Page Post fields `id,from{id},permalink_url,is_published`.
-7. Verify the returned Page ID, post ID, permalink and published state before marking `succeeded`.
+Never place tokens in Git, KV, D1, Make, request bodies, browser storage, logs, receipts, screenshots or chat. Never reuse a Production token in Preview. Do not assume the existing Make connection proves that a separate Worker token is valid.
 
-### Instagram CEO Notes
+## 5. Scheduler and backup policy
 
-The native adapter must:
-1. Require the same owner approval gate and reserve `instagram / ceo-notes` independently.
-2. Create a media container through the official Instagram Content Publishing API using the public JPEG URL and approved caption.
-3. Check container readiness before publishing; do not tight-loop poll.
-4. Publish the container and record the returned media ID.
-5. Let the Worker read back the media using `id,owner,permalink,timestamp`.
-6. Verify owner ID `17841402949410977`, media ID, permalink and published timestamp before marking `succeeded`.
+- Target daily publishing time: 19:30 Africa/Cairo.
+- Production publishing Cron candidate: `*/15 * * * *`; the Worker checks the local Cairo clock and only runs at 19:30.
+- Backup remains a separate Cron. The currently deployed Production Worker has `0 2 * * *` UTC configured.
+- The publishing scheduler runs only when `PUBLISHING_ENABLED=true` and `PREVIEW_MODE` is not true.
+- It processes only published feed items with a due, exact-hash approval for the relevant platform.
+- Preview must have no Cron Trigger and must never publish, even if a publishing flag is accidentally added.
+- Do not add or enable the publishing Cron until a controlled first public post has been separately approved and independently verified on both intended channels.
 
-Facebook and Instagram routes must succeed or fail independently. A success on one channel must never be retried because the other channel failed.
+## 6. Current Cloudflare state (read-only inspection)
 
-## 5. Approval and schedule policy
+The correct account is now authenticated and can be queried. The production `ceo-notes-ai` Worker currently has:
+- AI binding and the production `CEO_NOTES_KV` namespace.
+- Existing backup Cron `0 2 * * *` UTC.
+- No Durable Object binding in the current live configuration.
+- No `ADMIN_TOKEN`, Facebook token or Instagram token listed among its Worker Secrets.
 
-- Draft generation and image creation are not public publication.
-- Only an explicit, auditable owner approval bound to the exact content hash may make a draft eligible.
-- A caller-supplied `approved: true` value is not sufficient.
-- Preview must have no publishing Cron, no Meta secrets and no AI binding.
-- The current staged `scheduled()` handler performs backup only; it is not yet a daily social publisher.
-- The target publishing time is 19:30 Africa/Cairo, but do not add or activate a publishing Cron until the controlled first post is separately approved and all release gates pass.
-- Do not publish DAY 28 or any other pending article without the owner's explicit approval.
+The isolated `ceo-notes-ai-preview` Worker has:
+- Dedicated Preview KV `CEO_NOTES_PREVIEW_2026_11_12`.
+- SQLite Durable Object binding `OUTBOX_COORDINATOR` / `CEOOutboxCoordinator`.
+- `PREVIEW_MODE=true` and Preview public base URL.
+- No AI binding, no Cron Trigger, no Meta credentials and no `ADMIN_TOKEN` yet.
 
-## 6. Required release gates
+Do not confuse a Cloudflare Pages Preview URL with a deployed Worker runtime. The code has passed CI, but live Worker Preview deployment and runtime HTTP checks are still separate release gates.
 
-- [ ] Preview-only `ADMIN_TOKEN` configured securely; never reuse production credentials.
-- [ ] Preview `/health` returns 200 and confirms KV + Durable Object readiness.
-- [ ] Preview protected API returns 401 without auth and accepts only the authorized Bearer credential.
-- [ ] POST-only generation/image/feed contract tested with synthetic Preview data only.
-- [ ] Concurrent reservations, duplicate suppression, partial channel failure and ambiguous-outcome handling pass.
-- [ ] Worker-side Meta read-back tests pass for both Facebook and Instagram, including wrong destination, wrong post ID, wrong permalink, unpublished state, missing token and expired-token responses.
-- [ ] Native Meta publishing adapters are implemented; no Make publishing module remains in the execution path.
-- [ ] Owner approval is persisted and cryptographically/content-hash bound; unapproved content cannot be published.
-- [ ] Backup capture and isolated restore rehearsal pass, including Durable Object outbox records and failure-injection cases.
-- [ ] Production Worker source, AI/KV/DO bindings and secret names are read back before any deployment.
-- [ ] Cloudflare identity and least-privilege API authorization are verified. The previous API connection returned HTTP 401; do not deploy until the correct account is reconnected.
-- [ ] Preview and Production identities, KV namespaces, Durable Object namespaces and secrets are independently verified.
-- [ ] Canonical Pages project, article, feed, RSS, sitemap, canonical URLs and social metadata are verified.
-- [ ] One controlled public post is explicitly approved by the owner and independently read back on each destination.
-- [ ] Only after that controlled post passes may a separate approval be requested to enable the 19:30 Africa/Cairo daily schedule.
-- [ ] Keep Make publisher scenarios paused until native acceptance is complete and the owner separately authorizes retirement.
+## 7. Release gates
 
-## 7. Cost and editorial controls
+- [x] Architecture decision and zero-new-service comparison documented.
+- [x] Durable outbox, server-side Meta read-back and caller-attestation rejection staged.
+- [x] Explicit owner approval persisted per platform and exact content hash.
+- [x] Facebook and Instagram native adapters staged in v2.
+- [x] Scheduler checks Africa/Cairo 19:30, requires `PUBLISHING_ENABLED=true`, and is hard-disabled in Preview.
+- [x] Unit tests cover Facebook and Instagram API sequences, exact-hash approval, missing credentials, stale content hash, ambiguous outcomes and Preview schedule isolation.
+- [ ] Deploy the tested source to the isolated Preview Worker only.
+- [ ] Verify Preview `/health` returns 200 with KV and Durable Object ready, AI disabled, and no Cron.
+- [ ] Verify protected APIs return 401 without a Bearer token.
+- [ ] Configure a unique Preview `ADMIN_TOKEN`; test the authenticated editorial flow with synthetic Preview content only.
+- [ ] Configure separately authorized Preview Meta test credentials only if a non-public/test-only Meta destination is available. Never publish a test post publicly as part of unattended testing.
+- [ ] Verify Page and Instagram permissions, token expiry, wrong destination, read-back mismatch, container failure and timeout-after-remote-success handling.
+- [ ] Complete backup/restore rehearsal and failure injection on Preview.
+- [ ] Read back Production Worker bindings, version, secrets and Cron before any deployment.
+- [ ] Deploy Production only after all Preview gates pass and explicit deployment approval is recorded.
+- [ ] Add the Durable Object binding and migration to Production only with a verified backup and a reviewed migration plan.
+- [ ] Add Meta Worker Secrets independently; never migrate credentials from Make.
+- [ ] Keep `PUBLISHING_ENABLED` absent/false and publishing Cron absent during initial Production validation.
+- [ ] Obtain approval for the exact first public article and its content hash.
+- [ ] Publish the first controlled post to Facebook and Instagram independently; read both back and verify the outbox receipts.
+- [ ] Obtain separate approval before enabling `*/15 * * * *` and `PUBLISHING_ENABLED=true`.
+- [ ] Retire Make publisher scenarios only after the native runtime has passed live acceptance and the owner explicitly authorizes retirement.
 
-- Free-first. Check Cloudflare Workers, Durable Objects and Workers AI usage before any call.
-- Free-plan overages must fail safely; never auto-upgrade or incur a charge.
-- Do not enable paid plans, R2, paid image services, paid connectors or recurring charges.
-- Do not generate a new article or image when retrying the same Cairo publishing day; reuse the stored draft and media.
-- If Workers AI Free quota is unavailable, stop and leave the draft for manual preparation. Do not substitute a paid model/provider.
-- Preserve the established Egyptian Arabic professional editorial voice and fields: `title`, `article`, `ideaOfTheDay`, `ceoChallenge`, `discussionQuestion`, `hashtags`.
-- Do not rewrite historical posts or publish DAY 28 until the release gates and explicit owner approval are complete.
+## 8. Cost, editorial and rollback controls
 
-## 8. Rollback
-
-If any gate fails:
-- Keep all Make publisher scenarios paused.
-- Keep publishing Cron absent or disabled.
-- Preserve the feed, drafts, outbox, receipts and backups.
-- Disable only the failing native route.
-- Reconcile uncertain remote outcomes before another attempt.
-- Do not delete public posts, credentials, feed entries or backups as a cleanup shortcut.
+- Stay within existing Cloudflare Free allowances. Free quota exhaustion must stop safely; never upgrade automatically.
+- No paid plans, R2, paid image generation, paid connectors or recurring services.
+- If Workers AI Free quota is unavailable, stop and leave the draft for manual preparation.
+- Reuse the same draft and image for the same Cairo publishing day; never create a second copy on retry.
+- Preserve the established Egyptian Arabic professional editorial fields: `title`, `article`, `ideaOfTheDay`, `ceoChallenge`, `discussionQuestion`, `hashtags`.
+- Do not publish DAY 28 or any other pending item without exact owner approval.
+- On any failed gate, keep Make publishers paused, keep publishing Cron absent, preserve feed/outbox/backups, and require authoritative reconciliation before another attempt.
