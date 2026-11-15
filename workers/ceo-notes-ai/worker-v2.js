@@ -826,7 +826,7 @@ function validPlatformPermalink(platform,value){
     return false;
   }catch(error){return false;}
 }
-const ADMIN_HTML = \`<!doctype html>
+const ADMIN_HTML = `<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -967,7 +967,7 @@ el("publishIg").addEventListener("click",function(){run(function(){return publis
 ["title","article","idea","challenge","question","hashtags","prompt"].forEach(function(id){el(id).addEventListener("input",function(){state.dirty=true})});
 run(load);
 })();
-</script></body></html>\`;
+</script></body></html>`;
 export default {
   async fetch(req,env,ctx){
     const url=new URL(req.url);
