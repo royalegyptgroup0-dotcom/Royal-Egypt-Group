@@ -111,16 +111,18 @@ async function withMetaPublish(platform, work, mode = "success") {
     assert.equal(url.hostname, "graph.facebook.com");
     const expectedToken = platform === "facebook" ? "test-only-facebook-token-123456789" : "test-only-instagram-token-123456789";
     if (url.pathname.endsWith("/debug_token")) {
-      assert.equal(url.searchParams.get("input_token"), expectedToken);
+      const inputToken = url.searchParams.get("input_token");
+      const debugPlatform = inputToken === "test-only-facebook-token-123456789" ? "facebook" : "instagram";
+      assert.equal(inputToken, debugPlatform === "facebook" ? "test-only-facebook-token-123456789" : "test-only-instagram-token-123456789");
       assert.equal(url.searchParams.get("access_token"), "test-meta-app-id|test-only-meta-app-secret-123456789");
-      const scopes = platform === "facebook"
-        ? ["pages_manage_posts", "pages_read_engagement"]
+      const scopes = debugPlatform === "facebook"
+        ? ["pages_manage_posts", "pages_read_engagement", "pages_show_list", "instagram_basic"]
         : ["instagram_basic", "instagram_content_publish", "pages_show_list", "pages_read_engagement"];
-      if (mode === "missing-scope") scopes.splice(scopes.indexOf("pages_manage_posts"), 1);
+      if (mode === "missing-scope" && debugPlatform === "facebook") scopes.splice(scopes.indexOf("pages_manage_posts"), 1);
       const appId = mode === "wrong-app" ? "different-meta-app-id" : "test-meta-app-id";
       const expiry = Math.floor(Date.now()/1000)+(mode === "expired-token" ? 3600 : 90*86400);
       return new Response(JSON.stringify({ data: {
-        is_valid: true, app_id: appId,
+        is_valid: true, app_id: appId, type: debugPlatform === "facebook" ? "PAGE" : "USER",
         expires_at: expiry,
         data_access_expires_at: expiry,
         scopes
