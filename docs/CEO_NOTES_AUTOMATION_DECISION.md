@@ -73,7 +73,7 @@ Official references:
 
 ## Non-negotiable release gates
 
-- [ ] The current Worker outbox verification trust boundary is removed: the Worker performs the Meta read-back itself; callers cannot forge a successful verification attestation.
+- [x] The staged Worker removes the caller-attestation trust boundary for `/api/outbox/verify`: it performs Meta read-back itself, ignores caller-supplied proof fields, and fails closed when the required Worker Secret is absent. Unit tests cover Facebook and Instagram identity checks, wrong destination and missing credentials. Live Meta verification remains untested until credentials are independently authorized in Preview.
 - [ ] Native Facebook Page and Instagram publishing adapters use only the pinned CEO Notes identities:
   - Facebook Page: `115226621594988`
   - Instagram professional account: `17841402949410977`
@@ -91,9 +91,9 @@ Official references:
 - PR #78 adds a dedicated read-only Worker test workflow.
 - PR #81 adds Preview-only backup restore and tests.
 - PR #81 is a superset of the PR #77 head plus the Worker CI workflow and restore work. It should be the single review line targeting `ceo-notes-site`; do not merge any PR as part of this ADR.
-- Existing v2 `/api/outbox/verify` accepts caller-supplied platform verification fields. This is a trust boundary, not authoritative proof. It must be replaced by server-side Meta read-back before any live publishing.
+- The staged v2 `/api/outbox/verify` now performs server-side Meta Graph API read-back using Worker Secrets and ignores caller-supplied verification assertions. Unit tests cover Facebook and Instagram, wrong destination identity, and missing credentials. The native Meta publishing adapter, owner approval queue and scheduled publisher are not yet implemented.
 - Existing `scheduled()` performs backup only. The current Worker is not yet a complete Make replacement and must not be described as one.
-- Preview has no Meta credentials, AI binding or Cron. Protected routes remain closed until a unique Preview-only secret is set and tested.
+- Preview has no Meta credentials, AI binding or Cron. Protected routes remain closed until a unique Preview-only `ADMIN_TOKEN` is set and tested. No live Meta verification has been claimed.
 - Cloudflare API credentials previously returned HTTP 401. No deployment, binding, secret or production setting may be changed until the correct Cloudflare account is reconnected and read-only identity verification succeeds.
 
 ## Cost and AI policy
