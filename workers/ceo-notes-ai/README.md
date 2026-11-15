@@ -48,8 +48,9 @@ After either create call, the Worker reads the resulting post/media object back 
 Credentials are separate Worker Secrets:
 - `META_FACEBOOK_PAGE_ACCESS_TOKEN`
 - `META_INSTAGRAM_ACCESS_TOKEN`
+- `META_APP_SECRET`
 
-For the Facebook Login Instagram API flow, use a token authorized for the pinned professional account and the required Meta permissions, including `instagram_basic` and `instagram_content_publish`; Facebook Page publishing requires the Page task and permissions documented by Meta, including `pages_manage_posts` and `pages_read_engagement`. The app/account must have the necessary Page and Instagram roles and any required Meta app review. Never store credentials in Git, KV, D1, Make, request bodies, browser storage, logs, receipts or chat. Never copy Make's existing credentials into this Worker.
+For the Facebook Login Instagram API flow, use a token authorized for the pinned professional account and the required Meta permissions, including `instagram_basic` and `instagram_content_publish`; Facebook Page publishing requires the Page task and permissions documented by Meta, including `pages_manage_posts` and `pages_read_engagement`. The app/account must have the necessary Page and Instagram roles and any required Meta app review. All Graph API calls send the token only to Meta over TLS and include an HMAC-SHA256 `appsecret_proof` generated server-side from `META_APP_SECRET`. Configure Meta's Require App Secret setting to enforce proof validation. Never store credentials in Git, KV, D1, Make, request bodies to this Worker, browser storage, logs, receipts or chat. Never copy Make's existing credentials into this Worker.
 
 Official references:
 - [Meta Page Feed and publishing](https://developers.facebook.com/docs/graph-api/reference/page/feed/)
