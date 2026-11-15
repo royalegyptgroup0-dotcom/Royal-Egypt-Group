@@ -22,8 +22,8 @@ function makeKV(seed = {}) {
   };
 }
 
-function makeEnv({ posts = [], adminToken = token } = {}) {
-  const kv = makeKV({ feed: JSON.stringify({ version: 1, posts }) });
+function makeEnv({ posts = [], adminToken = token, previewMode = false, seedKV = {} } = {}) {
+  const kv = makeKV({ feed: JSON.stringify({ version: 1, posts }), ...seedKV });
   const calls = { text: 0, image: 0 };
   const article = "في بيئة العمل، القرار الجيد لا يبدأ دائمًا بإجابة سريعة. أحيانًا يحتاج الفريق إلى فهم المشكلة، وتحديد المسؤوليات، ومراجعة أثر الاختيارات قبل التنفيذ. ".repeat(5);
   const ai = {
@@ -73,7 +73,7 @@ function makeEnv({ posts = [], adminToken = token } = {}) {
       return { fetch(input, init) { return coordinatorObject.fetch(input instanceof Request ? input : new Request(input, init)); } };
     }
   };
-  return { ADMIN_TOKEN: adminToken, CEO_NOTES_KV: kv, AI: ai, OUTBOX_COORDINATOR: coordinatorNamespace, coordinatorValues, calls };
+  return { ADMIN_TOKEN: adminToken, PREVIEW_MODE: previewMode ? "true" : undefined, CEO_NOTES_KV: kv, AI: ai, OUTBOX_COORDINATOR: coordinatorNamespace, coordinatorValues, calls };
 }
 
 async function call(path, { method = "GET", headers = {}, body } = {}, env = makeEnv()) {
@@ -429,3 +429,67 @@ test("API Worker root is JSON-only and never fetches HTML from the Royal Egypt m
     globalThis.fetch = originalFetch;
   }
 });
+
+test("backup restore is preview-only, verifies checksums and restores KV plus coordinator outbox state", async () => {
+  const source = makeEnv({ previewMode: true });
+  const { generated } = await createPublishedPost(source);
+  const base = { day: generated.post.day, platform: "facebook", identity: "ceo-page", contentHash: generated.contentHash };
+  await call("/api/outbox/reserve", { method: "POST", headers: auth, body: base }, source);
+  const pending = [];
+  worker.scheduled({ scheduledTime: Date.parse("2026-11-12T02:00:00.000Z") }, source, {
+    waitUntil(promise) { pending.push(promise); }
+  });
+  await Promise.all(pending);
+
+  const backupSeed = Object.fromEntries([...source.CEO_NOTES_KV.values.entries()].filter(([key]) => key.startsWith("backup:")));
+  const target = makeEnv({ previewMode: true, seedKV: backupSeed });
+  const restoreBody = { date: "2026-11-12", confirm: "RESTORE_PREVIEW_BACKUP" };
+  const restoredResponse = await call("/api/backup/restore", { method: "POST", headers: auth, body: restoreBody }, target);
+  assert.equal(restoredResponse.status, 200);
+  const restored = await restoredResponse.json();
+  assert.equal(restored.previewOnly, true);
+  assert.equal(restored.feedPosts, 1);
+  assert.equal(await target.CEO_NOTES_KV.get("image:1"), await source.CEO_NOTES_KV.get("backup:2026-11-12:image:1"));
+  assert.equal(await target.CEO_NOTES_KV.get("image-meta:1"), await source.CEO_NOTES_KV.get("backup:2026-11-12:image-meta:1"));
+  assert.equal(await target.CEO_NOTES_KV.get("feed"), await source.CEO_NOTES_KV.get("backup:2026-11-12:feed"));
+  assert.equal(target.coordinatorValues.get("outbox:facebook:ceo-page:1").status, "reserved");
+
+  const repeated = await call("/api/backup/restore", { method: "POST", headers: auth, body: restoreBody }, target);
+  assert.equal(repeated.status, 200);
+  assert.equal((await repeated.json()).coordinatorOutbox, 1);
+});
+
+test("backup restore rejects production mode before reading or writing backup data", async () => {
+  const env = makeEnv();
+  const response = await call("/api/backup/restore", {
+    method: "POST",
+    headers: auth,
+    body: { date: "2026-11-12", confirm: "RESTORE_PREVIEW_BACKUP" }
+  }, env);
+  assert.equal(response.status, 403);
+  assert.equal((await response.json()).error, "preview_restore_only");
+  assert.equal((await env.CEO_NOTES_KV.get("feed")), JSON.stringify({ version: 1, posts: [] }));
+});
+
+test("backup restore rejects tampered backup data without partial writes", async () => {
+  const source = makeEnv({ previewMode: true });
+  await createPublishedPost(source);
+  const pending = [];
+  worker.scheduled({ scheduledTime: Date.parse("2026-11-12T02:00:00.000Z") }, source, {
+    waitUntil(promise) { pending.push(promise); }
+  });
+  await Promise.all(pending);
+  const backupSeed = Object.fromEntries([...source.CEO_NOTES_KV.values.entries()].filter(([key]) => key.startsWith("backup:")));
+  backupSeed["backup:2026-11-12:feed"] = "tampered";
+  const target = makeEnv({ previewMode: true, seedKV: backupSeed });
+  const response = await call("/api/backup/restore", {
+    method: "POST",
+    headers: auth,
+    body: { date: "2026-11-12", confirm: "RESTORE_PREVIEW_BACKUP" }
+  }, target);
+  assert.equal(response.status, 409);
+  assert.equal((await response.json()).error, "backup_feed_checksum_failed");
+  assert.equal(JSON.parse(await target.CEO_NOTES_KV.get("feed")).posts.length, 0);
+  assert.equal(target.coordinatorValues.size, 0);
+});
+
