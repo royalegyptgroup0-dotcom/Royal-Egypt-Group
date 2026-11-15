@@ -1,6 +1,12 @@
 name: CEO Notes Worker Tests
 
 on:
+  push:
+    branches:
+      - "fix/ceo-notes-backup-restore-2026-11-15"
+    paths:
+      - "workers/ceo-notes-ai/**"
+      - ".github/workflows/ceo-notes-worker-tests.yml"
   pull_request:
     paths:
       - "workers/ceo-notes-ai/**"
