@@ -323,7 +323,7 @@ test("Instagram native publishing waits for a finished container and verifies th
   const data = await result.json();
   assert.equal(data.status, "succeeded");
   assert.equal(data.postId, "17912345678901234");
-  assert.equal(requests.length, 7);
+  assert.equal(requests.length, 8);
   assert.equal(env.coordinatorValues.get("outbox:instagram:ceo-notes:1").status, "succeeded");
 });
 
