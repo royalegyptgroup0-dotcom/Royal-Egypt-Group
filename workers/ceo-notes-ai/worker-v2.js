@@ -442,14 +442,15 @@ async function verifyMetaCredential(env,platform){
   if(!debug.ok)return debug;
   try{
     if(platform==="facebook"){
-      const page=await metaGraphRequest(env,"facebook",outboxTarget("facebook","ceo-page"),"GET",{fields:"id,name,instagram_business_account"});
+      const page=await metaGraphRequest(env,"facebook",outboxTarget("facebook","ceo-page"),"GET",{fields:"id,name"});
       if(String(page.id||"")!=="115226621594988")return {ok:false,error:"meta_facebook_page_identity_mismatch",status:409};
-      if(String(page.instagram_business_account?.id||"")!=="17841402949410977")return {ok:false,error:"meta_instagram_account_not_linked_to_ceo_page",status:409};
-      return {ok:true,platform,identity:"ceo-page",targetId:String(page.id),linkedInstagramId:String(page.instagram_business_account.id),expiresAt:debug.expiresAt,scopes:debug.scopes};
+      return {ok:true,platform,identity:"ceo-page",targetId:String(page.id),expiresAt:debug.expiresAt,scopes:debug.scopes};
     }
     const account=await metaGraphRequest(env,"instagram",outboxTarget("instagram","ceo-notes"),"GET",{fields:"id,username"});
     if(String(account.id||"")!=="17841402949410977")return {ok:false,error:"meta_instagram_identity_mismatch",status:409};
-    return {ok:true,platform,identity:"ceo-notes",targetId:String(account.id),username:String(account.username||""),expiresAt:debug.expiresAt,scopes:debug.scopes};
+    const page=await metaGraphRequest(env,"facebook",outboxTarget("facebook","ceo-page"),"GET",{fields:"id,instagram_business_account"});
+    if(String(page.id||"")!=="115226621594988"||String(page.instagram_business_account?.id||"")!=="17841402949410977")return {ok:false,error:"meta_instagram_account_not_linked_to_ceo_page",status:409};
+    return {ok:true,platform,identity:"ceo-notes",targetId:String(account.id),username:String(account.username||""),linkedPageId:String(page.id),expiresAt:debug.expiresAt,scopes:debug.scopes};
   }catch(error){
     return {ok:false,error:"meta_destination_check_failed",status:502};
   }
