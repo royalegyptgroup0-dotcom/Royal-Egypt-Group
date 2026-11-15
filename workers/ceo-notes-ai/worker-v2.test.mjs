@@ -73,7 +73,7 @@ function makeEnv({ posts = [], adminToken = token, previewMode = false, seedKV =
       return { fetch(input, init) { return coordinatorObject.fetch(input instanceof Request ? input : new Request(input, init)); } };
     }
   };
-  return { ADMIN_TOKEN: adminToken, PREVIEW_MODE: previewMode ? "true" : undefined, CEO_NOTES_KV: kv, AI: ai, OUTBOX_COORDINATOR: coordinatorNamespace, coordinatorValues, calls };
+  return { ADMIN_TOKEN: adminToken, META_FACEBOOK_PAGE_ACCESS_TOKEN: "test-only-facebook-token-123456789", META_INSTAGRAM_ACCESS_TOKEN: "test-only-instagram-token-123456789", PREVIEW_MODE: previewMode ? "true" : undefined, CEO_NOTES_KV: kv, AI: ai, OUTBOX_COORDINATOR: coordinatorNamespace, coordinatorValues, calls };
 }
 
 async function call(path, { method = "GET", headers = {}, body } = {}, env = makeEnv()) {
@@ -83,6 +83,19 @@ async function call(path, { method = "GET", headers = {}, body } = {}, env = mak
     body: body === undefined ? undefined : JSON.stringify(body)
   });
   return worker.fetch(request, env, { waitUntil() {} });
+}
+
+async function withMetaReadBack(data, work) {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input, init = {}) => {
+    const url = new URL(input);
+    assert.equal(url.hostname, "graph.facebook.com");
+    assert.match(String(init.headers?.Authorization || ""), /^Bearer test-only-/);
+    assert.match(url.pathname, /^\\/v27\\.0\\//);
+    return new Response(JSON.stringify(data), { status: 200, headers: { "content-type": "application/json" } });
+  };
+  try { return await work(); }
+  finally { globalThis.fetch = originalFetch; }
 }
 
 async function createPublishedPost(env) {
@@ -254,13 +267,17 @@ test("outbox reserves, starts and stores an independently verifiable receipt", a
   assert.equal(cannotClearReceipt.status, 409);
   const blockedBeforeVerification = await call("/api/outbox/reserve", { method: "POST", headers: auth, body: base }, env);
   assert.equal(blockedBeforeVerification.status, 409);
-  const rejectedVerification = await call("/api/outbox/verify", {
-    method: "POST", headers: auth, body: { ...base, verified: true, verifiedPostId: "123_456", verifiedPermalink: "https://www.facebook.com/123_456", verifiedTargetId: "115226621594988", verificationSource: "manual_assertion", verificationStatus: "published" }
-  }, env);
-  assert.equal(rejectedVerification.status, 403);
-  const verify = await call("/api/outbox/verify", {
+  const rejectedVerification = await withMetaReadBack({
+    id: "123_456", from: { id: "101823889330644" }, permalink_url: "https://www.facebook.com/123_456", is_published: true
+  }, () => call("/api/outbox/verify", {
     method: "POST", headers: auth, body: { ...base, verified: true, verifiedPostId: "123_456", verifiedPermalink: "https://www.facebook.com/123_456", verifiedTargetId: "115226621594988", verificationSource: "facebook_graph_api", verificationStatus: "published" }
-  }, env);
+  }, env));
+  assert.equal(rejectedVerification.status, 409);
+  const verify = await withMetaReadBack({
+    id: "123_456", from: { id: "115226621594988" }, permalink_url: "https://www.facebook.com/123_456", is_published: true
+  }, () => call("/api/outbox/verify", {
+    method: "POST", headers: auth, body: { ...base }
+  }, env));
   assert.equal(verify.status, 200);
   assert.equal((await verify.json()).status, "succeeded");
   const retry = await call("/api/outbox/reserve", { method: "POST", headers: auth, body: base }, env);
@@ -269,6 +286,20 @@ test("outbox reserves, starts and stores an independently verifiable receipt", a
   const stored = env.coordinatorValues.get("outbox:facebook:ceo-page:1");
   assert.equal(stored.postId, "123_456");
   assert.equal(stored.permalink, "https://www.facebook.com/123_456");
+});
+
+test("Meta verification fails closed when the Worker secret is missing", async () => {
+  const env = makeEnv();
+  const { generated } = await createPublishedPost(env);
+  const base = { day: generated.post.day, platform: "facebook", identity: "ceo-page", contentHash: generated.contentHash };
+  await call("/api/outbox/reserve", { method: "POST", headers: auth, body: base }, env);
+  await call("/api/outbox/start", { method: "POST", headers: auth, body: base }, env);
+  await call("/api/outbox/receipt", { method: "POST", headers: auth, body: { ...base, postId: "123_456", permalink: "https://www.facebook.com/123_456" } }, env);
+  delete env.META_FACEBOOK_PAGE_ACCESS_TOKEN;
+  const response = await call("/api/outbox/verify", { method: "POST", headers: auth, body: base }, env);
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).error, "meta_credentials_unavailable");
+  assert.equal(env.coordinatorValues.get("outbox:facebook:ceo-page:1").status, "receipt_recorded");
 });
 
 test("CEO Notes identities remain isolated from corporate Facebook", async () => {
@@ -305,11 +336,11 @@ test("ambiguous publication is blocked until explicit reconciliation", async () 
   const reconcile = await call("/api/outbox/reconcile", {
     method: "POST", headers: auth, body: { ...base, action: "not_published", verifiedTargetId: "17841402949410977", verificationSource: "instagram_graph_api", verificationStatus: "not_found" }
   }, env);
-  assert.equal(reconcile.status, 200);
-  assert.equal((await reconcile.json()).retryAllowed, true);
-  const retry = await call("/api/outbox/reserve", { method: "POST", headers: auth, body: base }, env);
-  assert.equal(retry.status, 200);
-  assert.equal((await retry.json()).decision, "publish");
+  assert.equal(reconcile.status, 409);
+  assert.equal((await reconcile.json()).error, "authoritative_absence_check_required");
+  const stillBlocked = await call("/api/outbox/reserve", { method: "POST", headers: auth, body: base }, env);
+  assert.equal(stillBlocked.status, 409);
+  assert.equal((await stillBlocked.json()).status, "unknown");
 });
 
 test("abandoned reservation requires explicit not-published reconciliation before retry", async () => {
@@ -403,15 +434,13 @@ test("outbox verification rejects a post found under a different Facebook identi
     method: "POST", headers: auth,
     body: { ...base, postId: "123_456", permalink: "https://www.facebook.com/123_456" }
   }, env);
-  const wrongIdentity = await call("/api/outbox/verify", {
-    method: "POST", headers: auth,
-    body: { ...base, verified: true, verifiedPostId: "123_456", verifiedPermalink: "https://www.facebook.com/123_456", verifiedTargetId: "101823889330644", verificationSource: "facebook_graph_api", verificationStatus: "published" }
-  }, env);
-  assert.equal(wrongIdentity.status, 403);
-  const correctIdentity = await call("/api/outbox/verify", {
-    method: "POST", headers: auth,
-    body: { ...base, verified: true, verifiedPostId: "123_456", verifiedPermalink: "https://www.facebook.com/123_456", verifiedTargetId: "115226621594988", verificationSource: "facebook_graph_api", verificationStatus: "published" }
-  }, env);
+  const wrongIdentity = await withMetaReadBack({
+    id: "123_456", from: { id: "101823889330644" }, permalink_url: "https://www.facebook.com/123_456", is_published: true
+  }, () => call("/api/outbox/verify", { method: "POST", headers: auth, body: { ...base } }, env));
+  assert.equal(wrongIdentity.status, 409);
+  const correctIdentity = await withMetaReadBack({
+    id: "123_456", from: { id: "115226621594988" }, permalink_url: "https://www.facebook.com/123_456", is_published: true
+  }, () => call("/api/outbox/verify", { method: "POST", headers: auth, body: { ...base } }, env));
   assert.equal(correctIdentity.status, 200);
 });
 
