@@ -284,10 +284,11 @@ test("production scheduler publishes only an approved due post at 19:30 Cairo ti
   const env = makeEnv();
   env.PUBLISHING_ENABLED = "true";
   const { generated } = await createPublishedPost(env);
-  const scheduledTime = "2026-11-16T17:30:00.000Z";
-  await approvePost(env, generated, "facebook", scheduledTime);
+  const scheduledIso = "2026-11-16T17:30:00.000Z";
+  const scheduledTime = Date.parse(scheduledIso);
+  await approvePost(env, generated, "facebook", scheduledIso);
   const originalNow = Date.now;
-  Date.now = () => Date.parse(scheduledTime);
+  Date.now = () => scheduledTime;
   try {
     const pending = [];
     const { requests } = await withMetaPublish("facebook", async () => {
