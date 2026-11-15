@@ -74,13 +74,14 @@ Official references:
 ## Non-negotiable release gates
 
 - [x] The staged Worker removes the caller-attestation trust boundary for `/api/outbox/verify`: it performs Meta read-back itself, ignores caller-supplied proof fields, and fails closed when the required Worker Secret is absent. Unit tests cover Facebook and Instagram identity checks, wrong destination and missing credentials. Live Meta verification remains untested until credentials are independently authorized in Preview.
-- [ ] Native Facebook Page and Instagram publishing adapters use only the pinned CEO Notes identities:
+- [x] Native Facebook Page and Instagram publishing adapters are implemented in staged v2 code and use only the pinned CEO Notes identities:
   - Facebook Page: `115226621594988`
   - Instagram professional account: `17841402949410977`
 - [ ] Meta API credentials are independently authorized and stored as Cloudflare Worker Secrets. Never copy Make connection secrets into source, logs, chat, or client-side code.
 - [ ] Preview-only secret and isolated integration tests are configured without production credentials.
-- [ ] Tests cover concurrent reservations, duplicate suppression, partial channel failure, API timeout after remote success, token expiry, wrong destination identity, read-back mismatch, backup/restore failure and safe retry.
-- [ ] Cron remains absent from Preview and publishing remains disabled in Production until the owner approves the controlled first post.
+- [x] Unit tests cover concurrent reservations, duplicate suppression, Facebook/Instagram API sequences, exact-hash owner approval, missing credentials, stale feed hashes, wrong destination identity, ambiguous outcomes and Preview schedule isolation.
+- [ ] Live Preview tests cover token expiry, timeout after remote success, partial channel failure, actual Meta read-back, and backup/restore failure injection.
+- [x] The staged scheduler checks Africa/Cairo 19:30, requires `PUBLISHING_ENABLED=true`, and is hard-disabled in Preview. Preview has no Cron; Production publishing remains disabled until the owner approves the controlled first post.
 - [ ] The canonical CEO Notes Pages feed and both social destinations are verified independently.
 - [ ] The first controlled public post is explicitly approved by the owner. Only after its receipts and read-back pass may the daily schedule be considered for separate approval.
 - [ ] Make publishing scenarios remain paused and are not deleted until the native system has passed acceptance and the owner authorizes retirement.
@@ -89,12 +90,12 @@ Official references:
 
 - PR #77 stages the v2 outbox and isolated Preview Worker.
 - PR #78 adds a dedicated read-only Worker test workflow.
-- PR #81 adds Preview-only backup restore and tests.
-- PR #81 is a superset of the PR #77 head plus the Worker CI workflow and restore work. It should be the single review line targeting `ceo-notes-site`; do not merge any PR as part of this ADR.
-- The staged v2 `/api/outbox/verify` now performs server-side Meta Graph API read-back using Worker Secrets and ignores caller-supplied verification assertions. Unit tests cover Facebook and Instagram, wrong destination identity, and missing credentials. The native Meta publishing adapter, owner approval queue and scheduled publisher are not yet implemented.
-- Existing `scheduled()` performs backup only. The current Worker is not yet a complete Make replacement and must not be described as one.
-- Preview has no Meta credentials, AI binding or Cron. Protected routes remain closed until a unique Preview-only `ADMIN_TOKEN` is set and tested. No live Meta verification has been claimed.
-- Cloudflare API credentials previously returned HTTP 401. No deployment, binding, secret or production setting may be changed until the correct Cloudflare account is reconnected and read-only identity verification succeeds.
+- PR #81 consolidates the v2 outbox, Worker CI, Preview-only backup restore, server-side Meta read-back, native Meta adapters, owner approval records and Cairo-time scheduler. It remains Draft and targets `ceo-notes-site`; do not merge any PR as part of this ADR.
+- The staged v2 Worker implements Facebook Page Photo publishing and Instagram media-container publishing, both followed by server-side Meta read-back. It ignores caller-supplied proof fields and stores credentials only in Worker Secrets.
+- `/api/approval/approve` records explicit owner approval bound to one platform, pinned identity, day and exact content hash. `/api/social/publish` rejects unapproved or changed content. The scheduler only processes due approvals and remains disabled unless `PUBLISHING_ENABLED=true`.
+- Unit tests cover the native API sequences, approval, identity checks, missing secrets, content-hash tampering and Cairo-time scheduling. These are mocked API tests, not live Meta acceptance.
+- The authenticated Cloudflare account has now been identified. Read-only inspection confirms the current Production Worker is still the older generation: it has AI + production KV and a `0 2 * * *` UTC backup Cron, but no Durable Object binding, no `ADMIN_TOKEN` and no Meta secrets. The Preview Worker has isolated KV + SQLite DO, no AI, no Cron, no Meta secrets and no `ADMIN_TOKEN`.
+- The staged source has passed GitHub Actions syntax, worker tests and site validation. Live Preview Worker deployment and HTTP checks remain pending; a Pages Preview is not a Worker deployment.
 
 ## Cost and AI policy
 
