@@ -298,17 +298,28 @@ async function withEditorialLock(env,date,work){
   }
 }
 
+async function metaAppSecretProof(env,token){
+  const secret=env.META_APP_SECRET;
+  if(typeof secret!=="string"||secret.length<20)throw new Error("meta_app_secret_unavailable");
+  const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(secret),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
+  const signature=await crypto.subtle.sign("HMAC",key,new TextEncoder().encode(token));
+  return [...new Uint8Array(signature)].map(byte=>byte.toString(16).padStart(2,"0")).join("");
+}
 async function metaPublicationReadBack(env,platform,postId){
   const token=platform==="facebook"?env.META_FACEBOOK_PAGE_ACCESS_TOKEN:env.META_INSTAGRAM_ACCESS_TOKEN;
   if(typeof token!=="string"||token.length<20)return {ok:false,status:503,error:"meta_credentials_unavailable"};
+  let proof;
+  try{proof=await metaAppSecretProof(env,token);}catch(error){return {ok:false,status:503,error:String(error?.message||"meta_app_secret_unavailable")};}
   const version=String(env.META_GRAPH_API_VERSION||"v27.0");
   if(!/^v\d+\.\d+$/.test(version))return {ok:false,status:503,error:"meta_api_version_invalid"};
   const fields=platform==="facebook"?"id,from{id},permalink_url,is_published":"id,owner,permalink,timestamp";
   const endpoint=new URL("https://graph.facebook.com/"+version+"/"+encodeURIComponent(postId));
   endpoint.searchParams.set("fields",fields);
+  endpoint.searchParams.set("access_token",token);
+  endpoint.searchParams.set("appsecret_proof",proof);
   let response;
   try{
-    response=await fetch(endpoint.toString(),{headers:{Authorization:"Bearer "+token}});
+    response=await fetch(endpoint.toString());
   }catch(error){
     return {ok:false,status:502,error:"meta_readback_unavailable"};
   }
@@ -374,15 +385,17 @@ async function handleOutbox(req,env,path){
 async function metaGraphRequest(env,platform,path,method="GET",params={}){
   const token=platform==="facebook"?env.META_FACEBOOK_PAGE_ACCESS_TOKEN:env.META_INSTAGRAM_ACCESS_TOKEN;
   if(typeof token!=="string"||token.length<20)throw new Error("meta_credentials_unavailable");
+  const proof=await metaAppSecretProof(env,token);
   const version=String(env.META_GRAPH_API_VERSION||"v27.0");
   if(!/^v\d+\.\d+$/.test(version))throw new Error("meta_api_version_invalid");
   const endpoint=new URL("https://graph.facebook.com/"+version+"/"+String(path).split("/").map(encodeURIComponent).join("/"));
-  const headers={Authorization:"Bearer "+token};
+  const headers={};
   const init={method,headers};
+  const authParams={...params,access_token:token,appsecret_proof:proof};
   if(method==="GET"){
-    for(const [key,value] of Object.entries(params))if(value!==undefined&&value!==null)endpoint.searchParams.set(key,String(value));
+    for(const [key,value] of Object.entries(authParams))if(value!==undefined&&value!==null)endpoint.searchParams.set(key,String(value));
   }else{
-    init.body=new URLSearchParams(Object.entries(params).filter(([,value])=>value!==undefined&&value!==null).map(([key,value])=>[key,String(value)]));
+    init.body=new URLSearchParams(Object.entries(authParams).filter(([,value])=>value!==undefined&&value!==null).map(([key,value])=>[key,String(value)]));
     headers["content-type"]="application/x-www-form-urlencoded";
   }
   let response;
@@ -470,6 +483,7 @@ async function publishSocialPostCore(env,body){
   if(approval.scheduledFor&&Date.parse(approval.scheduledFor)>Date.now())return J({error:"publication_not_due",scheduledFor:approval.scheduledFor},409);
   const token=context.platform==="facebook"?env.META_FACEBOOK_PAGE_ACCESS_TOKEN:env.META_INSTAGRAM_ACCESS_TOKEN;
   if(typeof token!=="string"||token.length<20)return J({error:"meta_credentials_unavailable"},503);
+  if(typeof env.META_APP_SECRET!=="string"||env.META_APP_SECRET.length<20)return J({error:"meta_app_secret_unavailable"},503);
   const imageMetaRaw=await env.CEO_NOTES_KV.get("image-meta:"+context.day);
   if(!imageMetaRaw)return J({error:"approved_image_metadata_missing"},409);
   let imageMeta;
