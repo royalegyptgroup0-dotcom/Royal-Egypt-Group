@@ -475,6 +475,7 @@ async function publishSocialPostCore(env,body){
   const feed=await getFeed(env);
   const post=(feed.posts||[]).find(item=>Number(item.day)===context.day);
   if(!post)return J({error:"published_post_not_found"},404);
+  if(context.platform==="instagram"&&socialCaption(post).length>2200)return J({error:"instagram_caption_too_long",limit:2200},413);
   const imageUrl=publicBase(env)+"/image/"+context.day;
   const stub=env.OUTBOX_COORDINATOR.get(env.OUTBOX_COORDINATOR.idFromName("ceo-notes-day:"+context.day));
   const scoped={day:context.day,platform:context.platform,identity:context.identity,targetId:context.targetId,contentHash:context.hash};
