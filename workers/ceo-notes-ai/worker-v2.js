@@ -831,7 +831,7 @@ export default {
   },
   async scheduled(event,env,ctx){
     const cron=String(event.cron||"");
-    if(cron==="0 1 * * *")ctx.waitUntil(createBackup(env,event.scheduledTime).catch(error=>console.error("backup_failed")));
+    if(cron!=="*/15 * * * *")ctx.waitUntil(createBackup(env,event.scheduledTime).catch(error=>console.error("backup_failed")));
     if(cron==="*/15 * * * *"&&env.PUBLISHING_ENABLED==="true"&&env.PREVIEW_MODE!=="true"){
       const parts=new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Cairo",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date(event.scheduledTime||Date.now()));
       const clock=parts.find(item=>item.type==="hour")?.value+":"+parts.find(item=>item.type==="minute")?.value;
