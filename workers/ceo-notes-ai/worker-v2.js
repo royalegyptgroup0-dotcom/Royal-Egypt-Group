@@ -294,6 +294,30 @@ async function withEditorialLock(env,date,work){
   }
 }
 
+async function metaPublicationReadBack(env,platform,postId){
+  const token=platform==="facebook"?env.META_FACEBOOK_PAGE_ACCESS_TOKEN:env.META_INSTAGRAM_ACCESS_TOKEN;
+  if(typeof token!=="string"||token.length<20)return {ok:false,status:503,error:"meta_credentials_unavailable"};
+  const version=String(env.META_GRAPH_API_VERSION||"v27.0");
+  if(!/^v\\d+\\.\\d+$/.test(version))return {ok:false,status:503,error:"meta_api_version_invalid"};
+  const fields=platform==="facebook"?"id,from{id},permalink_url,is_published":"id,owner,permalink,timestamp";
+  const endpoint=new URL("https://graph.facebook.com/"+version+"/"+encodeURIComponent(postId));
+  endpoint.searchParams.set("fields",fields);
+  let response;
+  try{
+    response=await fetch(endpoint.toString(),{headers:{Authorization:"Bearer "+token}});
+  }catch(error){
+    return {ok:false,status:502,error:"meta_readback_unavailable"};
+  }
+  let data;
+  try{data=await response.json();}catch(error){return {ok:false,status:502,error:"meta_readback_invalid_response"};}
+  if(!response.ok)return {ok:false,status:502,error:"meta_readback_failed",metaErrorCode:Number(data?.error?.code)||null};
+  const id=String(data?.id||"");
+  const targetId=platform==="facebook"?String(data?.from?.id||""):String(data?.owner?.id||data?.owner||"");
+  const permalink=String(platform==="facebook"?data?.permalink_url||"":data?.permalink||"");
+  const published=platform==="facebook"?data?.is_published===true:Boolean(data?.timestamp&&permalink);
+  if(!id||!targetId||!permalink||!published)return {ok:false,status:409,error:"meta_publication_not_verified"};
+  return {ok:true,id,targetId,permalink,published};
+}
 async function handleOutbox(req,env,path){
   if(!env.OUTBOX_COORDINATOR)return J({error:"outbox_coordinator_unavailable"},503);
   const body=await req.json();
@@ -302,11 +326,45 @@ async function handleOutbox(req,env,path){
   const action=path.slice(OUTBOX_PREFIX.length);
   const id=env.OUTBOX_COORDINATOR.idFromName("ceo-notes-day:"+context.day);
   const stub=env.OUTBOX_COORDINATOR.get(id);
-  const response=await stub.fetch("https://outbox-coordinator/"+action,{
+  const scoped={...body,day:context.day,platform:context.platform,identity:context.identity,contentHash:context.hash,targetId:context.targetId};
+  const internal=(name,payload)=>stub.fetch("https://outbox-coordinator/"+name,{
     method:"POST",
     headers:{"content-type":"application/json"},
-    body:JSON.stringify({...body,day:context.day,platform:context.platform,identity:context.identity,contentHash:context.hash,targetId:context.targetId})
+    body:JSON.stringify(payload)
   });
+  if(action==="verify"){
+    const statusResponse=await internal("status",scoped);
+    const statusData=await statusResponse.json();
+    const receipt=statusData.receipt;
+    if(!receipt||receipt.status!=="receipt_recorded")return J({error:"receipt_verification_required",status:receipt?.status||"missing"},409);
+    const proof=await metaPublicationReadBack(env,context.platform,receipt.postId);
+    if(!proof.ok)return J({error:proof.error,metaErrorCode:proof.metaErrorCode||undefined},proof.status);
+    if(proof.id!==receipt.postId||proof.targetId!==context.targetId||proof.permalink!==receipt.permalink||!proof.published){
+      return J({error:"platform_readback_mismatch"},409);
+    }
+    const expectedSource=context.platform==="facebook"?"facebook_graph_api":"instagram_graph_api";
+    const response=await internal("verify",{...scoped,verified:true,verifiedPostId:proof.id,verifiedPermalink:proof.permalink,verifiedTargetId:proof.targetId,verificationSource:expectedSource,verificationStatus:"published"});
+    return new Response(response.body,{status:response.status,headers:response.headers});
+  }
+  if(action==="reconcile"&&body.action==="published"){
+    const postId=String(body.postId||"").trim();
+    if(!postId)return J({error:"post_id_required_for_reconciliation"},400);
+    const proof=await metaPublicationReadBack(env,context.platform,postId);
+    if(!proof.ok)return J({error:proof.error,metaErrorCode:proof.metaErrorCode||undefined},proof.status);
+    if(proof.id!==postId||proof.targetId!==context.targetId||proof.permalink!==String(body.permalink||"")||!proof.published){
+      return J({error:"platform_readback_mismatch"},409);
+    }
+    const expectedSource=context.platform==="facebook"?"facebook_graph_api":"instagram_graph_api";
+    const response=await internal("reconcile",{...scoped,action:"published",postId:proof.id,permalink:proof.permalink,verifiedTargetId:proof.targetId,verificationSource:expectedSource,verificationStatus:"published"});
+    return new Response(response.body,{status:response.status,headers:response.headers});
+  }
+  if(action==="reconcile"&&body.action==="not_published"){
+    const statusResponse=await internal("status",scoped);
+    const statusData=await statusResponse.json();
+    const status=statusData.receipt?.status;
+    if(status!=="reserved")return J({error:"authoritative_absence_check_required",manualReviewRequired:true,status:status||"missing"},409);
+  }
+  const response=await internal(action,scoped);
   return new Response(response.body,{status:response.status,headers:response.headers});
 }
 async function generatePost(env){
