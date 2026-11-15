@@ -415,6 +415,50 @@ function socialCaption(post){
     post.hashtags
   ].filter(Boolean).join("\n\n").trim();
 }
+async function metaDebugToken(env,token,platform){
+  if(typeof env.META_APP_ID!=="string"||!env.META_APP_ID.trim()||typeof env.META_APP_SECRET!=="string"||env.META_APP_SECRET.length<20)return {ok:false,error:"meta_app_credentials_unavailable",status:503};
+  const version=String(env.META_GRAPH_API_VERSION||"v27.0");
+  const endpoint=new URL("https://graph.facebook.com/"+version+"/debug_token");
+  endpoint.searchParams.set("input_token",token);
+  endpoint.searchParams.set("access_token",env.META_APP_ID+"|"+env.META_APP_SECRET);
+  let response,data;
+  try{response=await fetch(endpoint.toString());data=await response.json();}
+  catch(error){return {ok:false,error:"meta_token_check_unavailable",status:502};}
+  if(!response.ok||data?.error)return {ok:false,error:"meta_token_check_failed",status:502,metaErrorCode:Number(data?.error?.code)||response.status};
+  const info=data?.data||{};
+  if(info.is_valid!==true||String(info.app_id||"")!==String(env.META_APP_ID))return {ok:false,error:"meta_token_invalid_or_wrong_app",status:401};
+  const now=Math.floor(Date.now()/1000),expiry=Number(info.expires_at||0),dataExpiry=Number(info.data_access_expires_at||0);
+  if((expiry>0&&expiry<now+86400)||(dataExpiry>0&&dataExpiry<now+86400))return {ok:false,error:"meta_token_expires_within_24_hours",status:409};
+  const required=platform==="facebook"?["pages_manage_posts","pages_read_engagement"]:["instagram_basic","instagram_content_publish","pages_show_list","pages_read_engagement"];
+  const scopes=new Set(Array.isArray(info.scopes)?info.scopes.map(String):[]);
+  const missing=required.filter(scope=>!scopes.has(scope));
+  if(missing.length)return {ok:false,error:"meta_permissions_missing",missingPermissions:missing,status:403};
+  return {ok:true,appId:String(info.app_id),expiresAt:expiry||null,dataAccessExpiresAt:dataExpiry||null,scopes:[...scopes]};
+}
+async function verifyMetaCredential(env,platform){
+  const token=platform==="facebook"?env.META_FACEBOOK_PAGE_ACCESS_TOKEN:env.META_INSTAGRAM_ACCESS_TOKEN;
+  if(typeof token!=="string"||token.length<20)return {ok:false,error:"meta_credentials_unavailable",status:503};
+  const debug=await metaDebugToken(env,token,platform);
+  if(!debug.ok)return debug;
+  try{
+    if(platform==="facebook"){
+      const page=await metaGraphRequest(env,"facebook",outboxTarget("facebook","ceo-page"),"GET",{fields:"id,name,instagram_business_account"});
+      if(String(page.id||"")!=="115226621594988")return {ok:false,error:"meta_facebook_page_identity_mismatch",status:409};
+      if(String(page.instagram_business_account?.id||"")!=="17841402949410977")return {ok:false,error:"meta_instagram_account_not_linked_to_ceo_page",status:409};
+      return {ok:true,platform,identity:"ceo-page",targetId:String(page.id),linkedInstagramId:String(page.instagram_business_account.id),expiresAt:debug.expiresAt,scopes:debug.scopes};
+    }
+    const account=await metaGraphRequest(env,"instagram",outboxTarget("instagram","ceo-notes"),"GET",{fields:"id,username"});
+    if(String(account.id||"")!=="17841402949410977")return {ok:false,error:"meta_instagram_identity_mismatch",status:409};
+    return {ok:true,platform,identity:"ceo-notes",targetId:String(account.id),username:String(account.username||""),expiresAt:debug.expiresAt,scopes:debug.scopes};
+  }catch(error){
+    return {ok:false,error:"meta_destination_check_failed",status:502};
+  }
+}
+async function handleMetaVerify(env){
+  const [facebook,instagram]=await Promise.all([verifyMetaCredential(env,"facebook"),verifyMetaCredential(env,"instagram")]);
+  const ok=facebook.ok&&instagram.ok;
+  return J({ok,facebook,instagram},ok?200:409);
+}
 async function publishFacebookPost(env,post,imageUrl){
   const caption=socialCaption(post);
   const result=await metaGraphRequest(env,"facebook",outboxTarget("facebook","ceo-page")+"/photos","POST",{
@@ -484,7 +528,8 @@ async function publishSocialPostCore(env,body){
   const token=context.platform==="facebook"?env.META_FACEBOOK_PAGE_ACCESS_TOKEN:env.META_INSTAGRAM_ACCESS_TOKEN;
   if(typeof token!=="string"||token.length<20)return J({error:"meta_credentials_unavailable"},503);
   if(typeof env.META_APP_SECRET!=="string"||env.META_APP_SECRET.length<20)return J({error:"meta_app_secret_unavailable"},503);
-  try{await metaAppSecretProof(env,token);}catch(error){return J({error:"meta_app_secret_unavailable"},503);}
+  const credentialCheck=await verifyMetaCredential(env,context.platform);
+  if(!credentialCheck.ok)return J({error:credentialCheck.error,missingPermissions:credentialCheck.missingPermissions||undefined,metaErrorCode:credentialCheck.metaErrorCode||undefined},credentialCheck.status||503);
   const imageMetaRaw=await env.CEO_NOTES_KV.get("image-meta:"+context.day);
   if(!imageMetaRaw)return J({error:"approved_image_metadata_missing"},409);
   let imageMeta;
@@ -1027,6 +1072,7 @@ export default {
       if(req.method==="POST"&&url.pathname==="/api/backup/restore")return await restoreBackup(req,env);
       if(req.method==="POST"&&url.pathname==="/api/draft/status")return await handleDraftStatus(req,env);
       if(req.method==="POST"&&url.pathname==="/api/draft/update")return await handleDraftUpdate(req,env);
+      if(req.method==="POST"&&url.pathname==="/api/meta/verify")return await handleMetaVerify(env);
       if(req.method==="POST"&&url.pathname==="/api/approval/approve")return await handleApproval(req,env,"approve");
       if(req.method==="POST"&&url.pathname==="/api/approval/status")return await handleApproval(req,env,"approval-status");
       if(req.method==="POST"&&url.pathname==="/api/social/publish")return await publishSocialPostCore(env,await req.json());
