@@ -367,6 +367,160 @@ async function handleOutbox(req,env,path){
   const response=await internal(action,scoped);
   return new Response(response.body,{status:response.status,headers:response.headers});
 }
+async function metaGraphRequest(env,platform,path,method="GET",params={}){
+  const token=platform==="facebook"?env.META_FACEBOOK_PAGE_ACCESS_TOKEN:env.META_INSTAGRAM_ACCESS_TOKEN;
+  if(typeof token!=="string"||token.length<20)throw new Error("meta_credentials_unavailable");
+  const version=String(env.META_GRAPH_API_VERSION||"v27.0");
+  if(!/^v\d+\.\d+$/.test(version))throw new Error("meta_api_version_invalid");
+  const endpoint=new URL("https://graph.facebook.com/"+version+"/"+String(path).split("/").map(encodeURIComponent).join("/"));
+  const headers={Authorization:"Bearer "+token};
+  const init={method,headers};
+  if(method==="GET"){
+    for(const [key,value] of Object.entries(params))if(value!==undefined&&value!==null)endpoint.searchParams.set(key,String(value));
+  }else{
+    init.body=new URLSearchParams(Object.entries(params).filter(([,value])=>value!==undefined&&value!==null).map(([key,value])=>[key,String(value)]));
+    headers["content-type"]="application/x-www-form-urlencoded";
+  }
+  let response;
+  try{response=await fetch(endpoint.toString(),init);}catch(error){throw new Error("meta_network_failure");}
+  let data;
+  try{data=await response.json();}catch(error){throw new Error("meta_invalid_response");}
+  if(!response.ok||data?.error)throw new Error("meta_api_error_"+(Number(data?.error?.code)||response.status));
+  return data;
+}
+function socialCaption(post){
+  return [
+    post.title,
+    post.article,
+    "فكرة اليوم: "+post.ideaOfTheDay,
+    "تحدي CEO: "+post.ceoChallenge,
+    "سؤال للنقاش: "+post.discussionQuestion,
+    post.hashtags
+  ].filter(Boolean).join("\n\n").trim();
+}
+async function publishFacebookPost(env,post,imageUrl){
+  const caption=socialCaption(post);
+  const result=await metaGraphRequest(env,"facebook",outboxTarget("facebook","ceo-page")+"/photos","POST",{
+    url:imageUrl,
+    caption,
+    published:"true"
+  });
+  const postId=String(result.post_id||"");
+  if(!postId)throw new Error("meta_facebook_post_id_missing");
+  return postId;
+}
+async function publishInstagramPost(env,post,imageUrl){
+  const caption=socialCaption(post);
+  if(caption.length>2200)throw new Error("instagram_caption_too_long");
+  const target=outboxTarget("instagram","ceo-notes");
+  const container=await metaGraphRequest(env,"instagram",target+"/media","POST",{image_url:imageUrl,caption});
+  const creationId=String(container.id||"");
+  if(!creationId)throw new Error("meta_instagram_container_id_missing");
+  let ready=false;
+  for(let attempt=0;attempt<6;attempt++){
+    const status=await metaGraphRequest(env,"instagram",creationId,"GET",{fields:"status_code"});
+    if(status.status_code==="FINISHED"){ready=true;break;}
+    if(status.status_code==="ERROR")throw new Error("meta_instagram_container_failed");
+    if(status.status_code!=="IN_PROGRESS")throw new Error("meta_instagram_container_status_unknown");
+    if(attempt<5)await new Promise(resolve=>setTimeout(resolve,1500));
+  }
+  if(!ready)throw new Error("meta_instagram_container_timeout");
+  const published=await metaGraphRequest(env,"instagram",target+"/media_publish","POST",{creation_id:creationId});
+  const postId=String(published.id||"");
+  if(!postId)throw new Error("meta_instagram_post_id_missing");
+  return postId;
+}
+async function approvalFor(env,context){
+  const stub=env.OUTBOX_COORDINATOR.get(env.OUTBOX_COORDINATOR.idFromName("ceo-notes-day:"+context.day));
+  const response=await stub.fetch("https://outbox-coordinator/approval-status",{
+    method:"POST",
+    headers:{"content-type":"application/json"},
+    body:JSON.stringify({day:context.day,platform:context.platform,identity:context.identity,targetId:context.targetId,contentHash:context.hash})
+  });
+  const data=await response.json();
+  return data.approval||null;
+}
+async function handleApproval(req,env,action){
+  const body=await req.json();
+  const context=await validateOutboxContext(env,body);
+  if(context.error)return context.error;
+  if(action==="approve"){
+    if(body.confirm!=="APPROVE_CEO_NOTES_PUBLICATION")return J({error:"explicit_owner_approval_confirmation_required"},400);
+    const scheduledFor=body.scheduledFor?String(body.scheduledFor):null;
+    if(scheduledFor&&(!Number.isFinite(Date.parse(scheduledFor))||!/(Z|[+-]\d{2}:\d{2})$/i.test(scheduledFor)))return J({error:"scheduled_for_must_be_offset_aware_iso"},400);
+    if(scheduledFor&&Date.parse(scheduledFor)<=Date.now())return J({error:"scheduled_for_must_be_in_the_future"},400);
+  }
+  const stub=env.OUTBOX_COORDINATOR.get(env.OUTBOX_COORDINATOR.idFromName("ceo-notes-day:"+context.day));
+  const response=await stub.fetch("https://outbox-coordinator/"+action,{
+    method:"POST",
+    headers:{"content-type":"application/json"},
+    body:JSON.stringify({...body,day:context.day,platform:context.platform,identity:context.identity,targetId:context.targetId,contentHash:context.hash})
+  });
+  return new Response(response.body,{status:response.status,headers:response.headers});
+}
+async function publishSocialPostCore(env,body){
+  const context=await validateOutboxContext(env,body);
+  if(context.error)return context.error;
+  const approval=await approvalFor(env,context);
+  if(!approval||approval.contentHash!==context.hash||approval.targetId!==context.targetId)return J({error:"owner_approval_required_for_exact_content"},403);
+  if(approval.scheduledFor&&Date.parse(approval.scheduledFor)>Date.now())return J({error:"publication_not_due",scheduledFor:approval.scheduledFor},409);
+  const token=context.platform==="facebook"?env.META_FACEBOOK_PAGE_ACCESS_TOKEN:env.META_INSTAGRAM_ACCESS_TOKEN;
+  if(typeof token!=="string"||token.length<20)return J({error:"meta_credentials_unavailable"},503);
+  const imageMetaRaw=await env.CEO_NOTES_KV.get("image-meta:"+context.day);
+  if(!imageMetaRaw)return J({error:"approved_image_metadata_missing"},409);
+  let imageMeta;
+  try{imageMeta=JSON.parse(imageMetaRaw);}catch(error){return J({error:"image_metadata_invalid"},409);}
+  if(imageMeta.contentHash!==context.hash)return J({error:"approved_image_content_mismatch"},409);
+  if(!(await env.CEO_NOTES_KV.get("image:"+context.day)))return J({error:"approved_image_missing"},404);
+  const feed=await getFeed(env);
+  const post=(feed.posts||[]).find(item=>Number(item.day)===context.day);
+  if(!post)return J({error:"published_post_not_found"},404);
+  const imageUrl=publicBase(env)+"/image/"+context.day;
+  const stub=env.OUTBOX_COORDINATOR.get(env.OUTBOX_COORDINATOR.idFromName("ceo-notes-day:"+context.day));
+  const scoped={day:context.day,platform:context.platform,identity:context.identity,targetId:context.targetId,contentHash:context.hash};
+  const internal=(action,payload)=>stub.fetch("https://outbox-coordinator/"+action,{
+    method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)
+  });
+  const reserved=await internal("reserve",scoped);
+  const reserveData=await reserved.json();
+  if(!reserved.ok)return J(reserveData,reserved.status);
+  if(reserveData.decision==="skip")return J({ok:true,alreadyPublished:true,platform:context.platform,receipt:reserveData.receipt});
+  const started=await internal("start",scoped);
+  if(!started.ok)return new Response(started.body,{status:started.status,headers:started.headers});
+  try{
+    const postId=context.platform==="facebook"
+      ?await publishFacebookPost(env,post,imageUrl)
+      :await publishInstagramPost(env,post,imageUrl);
+    const proof=await metaPublicationReadBack(env,context.platform,postId);
+    if(!proof.ok||proof.id!==postId||proof.targetId!==context.targetId||!proof.permalink||!proof.published)throw new Error(proof.error||"meta_publication_readback_mismatch");
+    const receipt=await internal("receipt",{...scoped,postId:proof.id,permalink:proof.permalink,publishedAt:proof.timestamp||new Date().toISOString()});
+    const receiptData=await receipt.json();
+    if(!receipt.ok)throw new Error(receiptData.error||"outbox_receipt_failed");
+    const verified=await internal("verify",{...scoped,verified:true,verifiedPostId:proof.id,verifiedPermalink:proof.permalink,verifiedTargetId:proof.targetId,verificationSource:context.platform==="facebook"?"facebook_graph_api":"instagram_graph_api",verificationStatus:"published"});
+    const verifiedData=await verified.json();
+    if(!verified.ok||verifiedData.status!=="succeeded")throw new Error(verifiedData.error||"outbox_verification_failed");
+    return J({ok:true,status:"succeeded",platform:context.platform,day:context.day,postId:proof.id,permalink:proof.permalink,verifiedAt:verifiedData.receipt?.verifiedAt||new Date().toISOString()});
+  }catch(error){
+    await internal("unknown",{...scoped,reason:String(error?.message||"meta_publish_or_verification_failed").slice(0,180)});
+    return J({error:"social_publish_outcome_unknown",manualReviewRequired:true,platform:context.platform,day:context.day},502);
+  }
+}
+async function runDueSocialPublications(env,scheduledTime){
+  if(env.PREVIEW_MODE==="true"||env.PUBLISHING_ENABLED!=="true")return {skipped:true,reason:"publishing_disabled"};
+  const feed=await getFeed(env),now=Date.parse(scheduledTime||Date.now()),results=[];
+  for(const post of feed.posts||[]){
+    const day=Number(post.day),hash=String(post.contentHash||await contentHash(post));
+    if(!Number.isInteger(day)||day<1||post.status!=="Published")continue;
+    for(const [platform,identity] of [["facebook","ceo-page"],["instagram","ceo-notes"]]){
+      const context={day,platform,identity,targetId:outboxTarget(platform,identity),hash};
+      const approval=await approvalFor(env,context);
+      if(!approval||approval.contentHash!==hash||!approval.scheduledFor||Date.parse(approval.scheduledFor)>now)continue;
+      const response=await publishSocialPostCore(env,{...context,contentHash:hash});
+      results.push({day,platform,status:response.status});
+    }
+  }
+  return {processed:results.length,results};
+}
 async function generatePost(env){
   const date=cairoDate();
   const draftKey="draft:"+date;
@@ -520,6 +674,24 @@ export class CEOOutboxCoordinator {
     }
     const day=Number(body.day),platform=String(body.platform||""),identity=String(body.identity||""),hash=String(body.contentHash||""),targetId=String(body.targetId||"");
     if(!Number.isInteger(day)||day<1||!hash||!targetId||targetId!==outboxTarget(platform,identity))return J({error:"invalid_outbox_identity_or_payload"},400);
+    const approvalKey="approval:"+platform+":"+identity+":"+day;
+    if(action==="approval-status"){
+      const approval=storage.get(approvalKey)||null;
+      return J({ok:true,approval:approval&&approval.contentHash===hash?approval:null});
+    }
+    if(action==="approve"){
+      if(body.confirm!=="APPROVE_CEO_NOTES_PUBLICATION")return J({error:"explicit_owner_approval_confirmation_required"},400);
+      const scheduledFor=body.scheduledFor?String(body.scheduledFor):null;
+      if(scheduledFor&&(!Number.isFinite(Date.parse(scheduledFor))||!/(Z|[+-]\d{2}:\d{2})$/i.test(scheduledFor)))return J({error:"scheduled_for_must_be_offset_aware_iso"},400);
+      const existingApproval=storage.get(approvalKey)||null;
+      if(existingApproval&&existingApproval.contentHash!==hash)return J({error:"existing_approval_content_conflict"},409);
+      const currentOutbox=storage.get(outboxKey(platform,identity,day))||null;
+      if(currentOutbox&&currentOutbox.status!=="reserved")return J({error:"approval_locked_after_publish_attempt"},409);
+      if(existingApproval)return J({ok:true,idempotent:true,approval:existingApproval});
+      const approval={version:1,approvalId:crypto.randomUUID(),day,platform,identity,targetId,contentHash:hash,approvedBy:"owner",approvedAt:new Date().toISOString(),scheduledFor};
+      storage.put(approvalKey,approval);
+      return J({ok:true,approval});
+    }
     const key=outboxKey(platform,identity,day),now=new Date().toISOString(),current=storage.get(key)||null;
     if(current&&current.targetId!==targetId)return J({error:"outbox_target_conflict"},409);
     if(action==="reserve"){
@@ -638,6 +810,9 @@ export default {
         return new Response(binary,{headers:{"content-type":"image/jpeg","cache-control":"public, max-age=31536000","Access-Control-Allow-Origin":"*"}});
       }
       if(req.method==="POST"&&url.pathname==="/api/backup/restore")return await restoreBackup(req,env);
+      if(req.method==="POST"&&url.pathname==="/api/approval/approve")return await handleApproval(req,env,"approve");
+      if(req.method==="POST"&&url.pathname==="/api/approval/status")return await handleApproval(req,env,"approval-status");
+      if(req.method==="POST"&&url.pathname==="/api/social/publish")return await publishSocialPostCore(env,await req.json());
       if(req.method==="POST"&&url.pathname===API_GEN_PATH)return await withEditorialLock(env,cairoDate(),()=>generatePost(env));
       if(req.method==="POST"&&(url.pathname===API_IMAGE_PATH||url.pathname===API_PUBLISH_PATH)){
         const payload=await req.clone().json();
@@ -651,6 +826,12 @@ export default {
     }
   },
   async scheduled(event,env,ctx){
-    ctx.waitUntil(createBackup(env,event.scheduledTime).catch(error=>console.error("backup_failed",String(error))));
+    const cron=String(event.cron||"");
+    if(cron==="0 1 * * *")ctx.waitUntil(createBackup(env,event.scheduledTime).catch(error=>console.error("backup_failed")));
+    if(cron==="*/15 * * * *"&&env.PUBLISHING_ENABLED==="true"&&env.PREVIEW_MODE!=="true"){
+      const parts=new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Cairo",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date(event.scheduledTime||Date.now()));
+      const clock=parts.find(item=>item.type==="hour")?.value+":"+parts.find(item=>item.type==="minute")?.value;
+      if(clock==="19:30")ctx.waitUntil(runDueSocialPublications(env,event.scheduledTime).catch(error=>console.error("scheduled_publishing_failed")));
+    }
   }
 };
