@@ -48,7 +48,7 @@ Editorial flow:
 
 Approval flow:
 1. `POST /api/approval/approve` requires day, platform, pinned identity, exact content hash and `confirm: "APPROVE_CEO_NOTES_PUBLICATION"`.
-2. An optional `scheduledFor` must be an offset-aware ISO timestamp in the future.
+2. An optional `scheduledFor` must be an offset-aware ISO timestamp in the future and resolve to exactly 19:30 Africa/Cairo.
 3. Approval is persisted in the day-specific Durable Object, with owner label, timestamp, platform, target identity and content hash.
 4. An approval for one channel does not approve the other channel. Any change to the article fields invalidates the hash and blocks publication.
 
