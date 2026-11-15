@@ -55,8 +55,14 @@ jobs:
           fi
           node -e 'const fs=require("node:fs");const assert=require("node:assert/strict");const h=JSON.parse(fs.readFileSync("/tmp/ceo-notes-health.json","utf8"));assert.equal(h.ok,true);assert.equal(h.kvConfigured,true);assert.equal(h.aiConfigured,false);assert.equal(h.outboxCoordinatorConfigured,true);assert.equal(h.outboxCoordinatorReady,true);'
           api_status="$(curl --silent --show-error --output /tmp/ceo-notes-unauth.json --write-out '%{http_code}' -X POST -H 'content-type: application/json' --data '{}' "$url/api/social/publish")"
-          test "$api_status" = "401"
-          node -e 'const fs=require("node:fs");const assert=require("node:assert/strict");assert.equal(JSON.parse(fs.readFileSync("/tmp/ceo-notes-unauth.json","utf8")).error,"unauthorized");'
+          case "$api_status" in
+            401) node -e 'const fs=require("node:fs");const assert=require("node:assert/strict");assert.equal(JSON.parse(fs.readFileSync("/tmp/ceo-notes-unauth.json","utf8")).error,"unauthorized");' ;;
+            302|403) echo "Preview API protected by Cloudflare Access (HTTP $api_status)" ;;
+            *) echo "Unexpected unauthenticated API status: $api_status"; cat /tmp/ceo-notes-unauth.json; exit 1 ;;
+          esac
           admin_status="$(curl --silent --show-error --output /tmp/ceo-notes-admin.json --write-out '%{http_code}' "$url/admin")"
-          test "$admin_status" = "401"
-          node -e 'const fs=require("node:fs");const assert=require("node:assert/strict");assert.equal(JSON.parse(fs.readFileSync("/tmp/ceo-notes-admin.json","utf8")).error,"access_authentication_required");'
+          case "$admin_status" in
+            401) node -e 'const fs=require("node:fs");const assert=require("node:assert/strict");assert.equal(JSON.parse(fs.readFileSync("/tmp/ceo-notes-admin.json","utf8")).error,"access_authentication_required");' ;;
+            302|403) echo "Preview dashboard protected by Cloudflare Access (HTTP $admin_status)" ;;
+            *) echo "Unexpected unauthenticated dashboard status: $admin_status"; cat /tmp/ceo-notes-admin.json; exit 1 ;;
+          esac
