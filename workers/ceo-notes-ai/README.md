@@ -31,6 +31,7 @@ Editorial workflow:
 Native social workflow:
 - `POST /api/approval/approve`: records an explicit owner approval for one platform, pinned identity, day and exact SHA-256 content hash. Requires `confirm: "APPROVE_CEO_NOTES_PUBLICATION"`. An optional offset-aware `scheduledFor` timestamp must be in the future.
 - `POST /api/approval/status`: read the approval for the exact hash.
+- `POST /api/meta/verify`: read-only validation of both Meta tokens, app ID, scopes, expiry and pinned Page/Instagram identities.
 - `POST /api/social/publish`: manually publish one approved post to one platform.
 - `POST /api/outbox/reserve`, `start`, `receipt`, `verify`, `unknown`, `reconcile`: internal lifecycle exposed through authenticated endpoints for controlled reconciliation.
 - `POST /api/backup/restore`: explicit-confirmation Preview-only restore; never available in Production.
@@ -45,12 +46,15 @@ The staged v2 Worker implements both official Graph API adapters:
 
 After either create call, the Worker reads the resulting post/media object back from Meta. It verifies the returned ID, pinned destination identity, permalink and published state before the outbox can become `succeeded`. Caller-supplied verification claims are ignored. Unknown or ambiguous outcomes remain blocked for reconciliation; no blind retry is allowed.
 
-Credentials are separate Worker Secrets:
+Configuration:
+- `META_APP_ID`: non-secret Worker variable identifying the Meta app.
+
+Credentials are Worker Secrets:
 - `META_FACEBOOK_PAGE_ACCESS_TOKEN`
 - `META_INSTAGRAM_ACCESS_TOKEN`
 - `META_APP_SECRET`
 
-For the Facebook Login Instagram API flow, use a token authorized for the pinned professional account and the required Meta permissions, including `instagram_basic` and `instagram_content_publish`; Facebook Page publishing requires the Page task and permissions documented by Meta, including `pages_manage_posts` and `pages_read_engagement`. The app/account must have the necessary Page and Instagram roles and any required Meta app review. All Graph API calls send the token only to Meta over TLS and include an HMAC-SHA256 `appsecret_proof` generated server-side from `META_APP_SECRET`. Configure Meta's Require App Secret setting to enforce proof validation. Never store credentials in Git, KV, D1, Make, request bodies to this Worker, browser storage, logs, receipts or chat. Never copy Make's existing credentials into this Worker.
+For the Facebook Login Instagram API flow, use a token authorized for the pinned professional account and the required Meta permissions, including `instagram_basic` and `instagram_content_publish`; Facebook Page publishing requires the Page task and permissions documented by Meta, including `pages_manage_posts` and `pages_read_engagement`. The app/account must have the necessary Page and Instagram roles and any required Meta app review. The `/api/meta/verify` preflight uses Meta's debug-token endpoint to confirm the token belongs to `META_APP_ID`, is valid, has all required scopes and will not expire within 24 hours. It also checks the exact Page ID and verifies the pinned Instagram professional account is linked to that CEO Page. Facebook publishing is independently gated by its own Page token; Instagram additionally requires the Page-to-Instagram link. All Graph API calls send the token only to Meta over TLS and include an HMAC-SHA256 `appsecret_proof` generated server-side from `META_APP_SECRET`. Configure Meta's Require App Secret setting to enforce proof validation. Never store credentials in Git, KV, D1, Make, request bodies to this Worker, browser storage, logs, receipts or chat. Never copy Make's existing credentials into this Worker.
 
 Official references:
 - [Meta Page Feed and publishing](https://developers.facebook.com/docs/graph-api/reference/page/feed/)
