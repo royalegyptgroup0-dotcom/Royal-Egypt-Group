@@ -85,12 +85,13 @@ async function call(path, { method = "GET", headers = {}, body } = {}, env = mak
   return worker.fetch(request, env, { waitUntil() {} });
 }
 
-async function withMetaReadBack(data, work) {
+async function withMetaReadBack(data, work, platform = "facebook") {
   const originalFetch = globalThis.fetch;
+  const expectedToken = platform === "facebook" ? "test-only-facebook-token-123456789" : "test-only-instagram-token-123456789";
   globalThis.fetch = async (input, init = {}) => {
     const url = new URL(input);
     assert.equal(url.hostname, "graph.facebook.com");
-    assert.equal(url.searchParams.get("access_token"), "test-only-facebook-token-123456789");
+    assert.equal(url.searchParams.get("access_token"), expectedToken);
     assert.match(url.searchParams.get("appsecret_proof")||"", /^[a-f0-9]{64}$/);
     assert.equal(init.headers?.Authorization, undefined);
     assert.ok(url.pathname.startsWith("/v27.0/"));
@@ -623,7 +624,7 @@ test("Instagram verification reads back the media owner and permalink from Meta"
   const response = await withMetaReadBack({
     id: "17912345678901234", owner: { id: "17841402949410977" },
     permalink: "https://www.instagram.com/p/AbC123/", timestamp: "2026-11-15T17:30:00+0000"
-  }, () => call("/api/outbox/verify", { method: "POST", headers: auth, body: base }, env));
+  }, () => call("/api/outbox/verify", { method: "POST", headers: auth, body: base }, env), "instagram");
   assert.equal(response.status, 200);
   assert.equal((await response.json()).status, "succeeded");
   assert.equal(env.coordinatorValues.get("outbox:instagram:ceo-notes:1").verifiedTargetId, "17841402949410977");
