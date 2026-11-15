@@ -56,7 +56,7 @@ Native publishing preflight:
 - `POST /api/meta/verify` checks the Meta app ID, token validity, required scopes, expiry window, exact Facebook Page identity and the pinned Instagram professional account linkage. It is read-only and does not create posts.
 - Configure `META_APP_ID` as a non-secret Worker variable.
 - Configure `META_FACEBOOK_PAGE_ACCESS_TOKEN`, `META_INSTAGRAM_ACCESS_TOKEN` and `META_APP_SECRET` as Worker Secrets.
-- The Facebook token must have `pages_manage_posts` and `pages_read_engagement`. The Instagram token must have `instagram_basic`, `instagram_content_publish`, `pages_show_list` and `pages_read_engagement`.
+- The Facebook token must be a Page access token with `pages_manage_posts` and `pages_read_engagement`. The Instagram token must have `instagram_basic`, `instagram_content_publish`, `pages_show_list` and `pages_read_engagement`; the Page token must also have the scopes needed to read the linked Instagram account. The Worker checks token type, app ID, expiry and scopes before reserving an outbox attempt.
 - The Instagram professional account ID `17841402949410977` must be linked to the CEO Facebook Page ID `115226621594988`. If it is not linked, stop. Do not silently substitute another account or change the identity.
 - The Worker validates token app ID, scopes and expiry (at least 24 hours remaining) before reserving an outbox attempt. It also uses HMAC-SHA256 `appsecret_proof` with the App Secret on Graph API calls.
 
