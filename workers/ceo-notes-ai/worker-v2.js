@@ -133,6 +133,118 @@ async function createBackup(env,scheduledTime){
   }
   return {date,postCount:(feed.posts||[]).length,imageCount:imageKeys.length,draftCount:draftKeys.length,outboxCount:outboxKeys.length,feedSha256,retainedDays:Math.min(dates.length,30)};
 }
+
+async function restoreBackup(req,env){
+  if(env.PREVIEW_MODE!=="true")return J({error:"preview_restore_only"},403);
+  if(!env.OUTBOX_COORDINATOR)return J({error:"outbox_coordinator_unavailable"},503);
+  let body;
+  try{body=await req.json();}catch(error){return J({error:"invalid_json"},400);}
+  const date=String(body.date||"");
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||body.confirm!=="RESTORE_PREVIEW_BACKUP")return J({error:"explicit_preview_restore_confirmation_required"},400);
+  const manifestRaw=await env.CEO_NOTES_KV.get("backup:"+date+":manifest");
+  if(!manifestRaw)return J({error:"backup_manifest_not_found"},404);
+  let manifest;
+  try{manifest=JSON.parse(manifestRaw);}catch(error){return J({error:"backup_manifest_invalid"},409);}
+  if(manifest.version!==3||manifest.date!==date)return J({error:"unsupported_backup_manifest"},409);
+  const feedValue=await env.CEO_NOTES_KV.get("backup:"+date+":feed");
+  if(feedValue===null||await backupHash(feedValue)!==manifest.feedSha256)return J({error:"backup_feed_checksum_failed"},409);
+  let feed;
+  try{feed=JSON.parse(feedValue);}catch(error){return J({error:"backup_feed_invalid"},409);}
+  if(!Array.isArray(feed.posts))return J({error:"backup_feed_invalid"},409);
+  const postDays=feed.posts.map(post=>Number(post.day));
+  if(JSON.stringify(postDays)!==JSON.stringify(manifest.postDays))return J({error:"backup_feed_manifest_mismatch"},409);
+  const entries=[["feed",feedValue]];
+  const groups=[
+    ["imageKeys","image:"],
+    ["imageMetaKeys","image-meta:"],
+    ["draftKeys","draft:"],
+    ["outboxKeys","outbox:"]
+  ];
+  const seen=new Set(["feed"]);
+  for(const [field,prefix] of groups){
+    if(!Array.isArray(manifest[field]))return J({error:"backup_manifest_entries_invalid",field},409);
+    for(const item of manifest[field]){
+      const name=String(item?.name||"");
+      if(!name.startsWith(prefix)||name.includes("..")||name.startsWith("backup:")||seen.has(name))return J({error:"backup_entry_name_invalid",field},409);
+      const value=await env.CEO_NOTES_KV.get("backup:"+date+":"+name);
+      if(value===null||value.length!==item.length||await backupHash(value)!==item.sha256)return J({error:"backup_entry_checksum_failed",name},409);
+      seen.add(name);
+      entries.push([name,value]);
+    }
+  }
+  const coordinatorValue=await env.CEO_NOTES_KV.get("backup:"+date+":outbox-coordinator");
+  if(coordinatorValue===null||await backupHash(coordinatorValue)!==manifest.coordinatorOutboxSha256)return J({error:"backup_coordinator_checksum_failed"},409);
+  let coordinatorRecords;
+  try{coordinatorRecords=JSON.parse(coordinatorValue);}catch(error){return J({error:"backup_coordinator_invalid"},409);}
+  if(!Array.isArray(coordinatorRecords)||coordinatorRecords.length!==manifest.coordinatorOutboxCount)return J({error:"backup_coordinator_manifest_mismatch"},409);
+  const byDay=new Map();
+  const allowedStatuses=new Set(["reserved","attempting","unknown","receipt_recorded","succeeded"]);
+  for(const record of coordinatorRecords){
+    const key=String(record?.key||"");
+    const match=/^outbox:(facebook:ceo-page|instagram:ceo-notes):([1-9]\d*)$/.exec(key);
+    const value=record?.value;
+    if(!match||!value||typeof value!=="object")return J({error:"backup_coordinator_record_invalid"},409);
+    const [platform,identity]=match[1].split(":");
+    const day=Number(match[2]);
+    if(!manifest.postDays.includes(day)||value.version!==2||value.day!==day||value.platform!==platform||value.identity!==identity||value.targetId!==outboxTarget(platform,identity)||! /^[a-f0-9]{64}$/i.test(String(value.contentHash||""))||!allowedStatuses.has(value.status))return J({error:"backup_coordinator_identity_invalid",key},409);
+    const list=byDay.get(day)||[];
+    list.push({key,value});
+    byDay.set(day,list);
+  }
+  const currentFeed=await env.CEO_NOTES_KV.get("feed");
+  if(currentFeed!==null&&currentFeed!==feedValue){
+    try{
+      const parsed=JSON.parse(currentFeed);
+      if(!Array.isArray(parsed.posts)||parsed.posts.length!==0)return J({error:"preview_target_not_empty"},409);
+    }catch(error){return J({error:"preview_target_not_empty"},409);}
+  }
+  const restoredNames=new Set(entries.map(([key])=>key));
+  for(const prefix of ["image:","image-meta:","draft:","outbox:"]){
+    const page=await env.CEO_NOTES_KV.list({prefix,limit:1000});
+    if(page.list_complete===false)return J({error:"preview_target_scan_incomplete",prefix},409);
+    for(const item of page.keys||[])if(!restoredNames.has(item.name))return J({error:"preview_target_not_empty",key:item.name},409);
+  }
+  for(const [key,value] of entries){
+    if(key==="feed")continue;
+    const current=await env.CEO_NOTES_KV.get(key);
+    if(current!==null&&current!==value)return J({error:"preview_target_conflict",key},409);
+  }
+  const coordinatorCalls=[];
+  for(const dayValue of manifest.postDays){
+    const day=Number(dayValue),records=byDay.get(day)||[];
+    const coordinator=env.OUTBOX_COORDINATOR.get(env.OUTBOX_COORDINATOR.idFromName("ceo-notes-day:"+day));
+    const payload=JSON.stringify({records});
+    const validation=await coordinator.fetch("https://outbox-coordinator/validate-restore",{
+      method:"POST",
+      headers:{"content-type":"application/json"},
+      body:payload
+    });
+    if(!validation.ok)return J({error:"coordinator_restore_preflight_failed",day,status:validation.status},409);
+    coordinatorCalls.push({coordinator,payload,day});
+  }
+  for(const item of coordinatorCalls){
+    const response=await item.coordinator.fetch("https://outbox-coordinator/restore",{
+      method:"POST",
+      headers:{"content-type":"application/json"},
+      body:item.payload
+    });
+    if(!response.ok)return J({error:"coordinator_restore_failed",day:item.day,status:response.status},409);
+  }
+  for(const [key,value] of entries)await env.CEO_NOTES_KV.put(key,value);
+  return J({
+    ok:true,
+    restored:true,
+    previewOnly:true,
+    date,
+    feedPosts:feed.posts.length,
+    images:manifest.imageKeys.length,
+    imageMetadata:manifest.imageMetaKeys.length,
+    drafts:manifest.draftKeys.length,
+    legacyOutbox:manifest.outboxKeys.length,
+    coordinatorOutbox:coordinatorRecords.length
+  });
+}
+
 function outboxTarget(platform,identity){
   const targets={
     facebook:{"ceo-page":"115226621594988"},
@@ -310,6 +422,30 @@ export class CEOOutboxCoordinator {
     if(request.method!=="POST")return J({error:"method_not_allowed"},405);
     let body;
     try{body=await request.json();}catch(error){return J({error:"invalid_json"},400);}
+    if(action==="restore"||action==="validate-restore"){
+      if(!Array.isArray(body.records)||body.records.length>1000)return J({error:"invalid_restore_records"},400);
+      const validated=[],allowedStatuses=new Set(["reserved","attempting","unknown","receipt_recorded","succeeded"]);
+      for(const record of body.records){
+        const key=String(record?.key||""),value=record?.value;
+        const match=/^outbox:(facebook:ceo-page|instagram:ceo-notes):([1-9]\d*)$/.exec(key);
+        if(!match||!value||typeof value!=="object")return J({error:"invalid_restore_record"},400);
+        const [platform,identity]=match[1].split(":"),day=Number(match[2]);
+        if(value.day!==day||value.platform!==platform||value.identity!==identity||value.targetId!==outboxTarget(platform,identity)||! /^[a-f0-9]{64}$/i.test(String(value.contentHash||""))||!allowedStatuses.has(value.status))return J({error:"invalid_restore_identity"},400);
+        const existing=storage.get(key)||null;
+        if(existing&&JSON.stringify(existing)!==JSON.stringify(value))return J({error:"restore_record_conflict",key},409);
+        validated.push({key,value,existing});
+      }
+      const incoming=new Map(validated.map(item=>[item.key,item.value]));
+      for(const [existingKey,existingValue] of storage.list({prefix:"outbox:"})){
+        if(!incoming.has(existingKey)||JSON.stringify(existingValue)!==JSON.stringify(incoming.get(existingKey)))return J({error:"restore_target_not_empty",key:existingKey},409);
+      }
+      for(const [lockKey,lockValue] of storage.list({prefix:"editorial-lock:"})){
+        if(Number(lockValue?.expiresAt)>Date.now())return J({error:"editorial_operation_in_progress",key:lockKey},409);
+      }
+      if(action==="validate-restore")return J({ok:true,ready:true,records:validated.length,alreadyPresent:validated.filter(item=>item.existing).length});
+      for(const item of validated)if(!item.existing)storage.put(item.key,item.value);
+      return J({ok:true,restored:validated.filter(item=>!item.existing).length,alreadyPresent:validated.filter(item=>item.existing).length});
+    }
     if(action==="lock"||action==="unlock"){
       const lockKey=String(body.key||""),token=String(body.token||"");
       if(!/^editorial:\d{4}-\d{2}-\d{2}$/.test(lockKey)||token.length<16)return J({error:"invalid_editorial_lock"},400);
@@ -443,6 +579,7 @@ export default {
         const binary=Uint8Array.from(atob(base64),character=>character.charCodeAt(0));
         return new Response(binary,{headers:{"content-type":"image/jpeg","cache-control":"public, max-age=31536000","Access-Control-Allow-Origin":"*"}});
       }
+      if(req.method==="POST"&&url.pathname==="/api/backup/restore")return await restoreBackup(req,env);
       if(req.method==="POST"&&url.pathname===API_GEN_PATH)return await withEditorialLock(env,cairoDate(),()=>generatePost(env));
       if(req.method==="POST"&&(url.pathname===API_IMAGE_PATH||url.pathname===API_PUBLISH_PATH)){
         const payload=await req.clone().json();
