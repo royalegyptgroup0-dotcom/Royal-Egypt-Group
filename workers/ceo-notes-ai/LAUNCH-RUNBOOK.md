@@ -70,6 +70,8 @@ Native publishing:
 
 ## 4. Meta credentials and permissions
 
+Follow [META-SETUP.md](./META-SETUP.md) for the exact app, token and secret setup steps. Do not send any credential values through chat.
+
 Store independently authorized tokens only as Worker Secrets:
 - `META_FACEBOOK_PAGE_ACCESS_TOKEN`
 - `META_INSTAGRAM_ACCESS_TOKEN`
