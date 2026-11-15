@@ -10,6 +10,8 @@ The Worker pins these identities:
 
 The Instagram account must be connected to the CEO Facebook Page for the Facebook Login Instagram Graph API flow used by this Worker. If the Page does not report that exact Instagram account under `instagram_business_account`, stop. Do not substitute a different Page or Instagram account. The Instagram Login API is a different integration and is not implemented here.
 
+The current v2 Worker supports only the CEO Facebook Page and the CEO Notes Instagram account. The separate Royal Egypt Properties Facebook Page (`101823889330644`) is also required by the current operations scope, but is not implemented in this Worker yet. It must use a separately pinned destination, independently approved property-audience copy, its own outbox state and authoritative Page read-back. Do not reuse the CEO caption or assume the CEO Page token is authorized for Royal Egypt Properties. Recover the prior Make module-5 wording and mapping before implementing that route.
+
 ## 2. Create or select a Meta app
 
 1. Use the Meta developer account that owns or administers the CEO Page and Instagram professional account.
