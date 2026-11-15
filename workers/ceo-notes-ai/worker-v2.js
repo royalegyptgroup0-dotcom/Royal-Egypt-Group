@@ -447,8 +447,9 @@ async function verifyMetaCredential(env,platform){
       if(String(page.id||"")!=="115226621594988")return {ok:false,error:"meta_facebook_page_identity_mismatch",status:409};
       return {ok:true,platform,identity:"ceo-page",targetId:String(page.id),expiresAt:debug.expiresAt,scopes:debug.scopes};
     }
-    const account=await metaGraphRequest(env,"instagram",outboxTarget("instagram","ceo-notes"),"GET",{fields:"id,username"});
+    const account=await metaGraphRequest(env,"instagram",outboxTarget("instagram","ceo-notes"),"GET",{fields:"id,username,account_type"});
     if(String(account.id||"")!=="17841402949410977")return {ok:false,error:"meta_instagram_identity_mismatch",status:409};
+    if(!["BUSINESS","MEDIA_CREATOR"].includes(String(account.account_type||"").toUpperCase()))return {ok:false,error:"meta_instagram_professional_account_required",status:409};
     const pageTokenCheck=await metaDebugToken(env,env.META_FACEBOOK_PAGE_ACCESS_TOKEN,"facebook_link");
     if(!pageTokenCheck.ok)return pageTokenCheck;
     const page=await metaGraphRequest(env,"facebook",outboxTarget("facebook","ceo-page"),"GET",{fields:"id,instagram_business_account"});
