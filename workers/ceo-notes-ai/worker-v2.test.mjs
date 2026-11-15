@@ -156,7 +156,7 @@ async function withMetaPublish(platform, work, mode = "success") {
       }
     } else {
       if (method === "GET" && url.pathname.endsWith("/17841402949410977") && url.searchParams.get("fields")?.includes("username")) {
-        return new Response(JSON.stringify({ id: "17841402949410977", username: "kiritoon" }), { status: 200 });
+        return new Response(JSON.stringify({ id: "17841402949410977", username: "kiritoon", account_type: mode === "personal-ig" ? "PERSONAL" : "BUSINESS" }), { status: 200 });
       }
       if (method === "POST" && url.pathname.endsWith("/17841402949410977/media")) {
         if (mode === "publish-fail") return new Response(JSON.stringify({ error: { code: 190 } }), { status: 401 });
@@ -382,6 +382,19 @@ test("Meta token preflight rejects expiry, wrong app and missing permissions bef
     assert.equal((await result.json()).error, expectedError);
     assert.equal(env.coordinatorValues.has("outbox:facebook:ceo-page:1"), false);
   }
+});
+
+test("Instagram publishing rejects a personal account even when its ID matches", async () => {
+  const env = makeEnv();
+  const { generated } = await createPublishedPost(env);
+  await approvePost(env, generated, "instagram");
+  const { result } = await withMetaPublish("instagram", () => call("/api/social/publish", {
+    method: "POST", headers: auth,
+    body: { day: 1, platform: "instagram", identity: "ceo-notes", contentHash: generated.contentHash }
+  }, env), "personal-ig");
+  assert.equal(result.status, 409);
+  assert.equal((await result.json()).error, "meta_instagram_professional_account_required");
+  assert.equal(env.coordinatorValues.has("outbox:instagram:ceo-notes:1"), false);
 });
 
 test("Instagram publishing requires the pinned professional account to be linked to the CEO Page", async () => {
