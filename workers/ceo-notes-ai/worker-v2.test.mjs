@@ -295,7 +295,7 @@ test("Facebook native publishing uploads the approved image, verifies Page ident
     method: "POST", headers: auth,
     body: { day: 1, platform: "facebook", identity: "ceo-page", contentHash: generated.contentHash }
   }, env));
-  assert.equal(result.status, 200);
+  assert.equal(result.status, 200, "Facebook publish response: " + JSON.stringify(await result.clone().json()) + " outbox: " + JSON.stringify(env.coordinatorValues.get("outbox:facebook:ceo-page:1")));
   const data = await result.json();
   assert.equal(data.status, "succeeded");
   assert.equal(data.postId, "115226621594988_123456");
@@ -458,7 +458,7 @@ test("production scheduler publishes only an approved due post at 19:30 Cairo ti
       );
       await Promise.all(pending);
     });
-    assert.equal(requests.length, 2);
+    assert.equal(requests.length, 4);
     assert.equal(env.coordinatorValues.get("outbox:facebook:ceo-page:1").status, "succeeded");
   } finally {
     Date.now = originalNow;
