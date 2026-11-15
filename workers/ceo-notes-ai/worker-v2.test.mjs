@@ -116,10 +116,13 @@ async function withMetaPublish(platform, work, mode = "success") {
       const scopes = platform === "facebook"
         ? ["pages_manage_posts", "pages_read_engagement"]
         : ["instagram_basic", "instagram_content_publish", "pages_show_list", "pages_read_engagement"];
+      if (mode === "missing-scope") scopes.splice(scopes.indexOf("pages_manage_posts"), 1);
+      const appId = mode === "wrong-app" ? "different-meta-app-id" : "test-meta-app-id";
+      const expiry = Math.floor(Date.now()/1000)+(mode === "expired-token" ? 3600 : 90*86400);
       return new Response(JSON.stringify({ data: {
-        is_valid: true, app_id: "test-meta-app-id",
-        expires_at: Math.floor(Date.now()/1000)+90*86400,
-        data_access_expires_at: Math.floor(Date.now()/1000)+90*86400,
+        is_valid: true, app_id: appId,
+        expires_at: expiry,
+        data_access_expires_at: expiry,
         scopes
       }}), { status: 200 });
     }
@@ -132,7 +135,7 @@ async function withMetaPublish(platform, work, mode = "success") {
     assert.match(proof || "", /^[a-f0-9]{64}$/);
     assert.equal(init.headers?.Authorization, undefined);
     if (pageRequest) {
-      return new Response(JSON.stringify({ id: "115226621594988", name: "CEO", instagram_business_account: { id: "17841402949410977" } }), { status: 200 });
+      return new Response(JSON.stringify({ id: "115226621594988", name: "CEO", instagram_business_account: { id: mode === "wrong-ig-link" ? "17840000000000000" : "17841402949410977" } }), { status: 200 });
     }
     if (platform === "facebook") {
       if (method === "POST" && url.pathname.endsWith("/115226621594988/photos")) {
@@ -358,6 +361,38 @@ test("Facebook and Instagram publication states remain independent after a parti
   assert.equal(instagram.result.status, 502);
   assert.equal(env.coordinatorValues.get("outbox:facebook:ceo-page:1").status, "succeeded");
   assert.equal(env.coordinatorValues.get("outbox:instagram:ceo-notes:1").status, "unknown");
+});
+
+test("Meta token preflight rejects expiry, wrong app and missing permissions before reserving", async () => {
+  for (const [mode, expectedStatus, expectedError] of [
+    ["expired-token", 409, "meta_token_expires_within_24_hours"],
+    ["wrong-app", 401, "meta_token_invalid_or_wrong_app"],
+    ["missing-scope", 403, "meta_permissions_missing"]
+  ]) {
+    const env = makeEnv();
+    const { generated } = await createPublishedPost(env);
+    await approvePost(env, generated, "facebook");
+    const { result } = await withMetaPublish("facebook", () => call("/api/social/publish", {
+      method: "POST", headers: auth,
+      body: { day: 1, platform: "facebook", identity: "ceo-page", contentHash: generated.contentHash }
+    }, env), mode);
+    assert.equal(result.status, expectedStatus);
+    assert.equal((await result.json()).error, expectedError);
+    assert.equal(env.coordinatorValues.has("outbox:facebook:ceo-page:1"), false);
+  }
+});
+
+test("Instagram publishing requires the pinned professional account to be linked to the CEO Page", async () => {
+  const env = makeEnv();
+  const { generated } = await createPublishedPost(env);
+  await approvePost(env, generated, "instagram");
+  const { result } = await withMetaPublish("instagram", () => call("/api/social/publish", {
+    method: "POST", headers: auth,
+    body: { day: 1, platform: "instagram", identity: "ceo-notes", contentHash: generated.contentHash }
+  }, env), "wrong-ig-link");
+  assert.equal(result.status, 409);
+  assert.equal((await result.json()).error, "meta_instagram_account_not_linked_to_ceo_page");
+  assert.equal(env.coordinatorValues.has("outbox:instagram:ceo-notes:1"), false);
 });
 
 test("native publishing requires the Meta App Secret for appsecret_proof before reserving an attempt", async () => {
