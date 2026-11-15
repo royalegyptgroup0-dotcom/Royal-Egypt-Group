@@ -102,3 +102,11 @@ If Mobile is connected to an OCTOPUSA workspace, it should remain there for OCTO
 - Both connected Cloudflare integrations (the personal and Royal Egypt Group profiles) returned HTTP 401 `Invalid API Token` from the read-only `GET /user/tokens/verify` endpoint. Reauthorization is required before Cloudflare API reads or writes can be trusted. Do not attempt production Worker deployment, secret changes, binding changes, or migrations through those invalid connections.
 - PR #79 adds this project context and the OpenCode Mobile guide. Its Pages Preview deployment succeeded at `https://8c229f2a.royalegyptgroup-vy7.pages.dev`. The PR remains Draft and unmerged.
 
+### Make publishing safety confirmation (2026-11-15)
+
+- Confirmed via scenario search that the publishing scenarios `8438083`, `8438104`, `8438190`, and `8419318` are all `paused` with `isActive=false`.
+- Legacy `8333266` remains `error` and `isActive=false`; it has a daily 19:30 trigger and direct Facebook module configured, so it must never be reactivated.
+- `8423033` is `paused` and `isActive=false`. Its activation validation passed, then it was immediately deactivated. No webhook delivery or execution was triggered.
+- `8443695` is the only matching scenario found with `isActive=true`; it is an on-demand, read-only Facebook archive export, not a publishing scenario. Do not mistake it for a publisher.
+- Scenario descriptions were updated to record these safety gates and the Worker v2 migration blocker.
+
