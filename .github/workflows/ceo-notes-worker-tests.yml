@@ -37,3 +37,26 @@ jobs:
         run: node --check workers/ceo-notes-ai/worker-v2.js
       - name: Run isolated Worker tests
         run: node --test workers/ceo-notes-ai/worker-v2.test.mjs
+      - name: Verify deployed Preview Worker health and unauthenticated access gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://ceo-notes-ai-preview.yasser-abdelaziz83.workers.dev"
+          status=""
+          for attempt in 1 2 3 4 5 6; do
+            status="$(curl --silent --show-error --output /tmp/ceo-notes-health.json --write-out '%{http_code}' "$url/health" || true)"
+            if [ "$status" = "200" ]; then break; fi
+            sleep 5
+          done
+          if [ "$status" != "200" ]; then
+            echo "Preview health returned HTTP $status"
+            cat /tmp/ceo-notes-health.json || true
+            exit 1
+          fi
+          node -e 'const fs=require("node:fs");const assert=require("node:assert/strict");const h=JSON.parse(fs.readFileSync("/tmp/ceo-notes-health.json","utf8"));assert.equal(h.ok,true);assert.equal(h.kvConfigured,true);assert.equal(h.aiConfigured,false);assert.equal(h.outboxCoordinatorConfigured,true);assert.equal(h.outboxCoordinatorReady,true);'
+          api_status="$(curl --silent --show-error --output /tmp/ceo-notes-unauth.json --write-out '%{http_code}' -X POST -H 'content-type: application/json' --data '{}' "$url/api/social/publish")"
+          test "$api_status" = "401"
+          node -e 'const fs=require("node:fs");const assert=require("node:assert/strict");assert.equal(JSON.parse(fs.readFileSync("/tmp/ceo-notes-unauth.json","utf8")).error,"unauthorized");'
+          admin_status="$(curl --silent --show-error --output /tmp/ceo-notes-admin.json --write-out '%{http_code}' "$url/admin")"
+          test "$admin_status" = "401"
+          node -e 'const fs=require("node:fs");const assert=require("node:assert/strict");assert.equal(JSON.parse(fs.readFileSync("/tmp/ceo-notes-admin.json","utf8")).error,"access_authentication_required");'
