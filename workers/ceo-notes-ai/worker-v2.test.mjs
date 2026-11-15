@@ -369,6 +369,17 @@ test("scheduled publishing is disabled in Preview even when a flag is accidental
   assert.equal(pending.length, 0);
 });
 
+test("Preview AI generation and image routes fail closed when the AI binding is intentionally absent", async () => {
+  const env = makeEnv({ previewMode: true });
+  delete env.AI;
+  const generate = await call("/api/generate", { method: "POST", headers: auth, body: {} }, env);
+  assert.equal(generate.status, 503);
+  assert.equal((await generate.json()).error, "ai_binding_unavailable");
+  const image = await call("/api/image", { method: "POST", headers: auth, body: { date: "2026-11-15" } }, env);
+  assert.equal(image.status, 503);
+  assert.equal((await image.json()).error, "ai_binding_unavailable");
+});
+
 test("health and canonical feed remain public and health checks runtime bindings", async () => {
   const env = makeEnv();
   const healthResponse = await call("/health", {}, env);
