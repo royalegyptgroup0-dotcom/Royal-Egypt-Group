@@ -178,3 +178,17 @@ Do not confuse a Cloudflare Pages Preview URL with a deployed Worker runtime. Th
 - No new editorial item, image or social post was created during this run. No platform-specific post ID, permalink or durable publication receipt exists.
 
 See [CEO Notes target acceptance matrix](../../docs/CEO_NOTES_TARGET_ACCEPTANCE.md) for the per-target gate table.
+
+## 11. Latest isolated Preview deployment
+
+Verified on 2026-11-15 after the latest Worker source commit:
+
+- Source commit: `34d850843e63fef7adf89e6ceb7424820e9d79af`.
+- GitHub source blob SHA: `6ccfea3b5903e510736cde50b319fbecda6d3401`.
+- Preview Worker version 7: `8b79c509-171d-4ba8-8d5c-ac3f5a0c0e86`.
+- Preview deployment: `a4ca76c0-1213-46dc-8c8f-09591d6029a0`, 100% traffic to version 7.
+- Existing isolated Preview KV and SQLite Durable Object namespace IDs were preserved. No new namespace or paid resource was created.
+- Preview secret list remains empty and Cron schedule list remains empty. No AI binding or Meta credentials were added.
+- Production Worker, Production Pages and Make scenario 8438190 were not changed by this Preview deployment.
+- The deployed script content contains the latest image/publication timestamp separation fix and no longer uses image-generation time as `publishedAt`.
+- Post-deployment live health and unauthenticated API checks are delegated to the GitHub Actions Preview smoke workflow; do not claim them until that run completes successfully.
