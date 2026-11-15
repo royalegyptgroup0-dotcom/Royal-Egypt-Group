@@ -131,7 +131,7 @@ async function withMetaPublish(platform, work, mode = "success") {
     assert.equal(token, expectedRequestToken);
     assert.match(proof || "", /^[a-f0-9]{64}$/);
     assert.equal(init.headers?.Authorization, undefined);
-    if (pageRequest && url.searchParams.get("fields")?.includes("instagram_business_account")) {
+    if (pageRequest) {
       return new Response(JSON.stringify({ id: "115226621594988", name: "CEO", instagram_business_account: { id: "17841402949410977" } }), { status: 200 });
     }
     if (platform === "facebook") {
