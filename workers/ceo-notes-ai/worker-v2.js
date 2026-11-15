@@ -524,6 +524,7 @@ async function runDueSocialPublications(env,scheduledTime){
   return {processed:results.length,results};
 }
 async function generatePost(env){
+  if(!env.AI||typeof env.AI.run!=="function")return J({error:"ai_binding_unavailable"},503);
   const date=cairoDate();
   const draftKey="draft:"+date;
   const saved=await env.CEO_NOTES_KV.get(draftKey);
@@ -567,6 +568,7 @@ async function generatePost(env){
   return J({ok:true,post,imagePrompt,date,contentHash:hash,reused:false,usage:{textNeurons:ai.usage?.neurons}});
 }
 async function generateImage(req,env){
+  if(!env.AI||typeof env.AI.run!=="function")return J({error:"ai_binding_unavailable"},503);
   const body=await req.json();
   const date=String(body.date||cairoDate());
   const draftRaw=await env.CEO_NOTES_KV.get("draft:"+date);
