@@ -3,7 +3,8 @@ name: CEO Notes Worker Tests
 on:
   push:
     branches:
-      - "fix/ceo-notes-backup-restore-2026-11-15"
+      - "ceo-notes-site"
+      - "fix/ceo-notes-*"
     paths:
       - "workers/ceo-notes-ai/**"
       - ".github/workflows/ceo-notes-worker-tests.yml"
