@@ -181,6 +181,45 @@ async function createPublishedPost(env) {
   return { generated, image, publish: await publishResponse.json() };
 }
 
+test("editorial dashboard is inaccessible without Cloudflare Access and works for an Access-authenticated owner", async () => {
+  const env = makeEnv();
+  const anonymous = await worker.fetch(new Request("https://ceo-notes-ai-preview.workers.dev/admin"), env, {});
+  assert.equal(anonymous.status, 401);
+  const accessContext = { access: { async getIdentity() { return { email: "owner@example.invalid" }; } } };
+  const page = await worker.fetch(new Request("https://ceo-notes-ai-preview.workers.dev/admin"), env, accessContext);
+  assert.equal(page.status, 200);
+  assert.match(page.headers.get("content-type"), /text\/html/);
+  assert.match(await page.text(), /لوحة CEO Notes/);
+  const api = await worker.fetch(new Request("https://ceo-notes-ai-preview.workers.dev/api/draft/status", {
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ date: "2026-11-15" })
+  }), env, accessContext);
+  assert.equal(api.status, 200);
+  assert.equal((await api.json()).draft, null);
+});
+
+test("editing a draft recomputes its hash and invalidates an image generated for the old content", async () => {
+  const env = makeEnv();
+  const generatedResponse = await call("/api/generate", { method: "POST", headers: auth, body: {} }, env);
+  assert.equal(generatedResponse.status, 200);
+  const generated = await generatedResponse.json();
+  const imageResponse = await call("/api/image", {
+    method: "POST", headers: auth,
+    body: { date: generated.date, post: generated.post, imagePrompt: generated.imagePrompt }
+  }, env);
+  assert.equal(imageResponse.status, 200);
+  assert.ok(await env.CEO_NOTES_KV.get("image:1"));
+  const changedPost = { ...generated.post, title: generated.post.title + " - تعديل" };
+  const updated = await call("/api/draft/update", {
+    method: "POST", headers: auth,
+    body: { date: generated.date, post: changedPost, imagePrompt: generated.imagePrompt }
+  }, env);
+  assert.equal(updated.status, 200);
+  const data = await updated.json();
+  assert.notEqual(data.contentHash, generated.contentHash);
+  assert.equal(await env.CEO_NOTES_KV.get("image:1"), null);
+  assert.equal(await env.CEO_NOTES_KV.get("image-meta:1"), null);
+});
+
 test("native social publishing is blocked until the owner approves the exact published content hash", async () => {
   const env = makeEnv();
   const { generated } = await createPublishedPost(env);
