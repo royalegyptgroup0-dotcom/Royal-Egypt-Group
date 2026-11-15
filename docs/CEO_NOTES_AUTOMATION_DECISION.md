@@ -84,6 +84,7 @@ Official references:
 - [x] Live Preview Worker health and unauthenticated security smoke checks pass from GitHub Actions: KV + Durable Object ready, AI disabled, no Cron, API rejects unauthenticated POST, and `/admin` rejects requests without Access.
 - [ ] Live Preview tests cover token expiry, timeout after remote success, partial channel failure, actual Meta read-back, and backup/restore failure injection.
 - [x] The staged scheduler checks Africa/Cairo 19:30, requires `PUBLISHING_ENABLED=true`, and is hard-disabled in Preview. Preview has no Cron; Production publishing remains disabled until the owner approves the controlled first post.
+- [x] Meta token preflight validates app ID, validity, scopes, 24-hour expiry safety margin and pinned Page/Instagram linkage; all Graph calls include server-generated HMAC-SHA256 appsecret_proof.
 - [ ] The canonical CEO Notes Pages feed and both social destinations are verified independently.
 - [ ] The first controlled public post is explicitly approved by the owner. Only after its receipts and read-back pass may the daily schedule be considered for separate approval.
 - [ ] Make publishing scenarios remain paused and are not deleted until the native system has passed acceptance and the owner authorizes retirement.
@@ -93,13 +94,13 @@ Official references:
 - PR #77 stages the v2 outbox and isolated Preview Worker.
 - PR #78 adds a dedicated read-only Worker test workflow.
 - PR #81 consolidates the v2 outbox, Worker CI, Preview-only backup restore, server-side Meta read-back, native Meta adapters, owner approval records and Cairo-time scheduler. It remains Draft and targets `ceo-notes-site`; do not merge any PR as part of this ADR.
-- The staged v2 Worker implements Facebook Page Photo publishing and Instagram media-container publishing, both followed by server-side Meta read-back. It ignores caller-supplied proof fields and stores credentials only in Worker Secrets.
+- The staged v2 Worker implements Facebook Page Photo publishing and Instagram media-container publishing, both followed by server-side Meta read-back. It ignores caller-supplied proof fields, validates token app ID/scopes/expiry and account linkage before reserving an attempt, and uses server-generated appsecret_proof. `META_APP_ID` is a non-secret Worker variable; tokens and `META_APP_SECRET` are Worker Secrets.
 - `/api/approval/approve` records explicit owner approval bound to one platform, pinned identity, day and exact content hash. `/api/social/publish` rejects unapproved or changed content. The scheduler only processes due approvals and remains disabled unless `PUBLISHING_ENABLED=true`.
 - Unit tests cover the native API sequences, approval, identity checks, missing secrets, content-hash tampering and Cairo-time scheduling. These are mocked API tests, not live Meta acceptance.
 - The authenticated Cloudflare account has now been identified. Read-only inspection confirms the current Production Worker is still the older generation: it has AI + production KV and a `0 2 * * *` UTC backup Cron, but no Durable Object binding, no `ADMIN_TOKEN` and no Meta secrets.
 - The staged v2 source has been deployed to the isolated `ceo-notes-ai-preview` Worker (version `d160d725-7394-47f3-af2d-713c8d9946f6`, deployment `4cc51446-414d-437b-a96d-e2d2dd0ce087`). Its dedicated Preview KV and existing SQLite DO binding were preserved; migration tag `v1` remains unchanged; no AI, Cron, Worker Secrets or Production bindings were added.
 - GitHub Actions run `43707879264` passed the live Preview health and auth smoke checks. A separate Pages Preview is not a Worker deployment; the actual Worker is now deployed and its public health endpoint was checked by CI.
-- The Worker includes an Arabic `/admin` editorial dashboard protected by `ctx.access`, plus draft status/edit routes. Cloudflare Access is not enabled on the account yet; `/admin` intentionally returns 401 until the owner enables Access and we create account-member policies for `/admin*` and `/api/*`.
+- The Worker includes an Arabic `/admin` editorial dashboard protected by `ctx.access`, plus draft status/edit routes and a read-only Meta credential verification button. Cloudflare Access is not enabled on the account yet; `/admin` intentionally returns 401 until the owner enables Access and we create account-member policies for `/admin*` and `/api/*`.
 
 ## Cost and AI policy
 
