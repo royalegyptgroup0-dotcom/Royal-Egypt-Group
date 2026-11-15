@@ -6,7 +6,10 @@ const FEED_URL="https://raw.githubusercontent.com/royalegyptgroup0-dotcom/Royal-
 const PUBLIC_BASE="https://ceo-notes-ai.yasser-abdelaziz83.workers.dev";
 function publicBase(env){return String(env.PUBLIC_BASE||PUBLIC_BASE).replace(/\/+$/,"");}
 
-function authorized(req,env){
+async function authorized(req,env,ctx){
+  if(ctx?.access&&typeof ctx.access.getIdentity==="function"){
+    try{const identity=await ctx.access.getIdentity();if(identity)return true;}catch(error){}
+  }
   const token=env.ADMIN_TOKEN;
   return typeof token==="string"&&token.length>=32&&req.headers.get("Authorization")==="Bearer "+token;
 }
@@ -523,6 +526,49 @@ async function runDueSocialPublications(env,scheduledTime){
   }
   return {processed:results.length,results};
 }
+async function handleDraftStatus(req,env){
+  let body={};
+  try{body=await req.json();}catch(error){return J({error:"invalid_json"},400);}
+  const date=String(body.date||cairoDate());
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return J({error:"invalid_date"},400);
+  const raw=await env.CEO_NOTES_KV.get("draft:"+date);
+  if(!raw)return J({ok:true,draft:null,date});
+  try{return J({ok:true,draft:JSON.parse(raw),date});}
+  catch(error){return J({error:"draft_record_corrupt"},409);}
+}
+async function handleDraftUpdate(req,env){
+  let body;
+  try{body=await req.json();}catch(error){return J({error:"invalid_json"},400);}
+  const date=String(body.date||cairoDate());
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return J({error:"invalid_date"},400);
+  const key="draft:"+date,raw=await env.CEO_NOTES_KV.get(key);
+  if(!raw)return J({error:"draft_not_found"},404);
+  let existing;
+  try{existing=JSON.parse(raw);}catch(error){return J({error:"draft_record_corrupt"},409);}
+  if(existing.status==="published")return J({error:"published_draft_is_immutable"},409);
+  const post=editorialFields({...body.post,day:existing.post.day});
+  const imagePrompt=String(body.imagePrompt||existing.imagePrompt||"").trim().slice(0,2048);
+  if(!post.title||post.title.length<8||post.title.length>160||!post.article||post.article.length<500||post.article.length>6000||!post.ideaOfTheDay||!post.ceoChallenge||!post.discussionQuestion||!post.hashtags||!imagePrompt){
+    return J({error:"draft_quality_check_failed",articleLength:post.article.length},400);
+  }
+  const hash=await contentHash(post);
+  const imageMetaRaw=await env.CEO_NOTES_KV.get("image-meta:"+post.day);
+  if(imageMetaRaw){
+    try{
+      const imageMeta=JSON.parse(imageMetaRaw);
+      if(imageMeta.contentHash!==hash){
+        await env.CEO_NOTES_KV.delete("image:"+post.day);
+        await env.CEO_NOTES_KV.delete("image-meta:"+post.day);
+      }
+    }catch(error){
+      await env.CEO_NOTES_KV.delete("image:"+post.day);
+      await env.CEO_NOTES_KV.delete("image-meta:"+post.day);
+    }
+  }
+  const next={...existing,post,imagePrompt,contentHash:hash,updatedAt:new Date().toISOString(),status:"draft"};
+  await env.CEO_NOTES_KV.put(key,JSON.stringify(next));
+  return J({ok:true,draft:next,contentHash:hash,imageUrl:null});
+}
 async function generatePost(env){
   if(!env.AI||typeof env.AI.run!=="function")return J({error:"ai_binding_unavailable"},503);
   const date=cairoDate();
@@ -780,8 +826,146 @@ function validPlatformPermalink(platform,value){
     return false;
   }catch(error){return false;}
 }
+const ADMIN_HTML = \`<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>لوحة CEO Notes</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#101114;color:#f4f1e9}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#24201a,#101114 55%);min-height:100vh}
+main{max-width:1050px;margin:auto;padding:24px 16px 64px}header{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:22px}
+h1{font-size:25px;margin:0;color:#e7c987}p{color:#c8c4bb;line-height:1.7}.muted{color:#99958d;font-size:13px}
+.card{background:#1b1c20;border:1px solid #39352c;border-radius:16px;padding:18px;margin:14px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label{display:block;font-size:13px;color:#d9c9a6;margin:10px 0 6px}
+input,textarea{width:100%;background:#111216;border:1px solid #47433a;border-radius:9px;padding:11px;color:#f5f2eb;font:inherit}
+textarea{min-height:110px;resize:vertical}button{border:0;border-radius:9px;padding:11px 16px;margin:5px 4px 5px 0;background:#b9934d;color:#17130c;font-weight:700;cursor:pointer}
+button.secondary{background:#34343a;color:#eee}button.danger{background:#7d3636;color:white}button:disabled{opacity:.45;cursor:not-allowed}
+#status{white-space:pre-wrap;padding:12px;border-radius:9px;background:#121318;color:#cfc7b5;min-height:42px}
+#image{max-width:100%;max-height:380px;display:none;border-radius:12px;margin-top:12px}
+.actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.post-list{display:grid;gap:8px}.post-item{background:#131419;border:1px solid #333;padding:10px;border-radius:9px}
+@media(max-width:700px){.grid{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body><main>
+<header><div><h1>CEO Notes | لوحة التحرير والنشر</h1><p class="muted">مساحة خاصة للمراجعة والاعتماد والنشر. لا يتم النشر تلقائيًا دون موافقتك.</p></div><span class="muted">توقيت القاهرة · 19:30</span></header>
+<section class="card">
+  <div class="actions"><button id="load">تحديث البيانات</button><button id="generate">إنشاء مسودة اليوم</button><button class="secondary" id="save">حفظ التعديلات</button><button class="secondary" id="makeImage">إنشاء الصورة</button><button class="secondary" id="publishFeed">حفظ في موقع CEO Notes</button></div>
+  <div class="grid">
+    <div><label for="day">رقم اليوم</label><input id="day" type="number" min="1" readonly></div>
+    <div><label for="date">تاريخ التحرير (القاهرة)</label><input id="date" type="text" readonly></div>
+  </div>
+  <label for="title">العنوان</label><input id="title" maxlength="160">
+  <label for="article">المقال</label><textarea id="article" maxlength="6000" style="min-height:260px"></textarea>
+  <div class="grid">
+    <div><label for="idea">فكرة اليوم</label><textarea id="idea"></textarea></div>
+    <div><label for="challenge">تحدي CEO</label><textarea id="challenge"></textarea></div>
+  </div>
+  <label for="question">سؤال النقاش</label><textarea id="question"></textarea>
+  <label for="hashtags">الهاشتاجات</label><input id="hashtags">
+  <label for="prompt">وصف الصورة</label><textarea id="prompt"></textarea>
+  <img id="image" alt="معاينة صورة CEO Notes">
+</section>
+<section class="card">
+  <h2>اعتماد ونشر الشبكات الاجتماعية</h2>
+  <p class="muted">كل قناة مستقلة. الاعتماد مرتبط ببصمة المحتوى الحالية، وأي تعديل يبطل الاعتماد السابق.</p>
+  <label for="scheduled">موعد النشر المجدول (اختياري، بتوقيت القاهرة)</label><input id="scheduled" type="datetime-local">
+  <div class="actions">
+    <button id="approveFb">اعتماد Facebook</button><button class="secondary" id="publishFb">نشر Facebook الآن</button>
+    <button id="approveIg">اعتماد Instagram</button><button class="secondary" id="publishIg">نشر Instagram الآن</button>
+  </div>
+  <p class="muted">عند تحديد موعد مستقبلي، يلزم تفعيل الجدولة الإنتاجية بعد اختبار النشر الأول وموافقة منفصلة.</p>
+</section>
+<section class="card"><h2>آخر المنشورات المحفوظة</h2><div id="posts" class="post-list"></div></section>
+<div id="status" role="status" aria-live="polite">جارٍ تحميل المسودة...</div>
+</main>
+<script>
+(function(){
+"use strict";
+var state={date:"",draft:null,post:null,contentHash:"",imageUrl:""};
+var el=function(id){return document.getElementById(id)};
+var status=function(message){el("status").textContent=String(message||"")};
+var api=async function(path,body){
+  var response=await fetch(path,{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})});
+  var data={};try{data=await response.json()}catch(e){}
+  if(!response.ok)throw new Error(data.error||("HTTP "+response.status));
+  return data;
+};
+var cairoDate=function(){
+  var p=new Intl.DateTimeFormat("en-CA",{timeZone:"Africa/Cairo",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
+  var v={};p.forEach(function(x){v[x.type]=x.value});return v.year+"-"+v.month+"-"+v.day;
+};
+var cairoIso=function(value){
+  if(!value)return null;
+  var parts=value.split("T"),d=parts[0].split("-").map(Number),t=parts[1].split(":").map(Number);
+  var guess=Date.UTC(d[0],d[1]-1,d[2],t[0],t[1]);
+  var fmt=new Intl.DateTimeFormat("en-US",{timeZone:"Africa/Cairo",timeZoneName:"longOffset"});
+  var offset=fmt.formatToParts(new Date(guess)).find(function(x){return x.type==="timeZoneName"}).value;
+  var match=/GMT([+-])(\d{2}):?(\d{2})/.exec(offset);
+  if(!match)throw new Error("تعذر تحديد توقيت القاهرة");
+  var minutes=(Number(match[2])*60+Number(match[3]))*(match[1]==="-"?-1:1);
+  return new Date(guess-minutes*60000).toISOString();
+};
+var readForm=function(){
+  return {day:Number(el("day").value),title:el("title").value,article:el("article").value,ideaOfTheDay:el("idea").value,ceoChallenge:el("challenge").value,discussionQuestion:el("question").value,hashtags:el("hashtags").value};
+};
+var showDraft=function(draft){
+  state.draft=draft;state.post=draft.post;state.contentHash=draft.contentHash;state.date=draft.date;
+  el("date").value=draft.date;el("day").value=draft.post.day;el("title").value=draft.post.title||"";
+  el("article").value=draft.post.article||"";el("idea").value=draft.post.ideaOfTheDay||"";
+  el("challenge").value=draft.post.ceoChallenge||"";el("question").value=draft.post.discussionQuestion||"";
+  el("hashtags").value=draft.post.hashtags||"";el("prompt").value=draft.imagePrompt||"";
+  state.imageUrl=draft.imageUrl||"";
+  if(state.imageUrl){el("image").src=state.imageUrl;el("image").style.display="block"}else{el("image").removeAttribute("src");el("image").style.display="none"}
+};
+var load=async function(){
+  state.date=cairoDate();el("date").value=state.date;
+  var data=await api("/api/draft/status",{date:state.date});
+  if(data.draft)showDraft(data.draft);
+  else{state.draft=null;state.post=null;state.contentHash="";el("day").value="";status("لا توجد مسودة لهذا اليوم. يمكنك إنشاء مسودة جديدة.")}
+  var feed=await fetch("/feed",{credentials:"same-origin"}).then(function(r){if(!r.ok)throw new Error("feed_unavailable");return r.json()});
+  var posts=(feed.posts||[]).slice(-8).reverse();el("posts").textContent="";
+  posts.forEach(function(p){var item=document.createElement("div");item.className="post-item";item.textContent="اليوم "+p.day+" · "+p.title+" · "+p.status;el("posts").appendChild(item)});
+};
+var save=async function(){
+  if(!state.draft)throw new Error("أنشئ مسودة أولًا");
+  var data=await api("/api/draft/update",{date:state.date,post:readForm(),imagePrompt:el("prompt").value});
+  showDraft(data.draft);status("تم حفظ التعديلات وتحديث بصمة المحتوى. إذا تغير المقال ستحتاج إلى إنشاء صورة جديدة وإعادة الاعتماد.");
+};
+var approve=async function(platform){
+  if(!state.post||!state.contentHash)throw new Error("لا توجد مسودة محفوظة");
+  var name=platform==="facebook"?"صفحة CEO على Facebook":"حساب CEO Notes على Instagram";
+  if(!window.confirm("اعتماد اليوم "+state.post.day+" على "+name+" للمحتوى الحالي؟"))return;
+  var scheduled=el("scheduled").value?cairoIso(el("scheduled").value):null;
+  var data=await api("/api/approval/approve",{day:state.post.day,platform:platform,identity:platform==="facebook"?"ceo-page":"ceo-notes",contentHash:state.contentHash,confirm:"APPROVE_CEO_NOTES_PUBLICATION",scheduledFor:scheduled});
+  status("تم تسجيل الاعتماد لـ"+name+(scheduled?" بموعد "+scheduled:" دون جدولة. النشر اليدوي متاح بعد ذلك."));
+};
+var publish=async function(platform){
+  if(!state.post||!state.contentHash)throw new Error("لا توجد مسودة محفوظة");
+  var name=platform==="facebook"?"Facebook":"Instagram";
+  if(!window.confirm("تنفيذ نشر عام الآن على "+name+" لليوم "+state.post.day+"؟"))return;
+  var data=await api("/api/social/publish",{day:state.post.day,platform:platform,identity:platform==="facebook"?"ceo-page":"ceo-notes",contentHash:state.contentHash});
+  status("تم النشر والتحقق: "+data.permalink);
+};
+var run=async function(action){
+  try{status("جارٍ التنفيذ...");await action()}catch(error){status("تعذر التنفيذ: "+error.message)}
+};
+el("load").addEventListener("click",function(){run(load)});
+el("generate").addEventListener("click",function(){run(async function(){var d=await api("/api/generate",{});showDraft({date:d.date,post:d.post,imagePrompt:d.imagePrompt,contentHash:d.contentHash});status("تم إنشاء المسودة. راجعها وعدّلها قبل إنشاء الصورة أو حفظها في الموقع.")})});
+el("save").addEventListener("click",function(){run(save)});
+el("makeImage").addEventListener("click",function(){run(async function(){await save();var d=await api("/api/image",{date:state.date,post:readForm(),imagePrompt:el("prompt").value});state.imageUrl=d.imageUrl;el("image").src=d.imageUrl;el("image").style.display="block";status("تم إنشاء الصورة وربطها ببصمة المحتوى الحالية.")})});
+el("publishFeed").addEventListener("click",function(){run(async function(){await save();var d=await api("/api/publish",{date:state.date,post:readForm()});status(d.alreadyPublished?"المقال موجود بالفعل في الموقع.":"تم حفظ المقال في موقع CEO Notes. لم يتم نشره اجتماعيًا.")})});
+el("approveFb").addEventListener("click",function(){run(function(){return approve("facebook")})});
+el("approveIg").addEventListener("click",function(){run(function(){return approve("instagram")})});
+el("publishFb").addEventListener("click",function(){run(function(){return publish("facebook")})});
+el("publishIg").addEventListener("click",function(){run(function(){return publish("instagram")})});
+run(load);
+})();
+</script></body></html>\`;
 export default {
-  async fetch(req,env){
+  async fetch(req,env,ctx){
     const url=new URL(req.url);
     if(req.method==="OPTIONS"){
       return new Response(null,{status:204,headers:{
@@ -790,9 +974,15 @@ export default {
         "Access-Control-Allow-Headers":"Content-Type, Authorization"
       }});
     }
+    if((url.pathname==="/admin"||url.pathname==="/admin/")&&req.method==="GET"){
+      let identity=null;
+      try{identity=ctx?.access?.getIdentity?await ctx.access.getIdentity():null;}catch(error){}
+      if(!identity)return J({error:"access_authentication_required"},401);
+      return new Response(ADMIN_HTML,{headers:{"content-type":"text/html; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff","referrer-policy":"no-referrer","content-security-policy":"default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"}});
+    }
     if(url.pathname.startsWith("/api/")){
       if(req.method!=="POST")return J({error:"method_not_allowed"},405);
-      if(!authorized(req,env))return J({error:"unauthorized"},401);
+      if(!await authorized(req,env,ctx))return J({error:"unauthorized"},401);
     }
     if(url.pathname==="/health"&&req.method==="GET"){
       const health={ok:true,service:"CEO Notes AI Publisher",kvConfigured:!!env.CEO_NOTES_KV,aiConfigured:!!env.AI,outboxCoordinatorConfigured:!!env.OUTBOX_COORDINATOR,outboxCoordinatorReady:false};
@@ -816,6 +1006,8 @@ export default {
         return new Response(binary,{headers:{"content-type":"image/jpeg","cache-control":"public, max-age=31536000","Access-Control-Allow-Origin":"*"}});
       }
       if(req.method==="POST"&&url.pathname==="/api/backup/restore")return await restoreBackup(req,env);
+      if(req.method==="POST"&&url.pathname==="/api/draft/status")return await handleDraftStatus(req,env);
+      if(req.method==="POST"&&url.pathname==="/api/draft/update")return await handleDraftUpdate(req,env);
       if(req.method==="POST"&&url.pathname==="/api/approval/approve")return await handleApproval(req,env,"approve");
       if(req.method==="POST"&&url.pathname==="/api/approval/status")return await handleApproval(req,env,"approval-status");
       if(req.method==="POST"&&url.pathname==="/api/social/publish")return await publishSocialPostCore(env,await req.json());
