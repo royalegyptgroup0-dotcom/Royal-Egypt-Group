@@ -468,6 +468,23 @@ test("feed tampering that preserves a stale contentHash invalidates approval and
   assert.equal(env.coordinatorValues.has("outbox:facebook:ceo-page:1"), false);
 });
 
+test("scheduled owner approval rejects any time other than 19:30 Africa/Cairo", async () => {
+  const env = makeEnv();
+  const { generated } = await createPublishedPost(env);
+  const response = await call("/api/approval/approve", {
+    method: "POST", headers: auth,
+    body: {
+      day: 1, platform: "facebook", identity: "ceo-page",
+      contentHash: generated.contentHash,
+      confirm: "APPROVE_CEO_NOTES_PUBLICATION",
+      scheduledFor: "2026-11-16T16:30:00.000Z"
+    }
+  }, env);
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).error, "scheduled_for_must_be_1930_cairo");
+  assert.equal(env.coordinatorValues.has("approval:facebook:ceo-page:1"), false);
+});
+
 test("production scheduler publishes only an approved due post at 19:30 Cairo time", async () => {
   const env = makeEnv();
   env.PUBLISHING_ENABLED = "true";
