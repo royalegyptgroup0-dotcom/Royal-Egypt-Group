@@ -397,6 +397,33 @@ test("Instagram publishing requires the pinned professional account to be linked
   assert.equal(env.coordinatorValues.has("outbox:instagram:ceo-notes:1"), false);
 });
 
+test("Meta verification endpoint reports missing app credentials without exposing tokens or creating an outbox record", async () => {
+  const env = makeEnv();
+  delete env.META_APP_ID;
+  const response = await call("/api/meta/verify", { method: "POST", headers: auth, body: {} }, env);
+  assert.equal(response.status, 409);
+  const data = await response.json();
+  assert.equal(data.ok, false);
+  assert.equal(data.facebook.error, "meta_app_credentials_unavailable");
+  assert.equal(data.instagram.error, "meta_app_credentials_unavailable");
+  assert.equal(JSON.stringify(data).includes("test-only-"), false);
+  assert.equal(env.coordinatorValues.size, 0);
+});
+
+test("native publishing requires Meta App ID before reserving an attempt", async () => {
+  const env = makeEnv();
+  const { generated } = await createPublishedPost(env);
+  await approvePost(env, generated, "facebook");
+  delete env.META_APP_ID;
+  const response = await call("/api/social/publish", {
+    method: "POST", headers: auth,
+    body: { day: 1, platform: "facebook", identity: "ceo-page", contentHash: generated.contentHash }
+  }, env);
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).error, "meta_app_credentials_unavailable");
+  assert.equal(env.coordinatorValues.has("outbox:facebook:ceo-page:1"), false);
+});
+
 test("native publishing requires the Meta App Secret for appsecret_proof before reserving an attempt", async () => {
   const env = makeEnv();
   const { generated } = await createPublishedPost(env);
