@@ -659,6 +659,33 @@ test("feed publication is idempotent and refuses conflicting content for an exis
 });
 
 
+test("feed publication time is distinct from image generation time", async () => {
+  const env = makeEnv();
+  const generatedResponse = await call("/api/generate", { method: "POST", headers: auth, body: {} }, env);
+  assert.equal(generatedResponse.status, 200);
+  const generated = await generatedResponse.json();
+  const imageResponse = await call("/api/image", {
+    method: "POST", headers: auth,
+    body: { date: generated.date, post: generated.post, imagePrompt: generated.imagePrompt }
+  }, env);
+  assert.equal(imageResponse.status, 200);
+  const image = await imageResponse.json();
+  assert.equal(image.post.publishedAt, undefined);
+  assert.ok(image.post.imageGeneratedAt);
+  const metadata = JSON.parse(await env.CEO_NOTES_KV.get("image-meta:1"));
+  metadata.generatedAt = "2026-11-01T00:00:00.000Z";
+  await env.CEO_NOTES_KV.put("image-meta:1", JSON.stringify(metadata));
+  const publishResponse = await call("/api/publish", {
+    method: "POST", headers: auth,
+    body: { date: generated.date, post: image.post }
+  }, env);
+  assert.equal(publishResponse.status, 200);
+  const feed = JSON.parse(await env.CEO_NOTES_KV.get("feed"));
+  assert.equal(feed.posts[0].imageGeneratedAt, metadata.generatedAt);
+  assert.notEqual(feed.posts[0].publishedAt, metadata.generatedAt);
+  assert.ok(Date.parse(feed.posts[0].publishedAt) > Date.parse(metadata.generatedAt));
+});
+
 test("preview public image URLs use the configured preview Worker origin", async () => {
   const env = makeEnv();
   env.PUBLIC_BASE = "https://ceo-notes-ai-preview.example.workers.dev";
