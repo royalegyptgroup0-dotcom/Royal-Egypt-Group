@@ -203,7 +203,8 @@ async function restoreBackup(req,env){
     const current=await env.CEO_NOTES_KV.get(key);
     if(current!==null&&current!==value)return J({error:"preview_target_conflict",key},409);
   }
-  for(const [day,records] of byDay){
+  for(const dayValue of manifest.postDays){
+    const day=Number(dayValue),records=byDay.get(day)||[];
     const coordinator=env.OUTBOX_COORDINATOR.get(env.OUTBOX_COORDINATOR.idFromName("ceo-notes-day:"+day));
     const response=await coordinator.fetch("https://outbox-coordinator/restore",{
       method:"POST",
@@ -416,6 +417,13 @@ export class CEOOutboxCoordinator {
         const existing=storage.get(key)||null;
         if(existing&&JSON.stringify(existing)!==JSON.stringify(value))return J({error:"restore_record_conflict",key},409);
         validated.push({key,value,existing});
+      }
+      const incoming=new Map(validated.map(item=>[item.key,item.value]));
+      for(const [existingKey,existingValue] of storage.list({prefix:"outbox:"})){
+        if(!incoming.has(existingKey)||JSON.stringify(existingValue)!==JSON.stringify(incoming.get(existingKey)))return J({error:"restore_target_not_empty",key:existingKey},409);
+      }
+      for(const [lockKey,lockValue] of storage.list({prefix:"editorial-lock:"})){
+        if(Number(lockValue?.expiresAt)>Date.now())return J({error:"editorial_operation_in_progress",key:lockKey},409);
       }
       for(const item of validated)if(!item.existing)storage.put(item.key,item.value);
       return J({ok:true,restored:validated.filter(item=>!item.existing).length,alreadyPresent:validated.filter(item=>item.existing).length});
