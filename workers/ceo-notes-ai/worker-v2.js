@@ -268,8 +268,9 @@ async function validateOutboxContext(env,body){
   const feed=await getFeed(env);
   const post=(feed.posts||[]).find(item=>Number(item.day)===day&&item.status==="Published");
   if(!post)return {error:J({error:"published_post_not_found"},404)};
-  const savedHash=String(post.contentHash||await contentHash(post));
-  if(savedHash!==hash)return {error:J({error:"content_hash_mismatch"},409)};
+  const computedHash=await contentHash(post);
+  const savedHash=String(post.contentHash||computedHash);
+  if(savedHash!==computedHash||computedHash!==hash)return {error:J({error:"content_hash_mismatch"},409)};
   return {day,platform,identity,hash,targetId,key:outboxKey(platform,identity,day)};
 }
 async function withEditorialLock(env,date,work){
@@ -613,8 +614,10 @@ async function publishPost(req,env){
   const posts=Array.isArray(feed.posts)?feed.posts:[];
   const existing=posts.find(item=>Number(item.day)===day);
   if(existing){
-    const existingHash=String(existing.contentHash||await contentHash(existing));
-    if(existingHash!==hash)return J({error:"day_content_conflict",day},409);
+    const computedExistingHash=await contentHash(existing);
+    const existingHash=String(existing.contentHash||computedExistingHash);
+    if(existingHash!==computedExistingHash)return J({error:"existing_feed_content_hash_invalid",day},409);
+    if(computedExistingHash!==hash)return J({error:"day_content_conflict",day},409);
     return J({ok:true,alreadyPublished:true,day,post:existing,imageUrl:existing.imageUrl||publicBase(env)+"/image/"+day,contentHash:hash});
   }
   const published={...draft.post,status:"Published",publishedAt:String(post.publishedAt||new Date().toISOString()),imageUrl:publicBase(env)+"/image/"+day,contentHash:hash};
