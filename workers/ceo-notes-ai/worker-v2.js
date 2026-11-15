@@ -209,15 +209,26 @@ async function restoreBackup(req,env){
     const current=await env.CEO_NOTES_KV.get(key);
     if(current!==null&&current!==value)return J({error:"preview_target_conflict",key},409);
   }
+  const coordinatorCalls=[];
   for(const dayValue of manifest.postDays){
     const day=Number(dayValue),records=byDay.get(day)||[];
     const coordinator=env.OUTBOX_COORDINATOR.get(env.OUTBOX_COORDINATOR.idFromName("ceo-notes-day:"+day));
-    const response=await coordinator.fetch("https://outbox-coordinator/restore",{
+    const payload=JSON.stringify({records});
+    const validation=await coordinator.fetch("https://outbox-coordinator/validate-restore",{
       method:"POST",
       headers:{"content-type":"application/json"},
-      body:JSON.stringify({records})
+      body:payload
     });
-    if(!response.ok)return J({error:"coordinator_restore_failed",day,status:response.status},409);
+    if(!validation.ok)return J({error:"coordinator_restore_preflight_failed",day,status:validation.status},409);
+    coordinatorCalls.push({coordinator,payload,day});
+  }
+  for(const item of coordinatorCalls){
+    const response=await item.coordinator.fetch("https://outbox-coordinator/restore",{
+      method:"POST",
+      headers:{"content-type":"application/json"},
+      body:item.payload
+    });
+    if(!response.ok)return J({error:"coordinator_restore_failed",day:item.day,status:response.status},409);
   }
   for(const [key,value] of entries)await env.CEO_NOTES_KV.put(key,value);
   return J({
@@ -411,7 +422,7 @@ export class CEOOutboxCoordinator {
     if(request.method!=="POST")return J({error:"method_not_allowed"},405);
     let body;
     try{body=await request.json();}catch(error){return J({error:"invalid_json"},400);}
-    if(action==="restore"){
+    if(action==="restore"||action==="validate-restore"){
       if(!Array.isArray(body.records)||body.records.length>1000)return J({error:"invalid_restore_records"},400);
       const validated=[],allowedStatuses=new Set(["reserved","attempting","unknown","receipt_recorded","succeeded"]);
       for(const record of body.records){
@@ -431,6 +442,7 @@ export class CEOOutboxCoordinator {
       for(const [lockKey,lockValue] of storage.list({prefix:"editorial-lock:"})){
         if(Number(lockValue?.expiresAt)>Date.now())return J({error:"editorial_operation_in_progress",key:lockKey},409);
       }
+      if(action==="validate-restore")return J({ok:true,ready:true,records:validated.length,alreadyPresent:validated.filter(item=>item.existing).length});
       for(const item of validated)if(!item.existing)storage.put(item.key,item.value);
       return J({ok:true,restored:validated.filter(item=>!item.existing).length,alreadyPresent:validated.filter(item=>item.existing).length});
     }
