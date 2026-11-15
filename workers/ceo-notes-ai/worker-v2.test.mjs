@@ -288,6 +288,25 @@ test("outbox reserves, starts and stores an independently verifiable receipt", a
   assert.equal(stored.permalink, "https://www.facebook.com/123_456");
 });
 
+test("Instagram verification reads back the media owner and permalink from Meta", async () => {
+  const env = makeEnv();
+  const { generated } = await createPublishedPost(env);
+  const base = { day: generated.post.day, platform: "instagram", identity: "ceo-notes", contentHash: generated.contentHash };
+  await call("/api/outbox/reserve", { method: "POST", headers: auth, body: base }, env);
+  await call("/api/outbox/start", { method: "POST", headers: auth, body: base }, env);
+  await call("/api/outbox/receipt", {
+    method: "POST", headers: auth,
+    body: { ...base, postId: "17912345678901234", permalink: "https://www.instagram.com/p/AbC123/" }
+  }, env);
+  const response = await withMetaReadBack({
+    id: "17912345678901234", owner: { id: "17841402949410977" },
+    permalink: "https://www.instagram.com/p/AbC123/", timestamp: "2026-11-15T17:30:00+0000"
+  }, () => call("/api/outbox/verify", { method: "POST", headers: auth, body: base }, env));
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).status, "succeeded");
+  assert.equal(env.coordinatorValues.get("outbox:instagram:ceo-notes:1").verifiedTargetId, "17841402949410977");
+});
+
 test("Meta verification fails closed when the Worker secret is missing", async () => {
   const env = makeEnv();
   const { generated } = await createPublishedPost(env);
