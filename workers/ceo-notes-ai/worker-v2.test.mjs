@@ -280,6 +280,31 @@ test("feed tampering that preserves a stale contentHash invalidates approval and
   assert.equal(env.coordinatorValues.has("outbox:facebook:ceo-page:1"), false);
 });
 
+test("production scheduler publishes only an approved due post at 19:30 Cairo time", async () => {
+  const env = makeEnv();
+  env.PUBLISHING_ENABLED = "true";
+  const { generated } = await createPublishedPost(env);
+  const scheduledTime = "2026-11-16T17:30:00.000Z";
+  await approvePost(env, generated, "facebook", scheduledTime);
+  const originalNow = Date.now;
+  Date.now = () => Date.parse(scheduledTime);
+  try {
+    const pending = [];
+    const { requests } = await withMetaPublish("facebook", async () => {
+      await worker.scheduled(
+        { cron: "*/15 * * * *", scheduledTime },
+        env,
+        { waitUntil(promise) { pending.push(promise); } }
+      );
+      await Promise.all(pending);
+    });
+    assert.equal(requests.length, 2);
+    assert.equal(env.coordinatorValues.get("outbox:facebook:ceo-page:1").status, "succeeded");
+  } finally {
+    Date.now = originalNow;
+  }
+});
+
 test("scheduled publishing is disabled in Preview even when a flag is accidentally present", async () => {
   const env = makeEnv({ previewMode: true });
   env.PUBLISHING_ENABLED = "true";
