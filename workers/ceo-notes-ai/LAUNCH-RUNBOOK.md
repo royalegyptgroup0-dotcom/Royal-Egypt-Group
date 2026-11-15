@@ -111,7 +111,7 @@ The isolated `ceo-notes-ai-preview` Worker is deployed with the tested v2 source
 - No AI binding, no Cron Trigger, no Meta credentials and no `ADMIN_TOKEN`.
 - New `/admin` dashboard route checks `ctx.access`; all API routes accept Access identity or Bearer auth. The account's Cloudflare Access feature is not enabled yet, so the dashboard remains intentionally inaccessible until the owner enables Access and owner-only path policies are created.
 
-Do not confuse a Cloudflare Pages Preview URL with a deployed Worker runtime. The Worker itself is deployed. GitHub Actions run `43709104478` passed the live HTTP smoke test: `/health` returned 200 with KV and Durable Object ready, AI remained disabled, the unauthenticated publishing API was rejected, and `/admin` remained inaccessible without Access.
+Do not confuse a Cloudflare Pages Preview URL with a deployed Worker runtime. The Worker itself is deployed. GitHub Actions run `43709190369` passed the live HTTP smoke test: `/health` returned 200 with KV and Durable Object ready, AI remained disabled, the unauthenticated publishing API was rejected, and `/admin` remained inaccessible without Access.
 
 ## 7. Release gates
 
