@@ -73,7 +73,7 @@ function makeEnv({ posts = [], adminToken = token, previewMode = false, seedKV =
       return { fetch(input, init) { return coordinatorObject.fetch(input instanceof Request ? input : new Request(input, init)); } };
     }
   };
-  return { ADMIN_TOKEN: adminToken, META_APP_SECRET: "test-only-meta-app-secret-123456789", META_FACEBOOK_PAGE_ACCESS_TOKEN: "test-only-facebook-token-123456789", META_INSTAGRAM_ACCESS_TOKEN: "test-only-instagram-token-123456789", PREVIEW_MODE: previewMode ? "true" : undefined, CEO_NOTES_KV: kv, AI: ai, OUTBOX_COORDINATOR: coordinatorNamespace, coordinatorValues, calls };
+  return { ADMIN_TOKEN: adminToken, META_APP_ID: "test-meta-app-id", META_APP_SECRET: "test-only-meta-app-secret-123456789", META_FACEBOOK_PAGE_ACCESS_TOKEN: "test-only-facebook-token-123456789", META_INSTAGRAM_ACCESS_TOKEN: "test-only-instagram-token-123456789", PREVIEW_MODE: previewMode ? "true" : undefined, CEO_NOTES_KV: kv, AI: ai, OUTBOX_COORDINATOR: coordinatorNamespace, coordinatorValues, calls };
 }
 
 async function call(path, { method = "GET", headers = {}, body } = {}, env = makeEnv()) {
@@ -101,26 +101,44 @@ async function withMetaReadBack(data, work, platform = "facebook") {
   finally { globalThis.fetch = originalFetch; }
 }
 
-async function withMetaPublish(platform, work) {
+async function withMetaPublish(platform, work, mode = "success") {
   const originalFetch = globalThis.fetch;
   const requests = [];
   globalThis.fetch = async (input, init = {}) => {
     const url = new URL(input);
-    requests.push({ method: init.method || "GET", path: url.pathname, body: init.body });
+    const method = init.method || "GET";
+    requests.push({ method, path: url.pathname, body: init.body });
     assert.equal(url.hostname, "graph.facebook.com");
     const expectedToken = platform === "facebook" ? "test-only-facebook-token-123456789" : "test-only-instagram-token-123456789";
-    const token = init.method === "POST" ? init.body.get("access_token") : url.searchParams.get("access_token");
-    const proof = init.method === "POST" ? init.body.get("appsecret_proof") : url.searchParams.get("appsecret_proof");
+    if (url.pathname.endsWith("/debug_token")) {
+      assert.equal(url.searchParams.get("input_token"), expectedToken);
+      assert.equal(url.searchParams.get("access_token"), "test-meta-app-id|test-only-meta-app-secret-123456789");
+      const scopes = platform === "facebook"
+        ? ["pages_manage_posts", "pages_read_engagement"]
+        : ["instagram_basic", "instagram_content_publish", "pages_show_list", "pages_read_engagement"];
+      return new Response(JSON.stringify({ data: {
+        is_valid: true, app_id: "test-meta-app-id",
+        expires_at: Math.floor(Date.now()/1000)+90*86400,
+        data_access_expires_at: Math.floor(Date.now()/1000)+90*86400,
+        scopes
+      }}), { status: 200 });
+    }
+    const token = method === "POST" ? init.body.get("access_token") : url.searchParams.get("access_token");
+    const proof = method === "POST" ? init.body.get("appsecret_proof") : url.searchParams.get("appsecret_proof");
     assert.equal(token, expectedToken);
     assert.match(proof || "", /^[a-f0-9]{64}$/);
     assert.equal(init.headers?.Authorization, undefined);
     if (platform === "facebook") {
-      if (init.method === "POST" && url.pathname.endsWith("/115226621594988/photos")) {
+      if (method === "GET" && url.pathname.endsWith("/115226621594988") && url.searchParams.get("fields")?.includes("instagram_business_account")) {
+        return new Response(JSON.stringify({ id: "115226621594988", name: "CEO", instagram_business_account: { id: "17841402949410977" } }), { status: 200 });
+      }
+      if (method === "POST" && url.pathname.endsWith("/115226621594988/photos")) {
         assert.equal(init.body.get("published"), "true");
         assert.ok(init.body.get("caption").includes("#CEO_Notes"));
         return new Response(JSON.stringify({ id: "photo-123", post_id: "115226621594988_123456" }), { status: 200 });
       }
-      if ((init.method || "GET") === "GET" && url.pathname.endsWith("/115226621594988_123456")) {
+      if (method === "GET" && url.pathname.endsWith("/115226621594988_123456")) {
+        if (mode === "readback-fail") return new Response(JSON.stringify({ error: { code: 190 } }), { status: 401 });
         return new Response(JSON.stringify({
           id: "115226621594988_123456",
           from: { id: "115226621594988" },
@@ -129,18 +147,22 @@ async function withMetaPublish(platform, work) {
         }), { status: 200 });
       }
     } else {
-      if (init.method === "POST" && url.pathname.endsWith("/17841402949410977/media")) {
+      if (method === "GET" && url.pathname.endsWith("/17841402949410977") && url.searchParams.get("fields")?.includes("username")) {
+        return new Response(JSON.stringify({ id: "17841402949410977", username: "kiritoon" }), { status: 200 });
+      }
+      if (method === "POST" && url.pathname.endsWith("/17841402949410977/media")) {
+        if (mode === "publish-fail") return new Response(JSON.stringify({ error: { code: 190 } }), { status: 401 });
         assert.ok(init.body.get("image_url").includes("/image/1"));
         return new Response(JSON.stringify({ id: "ig-container-1" }), { status: 200 });
       }
-      if ((init.method || "GET") === "GET" && url.pathname.endsWith("/ig-container-1")) {
+      if (method === "GET" && url.pathname.endsWith("/ig-container-1")) {
         return new Response(JSON.stringify({ status_code: "FINISHED" }), { status: 200 });
       }
-      if (init.method === "POST" && url.pathname.endsWith("/17841402949410977/media_publish")) {
+      if (method === "POST" && url.pathname.endsWith("/17841402949410977/media_publish")) {
         assert.equal(init.body.get("creation_id"), "ig-container-1");
         return new Response(JSON.stringify({ id: "17912345678901234" }), { status: 200 });
       }
-      if ((init.method || "GET") === "GET" && url.pathname.endsWith("/17912345678901234")) {
+      if (method === "GET" && url.pathname.endsWith("/17912345678901234")) {
         return new Response(JSON.stringify({
           id: "17912345678901234",
           owner: { id: "17841402949410977" },
@@ -149,7 +171,7 @@ async function withMetaPublish(platform, work) {
         }), { status: 200 });
       }
     }
-    throw new Error("Unexpected Meta API request: " + (init.method || "GET") + " " + url.pathname);
+    throw new Error("Unexpected Meta API request: " + method + " " + url.pathname);
   };
   try { return { result: await work(), requests }; }
   finally { globalThis.fetch = originalFetch; }
