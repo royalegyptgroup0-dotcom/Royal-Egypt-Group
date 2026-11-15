@@ -1,6 +1,6 @@
 # CEO Notes Official Launch Runbook
 
-**Status:** STAGED IMPLEMENTATION — LIVE SOCIAL PUBLISHING NOT YET AUTHORIZED
+**Status:** STAGED IMPLEMENTATION — CONTROLLED PUBLICATION REQUESTED; PER-TARGET AUTH, CONTENT AND RECEIPT GATES REMAIN OPEN
 
 - Website: https://ceo-notes.pages.dev
 - Pages project: `ceo-notes`
@@ -8,26 +8,33 @@
 - Isolated Preview Worker: `ceo-notes-ai-preview`
 - Legacy Make publisher scenario: `8438190` (must remain paused)
 
-## 1. Project and identity boundary
+## 1. Project and identity boundaries
 
-CEO Notes is an independent editorial project. It is not Royal Egypt Group corporate publishing and must never publish to Royal Egypt Properties destinations.
+CEO Notes remains an independent editorial identity. A destination receiving a distinct adaptation does not become part of CEO Notes. Corporate channels must never receive a verbatim CEO Notes article or personal leadership commentary.
 
-| Channel | Pinned identity | ID |
-|---|---|---|
-| Facebook | CEO Page | `115226621594988` |
-| Instagram | CEO Notes / @kiritoon | `17841402949410977` |
+| Sequence | Channel | Pinned identity | ID | Content boundary | PR82 implementation |
+|---:|---|---|---|---|---|
+| 1 | Facebook | CEO Page | `115226621594988` | CEO Notes editorial copy | Supported |
+| 2 | Facebook | Royal Egypt Properties Page | `101823889330644` | Separate property-audience adaptation only; independent approval, content hash, outbox and receipt | Not implemented |
+| 3 | Instagram | CEO Notes / @kiritoon | `17841402949410977` | CEO Notes editorial copy | Supported |
+| 4 | LinkedIn member | Owner's personal profile | URL recorded in PR #54; not independently verified | CEO Notes-native adaptation only | Not implemented; OAuth and scopes absent |
+| 5 | LinkedIn Company Page | Royal Egypt Group Company Page | Public URL and organization URN not verified | Royal Egypt Group corporate copy based only on verified facts; never CEO Notes articles | Not implemented; role and scopes absent |
 
-Never route CEO Notes content to Royal Egypt Properties, Royal Egypt Group LinkedIn Company Page, or any other corporate identity. LinkedIn personal-profile publishing is a separate project and is not authorized here.
+The two Facebook destinations must remain in this order: CEO Page first, Royal Egypt Properties second. Royal Egypt Properties requires its own audience-specific wording; it is not a blind or verbatim cross-post. Do not add the Royal Egypt Properties Instagram account as a CEO Notes destination. Do not use any additional LinkedIn Page without an exact verified URL/URN and an authorized account.
 
-Keep existing Make connections intact while all Make publisher scenarios remain paused. Do not copy Make credentials into Cloudflare. Do not delete Make scenarios until the native system has passed acceptance and the owner separately authorizes retirement.
+**Current Make discrepancy:** scenario `8438190` currently contains only the CEO Facebook module; the former Royal Egypt Properties module and combined receipt module are absent. The surviving scenario note says they were disabled, but the exact audience copy, filters and mappings were not preserved in the current blueprint or retrieved run history. Do not recreate that wording or mapping from guesswork. Recover the original module configuration from Make history or an owner-provided export before implementing the REP route.
 
-## 2. Selected zero-new-service runtime
+Keep the CEO Notes personal LinkedIn and Royal Egypt Group Company Page tracks separate. They require independent credentials, content, approvals, outboxes and receipts. Keep existing Make connections intact while publisher scenarios remain paused. Do not copy Make credentials into Cloudflare or delete Make scenarios until the replacement runtime passes acceptance and the owner separately authorizes retirement.
+
+## 2. Proposed zero-new-service runtime (staged; Production runtime decision pending)
 
 - Cloudflare Worker: orchestration and Meta API adapter.
 - SQLite-backed Durable Object: per-day locks, approvals and publication outbox.
 - Dedicated Cloudflare KV: editorial feed, drafts, images and backups.
 - Cloudflare Cron Triggers: backup and the guarded Cairo-time scheduler.
 - GitHub Actions: CI and validation only.
+
+The Cloudflare-native implementation in this PR is a staged proposal, not an approved Production runtime switch. The existing Make scenario remains paused. Do not activate Make, enable the native publishing Cron, merge this PR, deploy Production or retire Make until the owner accepts the runtime decision and every authorized target is implemented and independently verified.
 
 Activepieces and n8n are not part of the selected architecture. Their self-hosted editions still require a continuously available host and maintenance. No new paid service, paid plan, payment card, R2, paid image API, recurring charge or automatic plan upgrade is allowed.
 
@@ -149,3 +156,25 @@ Do not confuse a Cloudflare Pages Preview URL with a deployed Worker runtime. Th
 - Preserve the established Egyptian Arabic professional editorial fields: `title`, `article`, `ideaOfTheDay`, `ceoChallenge`, `discussionQuestion`, `hashtags`.
 - Do not publish DAY 28 or any other pending item without exact owner approval.
 - On any failed gate, keep Make publishers paused, keep publishing Cron absent, preserve feed/outbox/backups, and require authoritative reconciliation before another attempt.
+
+
+## 9. Current operations acceptance evidence (2026-11-15)
+
+### Verified
+- PR #82 is the current staged Draft against `ceo-notes-site`; it is not merged. PRs #77 and #81 were superseded and closed unmerged.
+- Worker CI run [43750692781](https://github.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/actions/runs/43750692781) passed. The PR records 46/46 isolated Worker tests and a successful Preview health/auth smoke check.
+- Live-site CI run [43750692856](https://github.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/actions/runs/43750692856) passed. It checked `/`, `/feed`, `/posts.json`, `/rss.xml`, `/sitemap.xml`, `/robots.txt`, `/markets`, `/post/27`, and existing JPEG media `/image/26` and `/image/27`.
+- Production feed currently contains 27 Published posts, DAY 1 through DAY 27, with unique day numbers and no duplicate days.
+- Production backup manifest for 2026-11-15 was created at 02:00:12 UTC. Its feed and both image checksums match; the restored feed is structurally identical to the live feed.
+- Preview Worker deployment `d3a788c2-d213-499f-a239-5812bcdf0052` has the isolated KV and SQLite Durable Object binding. Preview has no AI binding, no Cron and no secrets.
+
+### Failed or blocked
+- Production Worker still has only the legacy AI/KV bindings and backup Cron `0 2 * * *`; it has no Durable Object binding, `ADMIN_TOKEN` or Meta credentials.
+- Preview has no Cloudflare Access applications or owner identity policy. Access API inventory requests currently return 403. Preview has no `ADMIN_TOKEN`, Meta secrets or AI binding, so authenticated generation, image and Meta preflight were not run.
+- Make scenario `8438190` remains paused on its daily 19:30 schedule. Its HTTP modules use an authorized API-key connection, but the Worker secret list is empty. Module 2 still performs image generation with GET and eight query parameters; modules 1 and 4 still use legacy endpoints rather than the v2 `/api/*` contract. No protected route was called.
+- The current Make blueprint has no Royal Egypt Properties publisher or independent receipt route. The exact old module-5 audience wording and mapper were not preserved. PR82 supports only the CEO Facebook Page and CEO Notes Instagram account.
+- No LinkedIn publishing integration exists. PR #54 remains a draft plan. The personal profile URL is not independently verified; the Company Page URL/organization URN and approved Page role are missing.
+- Production outbox/receipt state is not deployed. The production backup is manifest v1 and contains the feed and two images only; it does not contain image metadata, drafts or outbox records. Backup restore has passed isolated unit tests, but a live Preview restore rehearsal has not been run.
+- No new editorial item, image or social post was created during this run. No platform-specific post ID, permalink or durable publication receipt exists.
+
+See [CEO Notes target acceptance matrix](../../docs/CEO_NOTES_TARGET_ACCEPTANCE.md) for the per-target gate table.
