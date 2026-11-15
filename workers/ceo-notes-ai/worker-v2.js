@@ -903,7 +903,7 @@ var cairoIso=function(value){
   var guess=Date.UTC(d[0],d[1]-1,d[2],t[0],t[1]);
   var fmt=new Intl.DateTimeFormat("en-US",{timeZone:"Africa/Cairo",timeZoneName:"longOffset"});
   var offset=fmt.formatToParts(new Date(guess)).find(function(x){return x.type==="timeZoneName"}).value;
-  var match=/GMT([+-])(\d{2}):?(\d{2})/.exec(offset);
+  var match=/GMT([+-])(\\d{2}):?(\\d{2})/.exec(offset);
   if(!match)throw new Error("تعذر تحديد توقيت القاهرة");
   var minutes=(Number(match[2])*60+Number(match[3]))*(match[1]==="-"?-1:1);
   return new Date(guess-minutes*60000).toISOString();
