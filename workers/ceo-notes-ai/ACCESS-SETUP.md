@@ -33,10 +33,13 @@ Application B:
 - Type: `public` destination inside a `self_hosted` application.
 
 For each application, create one Allow policy:
-- Include: **Cloudflare account member**, scoped to the account containing this Worker.
-- Do not add Everyone, public, email-domain or service-token bypass rules.
+- Include only the single, verified owner email identity. Do not use a broad email-domain rule.
+- If using the Cloudflare account-member selector, verify that it admits only the intended owner; otherwise use the exact owner email selector.
+- Do not add Everyone, public or service-token bypass rules.
 - Use a 24-hour session or shorter.
 - Select the Cloudflare identity provider only.
+
+The Worker accepts a valid Cloudflare Access identity for protected API calls. The Access policy is therefore a security boundary: it must authorize only the owner, not every member of the Cloudflare account.
 
 Cloudflare documents that self-hosted Access applications can protect a specific hostname or path, including a `workers.dev` hostname, and that the application domain may contain a path:
 https://developers.cloudflare.com/workers/configuration/cloudflare-access/
