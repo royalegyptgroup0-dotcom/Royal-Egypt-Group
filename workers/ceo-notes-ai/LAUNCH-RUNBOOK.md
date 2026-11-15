@@ -33,10 +33,16 @@ Activepieces and n8n are not part of the selected architecture. Their self-hoste
 
 ## 3. Staged native API
 
-All state-changing `/api/*` endpoints require POST JSON and `Authorization: Bearer <ADMIN_TOKEN>`. The secret must be at least 32 characters and stored only in Worker Secrets.
+All state-changing `/api/*` endpoints require POST JSON and either an authenticated Cloudflare Access owner identity or `Authorization: Bearer <ADMIN_TOKEN>`. The Bearer secret, if used for non-browser automation, must be at least 32 characters and stored only in Worker Secrets. The Arabic `/admin` dashboard requires Cloudflare Access and never asks the browser to store a bearer token.
+
+Private owner interface:
+- `GET /admin` serves the Arabic editorial dashboard only when `ctx.access` is present.
+- Cloudflare Access must protect `/admin*` and `/api/*` on the Worker hostname. Keep `/health`, `/feed`, `/notes/posts.json` and `/image/*` public.
+- The dashboard uses the Access session for same-origin API calls; it has no localStorage/sessionStorage token.
 
 Editorial flow:
-1. `POST /api/generate` creates or reuses the current Cairo-date draft.
+1. `POST /api/draft/status` loads the current Cairo-date draft.
+2. `POST /api/generate` creates or reuses the current Cairo-date draft.
 2. `POST /api/image` creates or reuses the matching image.
 3. `POST /api/publish` saves the item to the canonical CEO Notes feed. This does not publish to social networks.
 
@@ -79,7 +85,7 @@ Never place tokens in Git, KV, D1, Make, request bodies, browser storage, logs, 
 - Preview must have no Cron Trigger and must never publish, even if a publishing flag is accidentally added.
 - Do not add or enable the publishing Cron until a controlled first public post has been separately approved and independently verified on both intended channels.
 
-## 6. Current Cloudflare state (read-only inspection)
+## 6. Current Cloudflare state (read-only inspection and Preview deployment)
 
 The correct account is now authenticated and can be queried. The production `ceo-notes-ai` Worker currently has:
 - AI binding and the production `CEO_NOTES_KV` namespace.
@@ -87,11 +93,12 @@ The correct account is now authenticated and can be queried. The production `ceo
 - No Durable Object binding in the current live configuration.
 - No `ADMIN_TOKEN`, Facebook token or Instagram token listed among its Worker Secrets.
 
-The isolated `ceo-notes-ai-preview` Worker has:
+The isolated `ceo-notes-ai-preview` Worker has now received the tested v2 source (deployment version created 2026-11-15):
 - Dedicated Preview KV `CEO_NOTES_PREVIEW_2026_11_12`.
-- SQLite Durable Object binding `OUTBOX_COORDINATOR` / `CEOOutboxCoordinator`.
+- Existing SQLite Durable Object binding `OUTBOX_COORDINATOR` / `CEOOutboxCoordinator` (migration tag `v1` preserved).
 - `PREVIEW_MODE=true` and Preview public base URL.
-- No AI binding, no Cron Trigger, no Meta credentials and no `ADMIN_TOKEN` yet.
+- No AI binding, no Cron Trigger, no Meta credentials and no `ADMIN_TOKEN`.
+- New `/admin` dashboard route checks `ctx.access`; all API routes accept Access identity or Bearer auth. The account's Cloudflare Access feature is not enabled yet, so the dashboard remains intentionally inaccessible until the owner enables Access and owner-only path policies are created.
 
 Do not confuse a Cloudflare Pages Preview URL with a deployed Worker runtime. The code has passed CI, but live Worker Preview deployment and runtime HTTP checks are still separate release gates.
 
@@ -103,10 +110,11 @@ Do not confuse a Cloudflare Pages Preview URL with a deployed Worker runtime. Th
 - [x] Facebook and Instagram native adapters staged in v2.
 - [x] Scheduler checks Africa/Cairo 19:30, requires `PUBLISHING_ENABLED=true`, and is hard-disabled in Preview.
 - [x] Unit tests cover Facebook and Instagram API sequences, exact-hash approval, missing credentials, stale content hash, ambiguous outcomes and Preview schedule isolation.
-- [ ] Deploy the tested source to the isolated Preview Worker only.
+- [x] Deploy the tested source to the isolated Preview Worker only; Cloudflare API confirmed successful upload, `fetch` + `scheduled` handlers, DO class and preserved migration tag.
+- [ ] Enable Cloudflare Access in the account; create owner-only policies for Preview `/admin*` and `/api/*` using the Cloudflare-account-member identity rule. Do not use Everyone or broad Gmail-domain access.
 - [ ] Verify Preview `/health` returns 200 with KV and Durable Object ready, AI disabled, and no Cron.
-- [ ] Verify protected APIs return 401 without a Bearer token.
-- [ ] Configure a unique Preview `ADMIN_TOKEN`; test the authenticated editorial flow with synthetic Preview content only.
+- [ ] Verify protected APIs are blocked without Access and work only after owner Access authentication (or a valid Bearer secret for a controlled service client).
+- [ ] Test the Access-protected dashboard and authenticated editorial flow with synthetic Preview content only. Do not create a client-side admin token.
 - [ ] Configure separately authorized Preview Meta test credentials only if a non-public/test-only Meta destination is available. Never publish a test post publicly as part of unattended testing.
 - [ ] Verify Page and Instagram permissions, token expiry, wrong destination, read-back mismatch, container failure and timeout-after-remote-success handling.
 - [ ] Complete backup/restore rehearsal and failure injection on Preview.
