@@ -54,6 +54,56 @@ jobs:
       - name: Test market freshness and stale fallback
         run: node notes/test-market-stale.mjs
 
+      - name: Smoke-test live CEO Notes site and existing media
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://ceo-notes.pages.dev"
+          worker="https://ceo-notes-ai.yasser-abdelaziz83.workers.dev"
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+          check_route() {
+            path="$1"
+            output="$2"
+            status="$(curl --silent --show-error --location --retry 2 --retry-delay 2 --connect-timeout 10 --max-time 30 --output "$output" --write-out '%{http_code}' "$base$path")"
+            echo "$path HTTP $status"
+            test "$status" = "200"
+          }
+          check_route "/" "$tmp/home.html"
+          check_route "/feed" "$tmp/feed.json"
+          check_route "/posts.json" "$tmp/posts.json"
+          check_route "/rss.xml" "$tmp/rss.xml"
+          check_route "/sitemap.xml" "$tmp/sitemap.xml"
+          check_route "/robots.txt" "$tmp/robots.txt"
+          check_route "/markets" "$tmp/markets.html"
+          check_route "/post/27" "$tmp/post27.html"
+          export CEO_NOTES_SMOKE_TMP="$tmp"
+          node <<'NODE'
+          const fs = require("node:fs");
+          const path = process.env.CEO_NOTES_SMOKE_TMP;
+          const assert = require("node:assert/strict");
+          const feed = JSON.parse(fs.readFileSync(path + "/feed.json", "utf8"));
+          const fallback = JSON.parse(fs.readFileSync(path + "/posts.json", "utf8"));
+          for (const value of [feed, fallback]) {
+            assert.ok(Array.isArray(value.posts), "feed must expose a posts array");
+            const days = value.posts.map(post => Number(post.day));
+            assert.ok(days.includes(27), "DAY 27 must remain visible");
+            assert.equal(new Set(days).size, days.length, "feed day numbers must be unique");
+          }
+          assert.match(fs.readFileSync(path + "/rss.xml", "utf8"), /<rss\b|<feed\b/i);
+          assert.match(fs.readFileSync(path + "/sitemap.xml", "utf8"), /\/post\/27/);
+          assert.match(fs.readFileSync(path + "/robots.txt", "utf8"), /Sitemap:\s*https:/i);
+          const article = fs.readFileSync(path + "/post27.html", "utf8");
+          assert.match(article, /rel=["']canonical["']/i);
+          assert.match(article, /property=["']og:title["']/i);
+          assert.match(article, /property=["']og:image["']/i);
+          NODE
+          for day in 26 27; do
+            status="$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 --dump-header "$tmp/image-$day.headers" --output /dev/null --write-out '%{http_code}' "$worker/image/$day")"
+            echo "/image/$day HTTP $status"
+            test "$status" = "200"
+            grep -qi '^content-type: image/jpeg' "$tmp/image-$day.headers"
+          done
       - name: Check Facebook archive importer syntax
         run: node --check scripts/import-ceo-facebook-archive.mjs
       - name: Test offline Facebook archive importer
