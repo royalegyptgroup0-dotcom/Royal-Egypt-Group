@@ -73,7 +73,7 @@ function makeEnv({ posts = [], adminToken = token, previewMode = false, seedKV =
       return { fetch(input, init) { return coordinatorObject.fetch(input instanceof Request ? input : new Request(input, init)); } };
     }
   };
-  return { ADMIN_TOKEN: adminToken, META_FACEBOOK_PAGE_ACCESS_TOKEN: "test-only-facebook-token-123456789", META_INSTAGRAM_ACCESS_TOKEN: "test-only-instagram-token-123456789", PREVIEW_MODE: previewMode ? "true" : undefined, CEO_NOTES_KV: kv, AI: ai, OUTBOX_COORDINATOR: coordinatorNamespace, coordinatorValues, calls };
+  return { ADMIN_TOKEN: adminToken, META_APP_SECRET: "test-only-meta-app-secret-123456789", META_FACEBOOK_PAGE_ACCESS_TOKEN: "test-only-facebook-token-123456789", META_INSTAGRAM_ACCESS_TOKEN: "test-only-instagram-token-123456789", PREVIEW_MODE: previewMode ? "true" : undefined, CEO_NOTES_KV: kv, AI: ai, OUTBOX_COORDINATOR: coordinatorNamespace, coordinatorValues, calls };
 }
 
 async function call(path, { method = "GET", headers = {}, body } = {}, env = makeEnv()) {
@@ -90,7 +90,9 @@ async function withMetaReadBack(data, work) {
   globalThis.fetch = async (input, init = {}) => {
     const url = new URL(input);
     assert.equal(url.hostname, "graph.facebook.com");
-    assert.match(String(init.headers?.Authorization || ""), /^Bearer test-only-/);
+    assert.equal(url.searchParams.get("access_token"), "test-only-facebook-token-123456789");
+    assert.match(url.searchParams.get("appsecret_proof")||"", /^[a-f0-9]{64}$/);
+    assert.equal(init.headers?.Authorization, undefined);
     assert.ok(url.pathname.startsWith("/v27.0/"));
     return new Response(JSON.stringify(data), { status: 200, headers: { "content-type": "application/json" } });
   };
@@ -105,7 +107,12 @@ async function withMetaPublish(platform, work) {
     const url = new URL(input);
     requests.push({ method: init.method || "GET", path: url.pathname, body: init.body });
     assert.equal(url.hostname, "graph.facebook.com");
-    assert.match(String(init.headers?.Authorization || ""), /^Bearer test-only-/);
+    const expectedToken = platform === "facebook" ? "test-only-facebook-token-123456789" : "test-only-instagram-token-123456789";
+    const token = init.method === "POST" ? init.body.get("access_token") : url.searchParams.get("access_token");
+    const proof = init.method === "POST" ? init.body.get("appsecret_proof") : url.searchParams.get("appsecret_proof");
+    assert.equal(token, expectedToken);
+    assert.match(proof || "", /^[a-f0-9]{64}$/);
+    assert.equal(init.headers?.Authorization, undefined);
     if (platform === "facebook") {
       if (init.method === "POST" && url.pathname.endsWith("/115226621594988/photos")) {
         assert.equal(init.body.get("published"), "true");
@@ -342,6 +349,20 @@ test("Facebook and Instagram publication states remain independent after a parti
     assert.equal(env.coordinatorValues.get("outbox:facebook:ceo-page:1").status, "succeeded");
     assert.equal(env.coordinatorValues.get("outbox:instagram:ceo-notes:1").status, "unknown");
   } finally { globalThis.fetch = originalFetch; }
+});
+
+test("native publishing requires the Meta App Secret for appsecret_proof before reserving an attempt", async () => {
+  const env = makeEnv();
+  const { generated } = await createPublishedPost(env);
+  await approvePost(env, generated, "facebook");
+  delete env.META_APP_SECRET;
+  const response = await call("/api/social/publish", {
+    method: "POST", headers: auth,
+    body: { day: 1, platform: "facebook", identity: "ceo-page", contentHash: generated.contentHash }
+  }, env);
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).error, "meta_app_secret_unavailable");
+  assert.equal(env.coordinatorValues.has("outbox:facebook:ceo-page:1"), false);
 });
 
 test("native publishing fails closed without Meta credentials and before reserving an outbox attempt", async () => {
