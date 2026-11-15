@@ -526,6 +526,26 @@ async function publishSocialPostCore(env,body){
   const approval=await approvalFor(env,context);
   if(!approval||approval.contentHash!==context.hash||approval.targetId!==context.targetId)return J({error:"owner_approval_required_for_exact_content"},403);
   if(approval.scheduledFor&&Date.parse(approval.scheduledFor)>Date.now())return J({error:"publication_not_due",scheduledFor:approval.scheduledFor},409);
+  const stub=env.OUTBOX_COORDINATOR.get(env.OUTBOX_COORDINATOR.idFromName("ceo-notes-day:"+context.day));
+  const scoped={day:context.day,platform:context.platform,identity:context.identity,targetId:context.targetId,contentHash:context.hash};
+  const internal=(action,payload)=>stub.fetch("https://outbox-coordinator/"+action,{
+    method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)
+  });
+  const currentResponse=await internal("status",scoped);
+  const currentData=await currentResponse.json();
+  const current=currentData.receipt||null;
+  if(current?.status==="succeeded")return J({ok:true,alreadyPublished:true,platform:context.platform,receipt:current});
+  if(current?.status==="receipt_recorded"){
+    const proof=await metaPublicationReadBack(env,context.platform,current.postId);
+    if(!proof.ok||proof.id!==current.postId||proof.targetId!==context.targetId||proof.permalink!==current.permalink||!proof.published){
+      return J({error:"recorded_receipt_requires_manual_reconciliation",manualReviewRequired:true},409);
+    }
+    const verified=await internal("verify",{...scoped,verified:true,verifiedPostId:proof.id,verifiedPermalink:proof.permalink,verifiedTargetId:proof.targetId,verificationSource:context.platform==="facebook"?"facebook_graph_api":"instagram_graph_api",verificationStatus:"published"});
+    const verifiedData=await verified.json();
+    if(!verified.ok||verifiedData.status!=="succeeded")return J({error:"recorded_receipt_verification_failed",manualReviewRequired:true},409);
+    return J({ok:true,alreadyPublished:true,status:"succeeded",platform:context.platform,receipt:verifiedData.receipt});
+  }
+  if(current)return J({error:"publication_attempt_requires_reconciliation",status:current.status,manualReviewRequired:true},409);
   const token=context.platform==="facebook"?env.META_FACEBOOK_PAGE_ACCESS_TOKEN:env.META_INSTAGRAM_ACCESS_TOKEN;
   if(typeof token!=="string"||token.length<20)return J({error:"meta_credentials_unavailable"},503);
   if(typeof env.META_APP_SECRET!=="string"||env.META_APP_SECRET.length<20)return J({error:"meta_app_secret_unavailable"},503);
@@ -542,11 +562,6 @@ async function publishSocialPostCore(env,body){
   if(!post)return J({error:"published_post_not_found"},404);
   if(context.platform==="instagram"&&socialCaption(post).length>2200)return J({error:"instagram_caption_too_long",limit:2200},413);
   const imageUrl=publicBase(env)+"/image/"+context.day;
-  const stub=env.OUTBOX_COORDINATOR.get(env.OUTBOX_COORDINATOR.idFromName("ceo-notes-day:"+context.day));
-  const scoped={day:context.day,platform:context.platform,identity:context.identity,targetId:context.targetId,contentHash:context.hash};
-  const internal=(action,payload)=>stub.fetch("https://outbox-coordinator/"+action,{
-    method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)
-  });
   const reserved=await internal("reserve",scoped);
   const reserveData=await reserved.json();
   if(!reserved.ok)return J(reserveData,reserved.status);
