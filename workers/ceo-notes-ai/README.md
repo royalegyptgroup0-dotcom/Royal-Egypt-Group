@@ -16,7 +16,12 @@ CEO Notes must never publish to Royal Egypt Properties or Royal Egypt Group corp
 
 ## API
 
-All `/api/*` routes require POST JSON and `Authorization: Bearer <ADMIN_TOKEN>`. The token must be at least 32 characters and must exist only as a Worker Secret. Public `/health`, `/feed`, `/notes/posts.json` and generated image delivery are read-only.
+All `/api/*` routes require POST JSON and either a Cloudflare Access-authenticated owner identity (`ctx.access`) or a Bearer `ADMIN_TOKEN` of at least 32 characters stored only as a Worker Secret. The `/admin` dashboard is served only when Cloudflare Access has authenticated the request; a bearer token alone cannot expose the dashboard. Public `/health`, `/feed`, `/notes/posts.json` and generated image delivery are read-only.
+
+Private dashboard and draft workflow:
+- `GET /admin`: Access-only Arabic editorial dashboard. It never stores an admin token in browser storage; it uses the Access session cookie for same-origin API requests.
+- `POST /api/draft/status`: load the current Cairo-date draft.
+- `POST /api/draft/update`: edit the draft, recompute the content hash, and invalidate any image generated for an older hash.
 
 Editorial workflow:
 - `POST /api/generate`: create or reuse one date-keyed Cairo draft.
@@ -57,9 +62,13 @@ The scheduler is deliberately inert unless `PUBLISHING_ENABLED=true` and `PREVIE
 
 The current production Worker is still the older generation: its live configuration has the AI binding and production KV but no Durable Object binding, no `ADMIN_TOKEN` secret and no Meta secrets. Its existing backup Cron is `0 2 * * *` UTC. Do not mistake the staged v2 source or a Pages Preview for a production Worker deployment.
 
+## Access protection
+
+The dashboard and every `/api/*` route must be protected by Cloudflare Access path-based applications on the Preview and Production `workers.dev` hostnames. Protect `/admin*` and `/api/*` while leaving `/health`, `/feed`, `/notes/posts.json` and `/image/*` public. The Worker independently checks `ctx.access` for the dashboard and accepts Access identity for API authorization; requests without Access or a valid Bearer token are rejected. Cloudflare Access is not enabled in the current account yet, so the dashboard intentionally returns 401 until Zero Trust is enabled and the owner-only Access policies are created. Use a Cloudflare-account-member policy rather than a broad email-domain or Everyone policy. See [Cloudflare Access for Workers](https://developers.cloudflare.com/workers/configuration/cloudflare-access/).
+
 ## Preview isolation
 
-`wrangler.preview.jsonc` targets only the dedicated Preview KV namespace `CEO_NOTES_PREVIEW_2026_11_12` and the SQLite namespace `ceo-notes-ai-preview_CEOOutboxCoordinator`. Preview has `PREVIEW_MODE=true`, no AI binding, no Meta credentials, no Cron Trigger and no `ADMIN_TOKEN` secret. Its empty KV must never seed from the production feed. Set a unique Preview-only admin secret before exercising protected routes; never reuse a Production secret.
+`wrangler.preview.jsonc` targets only the dedicated Preview KV namespace `CEO_NOTES_PREVIEW_2026_11_12` and the SQLite namespace `ceo-notes-ai-preview_CEOOutboxCoordinator`. Preview has `PREVIEW_MODE=true`, no AI binding, no Meta credentials, no Cron Trigger and no `ADMIN_TOKEN` secret. Its empty KV must never seed from the production feed. Enable Cloudflare Access and create owner-only policies for `/admin*` and `/api/*` before exercising the dashboard; never expose a client-side token or reuse a Production secret.
 
 ## Release gates
 
@@ -68,7 +77,9 @@ The current production Worker is still the older generation: its live configurat
 - [x] Native Facebook and Instagram publishing adapters in staged v2 code.
 - [x] Cairo-time scheduler guarded by `PUBLISHING_ENABLED`, with Preview hard-disabled.
 - [x] Unit coverage for approval, Facebook/Instagram publish flow, destination verification, missing credentials, stale content hash, ambiguous outcomes and Preview schedule isolation.
-- [ ] Deploy v2 to the isolated Preview Worker and verify live health, auth failure, KV/DO readiness and public image URL.
+- [x] Deploy v2 to the isolated Preview Worker; verify deployment metadata, dedicated KV/DO bindings, no AI binding, no Cron and no Worker Secrets.
+- [ ] Enable Cloudflare Access in the account and protect Preview `/admin*` and `/api/*` with an owner-only policy.
+- [ ] Verify live Preview `/health`, Access login, protected dashboard, API authorization, KV/DO readiness and public image URL.
 - [ ] Configure a unique Preview `ADMIN_TOKEN` and independent Meta test credentials; complete live Meta read-back tests without public posting.
 - [ ] Verify token scopes, expiry handling, Page role, Instagram professional account linkage and Meta app permissions.
 - [ ] Complete failure-injection for timeout-after-remote-success, partial channel failure, container timeout, expired tokens and read-back mismatch.
