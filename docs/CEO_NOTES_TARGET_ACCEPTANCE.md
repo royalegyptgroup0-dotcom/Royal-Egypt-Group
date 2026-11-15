@@ -47,6 +47,8 @@ No other Facebook Page, Instagram account or LinkedIn Page is authorized by this
 
 ## Required owner actions
 
+See [the prepared LinkedIn OAuth connection request](./LINKEDIN_OAUTH_CONNECTION_REQUEST.md) for the exact two-track Developer App, scope, identity, callback and receipt requirements.
+
 1. Enable Cloudflare Zero Trust/Access and create owner-only policies for Preview `/admin*` and `/api/*`. Do not use Everyone or a broad domain policy.
 2. After Access is ready, configure the Preview Meta app ID, App Secret and CEO Page/Instagram credentials as Worker variables/secrets, then run the read-only Meta verification. Never paste credentials into chat.
 3. Recover the original Royal Egypt Properties Make module-5 audience wording and mapping from Make history or provide the exact approved adaptation. It must become an independent target with its own outbox and receipt.
