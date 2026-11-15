@@ -55,9 +55,17 @@ $existing = if (Test-Path -LiteralPath $agentsPath) {
     ''
 }
 
-if ($existing.Contains($startMarker) -and $existing.Contains($endMarker)) {
-    $pattern = '(?s)' + [regex]::Escape($startMarker) + '.*?' + [regex]::Escape($endMarker)
-    $updated = [regex]::Replace($existing, $pattern, [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $managedBlock }, 1)
+$startIndex = $existing.IndexOf($startMarker, [System.StringComparison]::Ordinal)
+$endIndex = $existing.IndexOf($endMarker, [System.StringComparison]::Ordinal)
+if (($startIndex -ge 0) -xor ($endIndex -ge 0)) {
+    throw "The existing global AGENTS.md contains only one routing marker. Repair it manually before applying."
+}
+if ($startIndex -ge 0) {
+    if ($endIndex -le $startIndex) {
+        throw "The global routing markers are out of order. Repair the file manually before applying."
+    }
+    $suffixStart = $endIndex + $endMarker.Length
+    $updated = $existing.Substring(0, $startIndex) + $managedBlock + $existing.Substring($suffixStart)
 } else {
     $separator = if ([string]::IsNullOrWhiteSpace($existing)) { '' } else { $newLine + $newLine }
     $updated = $existing + $separator + $managedBlock + $newLine
