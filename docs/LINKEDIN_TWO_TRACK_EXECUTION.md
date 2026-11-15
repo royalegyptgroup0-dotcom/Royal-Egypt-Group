@@ -24,8 +24,8 @@ Implement the previously agreed LinkedIn plan without merging the CEO Notes iden
 
 1. Use LinkedIn's 3-legged OAuth authorization-code flow. Configure an HTTPS redirect URL, validate a cryptographically random `state` value, exchange the code server-side, and keep Client Secret/access tokens out of source control, browser code, logs, and chat.
 2. Personal publishing requires `w_member_social`. LinkedIn lists this under its self-service "Share on LinkedIn" open permission.
-3. Company publishing requires `w_organization_social` and the authorizing member must hold an eligible Page role (Administrator, Direct Sponsored Content Poster, or Content Admin). Organization access is not assumed merely because a Page exists; the app may need LinkedIn program approval.
-4. Use the current REST Posts API, not the retired UGC Posts endpoint. Requests require `Linkedin-Version: YYYYMM` and `X-Restli-Protocol-Version: 2.0.0`. A text-only organic post is supported. Image posts require uploading the media asset first and using the returned image URN.
+3. Company publishing requires `w_organization_social` and an eligible role on the exact Company Page. The current versioned Posts API documentation lists `ADMINISTRATOR`, `DIRECT_SPONSORED_CONTENT_POSTER`, or `CONTENT_ADMIN`; the Organization Access Control role catalogue also exposes `CONTENT_ADMINISTRATOR`, so verify the actual approved role returned by `/rest/organizationAcls` instead of inferring it from the Page UI. Organization access is not assumed merely because a Page exists; the app may need LinkedIn program approval.
+4. Use the current REST Posts API, not the retired UGC Posts endpoint. Requests require `Linkedin-Version: YYYYMM` and `X-Restli-Protocol-Version: 2.0.0`. As checked on 2026-11-15, the latest Marketing API version is `202610`; version `202511` sunsets on 2026-11-16. Recheck the version before release. A text-only organic post is supported. Image posts require uploading the media asset first and using the returned image URN.
 5. Save the returned LinkedIn post URN and publication time as a receipt. Use a durable outbox with per-track/per-article idempotency keys. If a network timeout leaves publication ambiguous, do not blindly retry; reconcile the post before retrying.
 
 Official references:
@@ -34,6 +34,13 @@ Official references:
 - API access and permissions: https://learn.microsoft.com/en-us/linkedin/shared/authentication/getting-access
 - Posts API: https://learn.microsoft.com/en-us/linkedin/marketing/community-management/shares/posts-api
 - Organic posts: https://learn.microsoft.com/en-us/linkedin/marketing/usecases/page-management/organic-posts-usecase
+
+## Current official API verification (2026-11-15)
+
+- Posts API: `POST https://api.linkedin.com/rest/posts`; successful creation returns HTTP 201 and the post URN in `x-restli-id`. Read the post back by URN before recording success.
+- Versioning: latest version listed is October 2026 (`Linkedin-Version: 202610`). Marketing version `202511` is scheduled to sunset on 2026-11-16; do not pin the integration to it.
+- Organization publishing: use the versioned Posts API permission table and verify the member-to-organization ACL through `/rest/organizationAcls`. The documentation uses slightly different labels between the Posts API permission table and the Organization Access Control role catalogue, so the live approved ACL is the final check.
+- Image posts: upload the image first and use the returned image URN in the Posts API request.
 
 ## Free-first implementation sequence
 
