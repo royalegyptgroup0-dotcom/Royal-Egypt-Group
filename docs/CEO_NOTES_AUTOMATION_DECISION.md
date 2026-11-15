@@ -91,9 +91,9 @@ Official references:
 
 ## Current implementation findings (2026-11-15)
 
-- PR #77 stages the v2 outbox and isolated Preview Worker.
-- PR #78 adds a dedicated read-only Worker test workflow.
-- PR #81 consolidates the v2 outbox, Worker CI, Preview-only backup restore, server-side Meta read-back, native Meta adapters, owner approval records and Cairo-time scheduler. It remains Draft and targets `ceo-notes-site`; do not merge any PR as part of this ADR.
+- PR #77 and PR #78 were superseded and closed unmerged after their work was consolidated.
+- PR #81 was superseded and closed unmerged after the final documentation and deployment record were consolidated.
+- PR #82 is the single current Draft review for the v2 outbox, Worker CI, Preview-only backup restore, server-side Meta read-back, native Meta adapters, Meta credential preflight, Access-gated dashboard, owner approval records and Cairo-time scheduler. It targets `ceo-notes-site`; do not merge as part of this ADR.
 - The staged v2 Worker implements Facebook Page Photo publishing and Instagram media-container publishing, both followed by server-side Meta read-back. It ignores caller-supplied proof fields, validates token app ID/scopes/expiry and account linkage before reserving an attempt, and uses server-generated appsecret_proof. `META_APP_ID` is a non-secret Worker variable; tokens and `META_APP_SECRET` are Worker Secrets.
 - `/api/approval/approve` records explicit owner approval bound to one platform, pinned identity, day and exact content hash. `/api/social/publish` rejects unapproved or changed content. The scheduler only processes due approvals and remains disabled unless `PUBLISHING_ENABLED=true`.
 - Unit tests cover the native API sequences, approval, identity checks, missing secrets, content-hash tampering and Cairo-time scheduling. These are mocked API tests, not live Meta acceptance.
