@@ -529,7 +529,7 @@ test("scheduled owner approval rejects any time other than 19:30 Africa/Cairo", 
       day: 1, platform: "facebook", identity: "ceo-page",
       contentHash: generated.contentHash,
       confirm: "APPROVE_CEO_NOTES_PUBLICATION",
-      scheduledFor: "2026-11-16T16:30:00.000Z"
+      scheduledFor: "2026-11-18T16:30:00.000Z"
     }
   }, env);
   assert.equal(response.status, 400);
@@ -541,7 +541,7 @@ test("production scheduler publishes only an approved due post at 19:30 Cairo ti
   const env = makeEnv();
   env.PUBLISHING_ENABLED = "true";
   const { generated } = await createPublishedPost(env);
-  const scheduledIso = "2026-11-16T17:30:00.000Z";
+  const scheduledIso = "2026-11-18T17:30:00.000Z";
   const scheduledTime = Date.parse(scheduledIso);
   await approvePost(env, generated, "facebook", scheduledIso);
   const originalNow = Date.now;
