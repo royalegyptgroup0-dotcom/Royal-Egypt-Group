@@ -53,6 +53,29 @@ async function backupHash(value){
   const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(value));
   return [...new Uint8Array(digest)].map(byte=>byte.toString(16).padStart(2,"0")).join("");
 }
+async function listAllKV(env,prefix){
+  const keys=[];
+  let cursor=null;
+  for(let pageNumber=0;pageNumber<1000;pageNumber++){
+    const options={prefix,limit:1000};
+    if(cursor)options.cursor=cursor;
+    const page=await env.CEO_NOTES_KV.list(options);
+    keys.push(...(page.keys||[]));
+    if(page.list_complete!==false)return keys;
+    const next=String(page.cursor||"");
+    if(!next||next===cursor)throw new Error("kv_list_pagination_incomplete");
+    cursor=next;
+  }
+  throw new Error("kv_list_pagination_limit_exceeded");
+}
+function scheduledForValidation(scheduledFor){
+  if(!scheduledFor)return null;
+  if(!Number.isFinite(Date.parse(scheduledFor))||!/(Z|[+-]\d{2}:\d{2})$/i.test(scheduledFor))return "scheduled_for_must_be_offset_aware_iso";
+  if(Date.parse(scheduledFor)<=Date.now())return "scheduled_for_must_be_in_the_future";
+  const localClock=new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Cairo",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(new Date(scheduledFor));
+  if(localClock!=="19:30")return "scheduled_for_must_be_1930_cairo";
+  return null;
+}
 async function getFeed(env){
   const saved=await env.CEO_NOTES_KV.get("feed");
   if(saved){
@@ -83,8 +106,7 @@ async function createBackup(env,scheduledTime){
   await env.CEO_NOTES_KV.put("backup:"+date+":feed",feedValue);
   const imageKeys=[],imageMetaKeys=[],draftKeys=[],outboxKeys=[];
   for(const prefix of ["image:","image-meta:","draft:","outbox:"]){
-    const page=await env.CEO_NOTES_KV.list({prefix,limit:1000});
-    for(const item of page.keys||[]){
+    for(const item of await listAllKV(env,prefix)){
       const value=await env.CEO_NOTES_KV.get(item.name);
       if(value===null)continue;
       const stored=String(value);
@@ -127,12 +149,12 @@ async function createBackup(env,scheduledTime){
     coordinatorOutboxSha256
   };
   await env.CEO_NOTES_KV.put("backup:"+date+":manifest",JSON.stringify(manifest));
-  const all=await env.CEO_NOTES_KV.list({prefix:"backup:",limit:1000});
-  const dates=[...new Set((all.keys||[]).map(item=>item.name.split(":")[1]).filter(Boolean))].sort();
+  const all=await listAllKV(env,"backup:");
+  const dates=[...new Set(all.map(item=>item.name.split(":")[1]).filter(Boolean))].sort();
   const stale=dates.slice(0,Math.max(0,dates.length-30));
   for(const oldDate of stale){
-    const old=await env.CEO_NOTES_KV.list({prefix:"backup:"+oldDate+":",limit:1000});
-    for(const item of old.keys||[])await env.CEO_NOTES_KV.delete(item.name);
+    const old=await listAllKV(env,"backup:"+oldDate+":");
+    for(const item of old)await env.CEO_NOTES_KV.delete(item.name);
   }
   return {date,postCount:(feed.posts||[]).length,imageCount:imageKeys.length,draftCount:draftKeys.length,outboxCount:outboxKeys.length,feedSha256,retainedDays:Math.min(dates.length,30)};
 }
@@ -339,6 +361,7 @@ async function handleOutbox(req,env,path){
   const context=await validateOutboxContext(env,body);
   if(context.error)return context.error;
   const action=path.slice(OUTBOX_PREFIX.length);
+  if(action==="approve")return J({error:"use_dedicated_approval_endpoint"},405);
   const id=env.OUTBOX_COORDINATOR.idFromName("ceo-notes-day:"+context.day);
   const stub=env.OUTBOX_COORDINATOR.get(id);
   const scoped={...body,day:context.day,platform:context.platform,identity:context.identity,contentHash:context.hash,targetId:context.targetId};
@@ -513,12 +536,8 @@ async function handleApproval(req,env,action){
   if(action==="approve"){
     if(body.confirm!=="APPROVE_CEO_NOTES_PUBLICATION")return J({error:"explicit_owner_approval_confirmation_required"},400);
     const scheduledFor=body.scheduledFor?String(body.scheduledFor):null;
-    if(scheduledFor&&(!Number.isFinite(Date.parse(scheduledFor))||!/(Z|[+-]\d{2}:\d{2})$/i.test(scheduledFor)))return J({error:"scheduled_for_must_be_offset_aware_iso"},400);
-    if(scheduledFor&&Date.parse(scheduledFor)<=Date.now())return J({error:"scheduled_for_must_be_in_the_future"},400);
-    if(scheduledFor){
-      const localClock=new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Cairo",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(new Date(scheduledFor));
-      if(localClock!=="19:30")return J({error:"scheduled_for_must_be_1930_cairo"},400);
-    }
+    const scheduleError=scheduledForValidation(scheduledFor);
+    if(scheduleError)return J({error:scheduleError},400);
   }
   const stub=env.OUTBOX_COORDINATOR.get(env.OUTBOX_COORDINATOR.idFromName("ceo-notes-day:"+context.day));
   const response=await stub.fetch("https://outbox-coordinator/"+action,{
@@ -818,7 +837,8 @@ export class CEOOutboxCoordinator {
     if(action==="approve"){
       if(body.confirm!=="APPROVE_CEO_NOTES_PUBLICATION")return J({error:"explicit_owner_approval_confirmation_required"},400);
       const scheduledFor=body.scheduledFor?String(body.scheduledFor):null;
-      if(scheduledFor&&(!Number.isFinite(Date.parse(scheduledFor))||!/(Z|[+-]\d{2}:\d{2})$/i.test(scheduledFor)))return J({error:"scheduled_for_must_be_offset_aware_iso"},400);
+      const scheduleError=scheduledForValidation(scheduledFor);
+      if(scheduleError)return J({error:scheduleError},400);
       const existingApproval=storage.get(approvalKey)||null;
       if(existingApproval&&existingApproval.contentHash!==hash)return J({error:"existing_approval_content_conflict"},409);
       const currentOutbox=storage.get(outboxKey(platform,identity,day))||null;
