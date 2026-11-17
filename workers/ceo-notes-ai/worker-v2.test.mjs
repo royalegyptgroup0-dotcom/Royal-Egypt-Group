@@ -1035,7 +1035,7 @@ test("backup restore scans every page before accepting an empty preview target",
   }, target);
   assert.equal(response.status, 409);
   assert.equal((await response.json()).error, "preview_target_not_empty");
-  assert.equal(await target.CEO_NOTES_KV.get("feed"), null);
+  assert.deepEqual(JSON.parse(await target.CEO_NOTES_KV.get("feed")), { version: 1, posts: [] });
   assert.equal(target.coordinatorValues.size, 0);
 });
 
