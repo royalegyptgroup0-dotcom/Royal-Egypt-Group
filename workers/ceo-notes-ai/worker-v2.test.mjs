@@ -1013,6 +1013,32 @@ test("backup restore is preview-only, verifies checksums and restores KV plus co
   assert.equal((await repeated.json()).coordinatorOutbox, 1);
 });
 
+test("backup restore scans every page before accepting an empty preview target", async () => {
+  const seedKV = {};
+  for (let index = 1; index <= 1000; index++) {
+    seedKV["image:" + String(index).padStart(4, "0")] = "aGVsbG8=";
+  }
+  const source = makeEnv({ previewMode: true, seedKV });
+  await createPublishedPost(source);
+  const pending = [];
+  worker.scheduled({ scheduledTime: Date.parse("2026-11-12T02:00:00.000Z") }, source, {
+    waitUntil(promise) { pending.push(promise); }
+  });
+  await Promise.all(pending);
+  const backupSeed = Object.fromEntries([...source.CEO_NOTES_KV.values.entries()].filter(([key]) => key.startsWith("backup:")));
+  backupSeed["image:zz-unrelated"] = "must-not-be-overwritten";
+  const target = makeEnv({ previewMode: true, seedKV: backupSeed });
+  const response = await call("/api/backup/restore", {
+    method: "POST",
+    headers: auth,
+    body: { date: "2026-11-12", confirm: "RESTORE_PREVIEW_BACKUP" }
+  }, target);
+  assert.equal(response.status, 409);
+  assert.equal((await response.json()).error, "preview_target_not_empty");
+  assert.equal(await target.CEO_NOTES_KV.get("feed"), null);
+  assert.equal(target.coordinatorValues.size, 0);
+});
+
 test("backup restore rejects production mode before reading or writing backup data", async () => {
   const env = makeEnv();
   const response = await call("/api/backup/restore", {
