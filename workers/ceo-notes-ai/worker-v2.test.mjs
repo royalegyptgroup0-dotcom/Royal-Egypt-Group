@@ -16,8 +16,16 @@ function makeKV(seed = {}) {
     async get(key) { return values.has(key) ? values.get(key) : null; },
     async put(key, value) { values.set(key, String(value)); },
     async delete(key) { values.delete(key); },
-    async list({ prefix = "", limit = 1000 } = {}) {
-      return { keys: [...values.keys()].filter(key => key.startsWith(prefix)).slice(0, limit).map(name => ({ name })) };
+    async list({ prefix = "", limit = 1000, cursor } = {}) {
+      const names = [...values.keys()].filter(key => key.startsWith(prefix)).sort();
+      const start = cursor ? Number(cursor) : 0;
+      const selected = names.slice(start, start + limit);
+      const next = start + selected.length;
+      return {
+        keys: selected.map(name => ({ name })),
+        list_complete: next >= names.length,
+        ...(next < names.length ? { cursor: String(next) } : {})
+      };
     }
   };
 }
@@ -287,6 +295,37 @@ test("owner approval is explicit, idempotent and bound to the exact content hash
   assert.equal(repeat.data.idempotent, true);
   const stored = env.coordinatorValues.get("approval:facebook:ceo-page:1");
   assert.equal(stored.contentHash, generated.contentHash);
+});
+
+test("approval cannot bypass the exact future 19:30 Cairo schedule through the generic outbox route", async () => {
+  const env = makeEnv();
+  const { generated } = await createPublishedPost(env);
+  const base = {
+    day: generated.post.day,
+    platform: "facebook",
+    identity: "ceo-page",
+    contentHash: generated.contentHash,
+    confirm: "APPROVE_CEO_NOTES_PUBLICATION"
+  };
+  const bypass = await call("/api/outbox/approve", {
+    method: "POST", headers: auth,
+    body: { ...base, scheduledFor: "2026-11-18T17:31:00.000Z" }
+  }, env);
+  assert.equal(bypass.status, 405);
+  assert.equal((await bypass.json()).error, "use_dedicated_approval_endpoint");
+  const wrongClock = await call("/api/approval/approve", {
+    method: "POST", headers: auth,
+    body: { ...base, scheduledFor: "2026-11-18T17:31:00.000Z" }
+  }, env);
+  assert.equal(wrongClock.status, 400);
+  assert.equal((await wrongClock.json()).error, "scheduled_for_must_be_1930_cairo");
+  const past = await call("/api/approval/approve", {
+    method: "POST", headers: auth,
+    body: { ...base, scheduledFor: "2026-11-15T17:30:00.000Z" }
+  }, env);
+  assert.equal(past.status, 400);
+  assert.equal((await past.json()).error, "scheduled_for_must_be_in_the_future");
+  assert.equal(env.coordinatorValues.has("approval:facebook:ceo-page:1"), false);
 });
 
 test("Facebook native publishing uploads the approved image, verifies Page identity and stores a successful outbox receipt", async () => {
@@ -884,6 +923,21 @@ test("backup includes feed, images, image metadata, drafts and per-platform outb
   assert.equal(manifest.draftKeys.some(item => item.name.startsWith("draft:")), true);
 });
 
+
+test("backup paginates every KV prefix and the retention index beyond the 1000-key page limit", async () => {
+  const seedKV = {};
+  for (let day = 1; day <= 1001; day++) seedKV["image:" + day] = "aGVsbG8=";
+  const env = makeEnv({ seedKV });
+  const pending = [];
+  worker.scheduled({ scheduledTime: Date.parse("2026-11-12T02:00:00.000Z") }, env, {
+    waitUntil(promise) { pending.push(promise); }
+  });
+  await Promise.all(pending);
+  const manifest = JSON.parse(await env.CEO_NOTES_KV.get("backup:2026-11-12:manifest"));
+  assert.equal(manifest.imageKeys.length, 1001);
+  assert.ok(manifest.imageKeys.some(item => item.name === "image:1001"));
+  assert.equal(await env.CEO_NOTES_KV.get("backup:2026-11-12:image:1001"), "aGVsbG8=");
+});
 
 test("outbox target identity is pinned server-side and cannot be supplied by the caller", async () => {
   const env = makeEnv();
