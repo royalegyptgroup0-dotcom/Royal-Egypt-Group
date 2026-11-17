@@ -225,9 +225,9 @@ async function restoreBackup(req,env){
   }
   const restoredNames=new Set(entries.map(([key])=>key));
   for(const prefix of ["image:","image-meta:","draft:","outbox:"]){
-    const page=await env.CEO_NOTES_KV.list({prefix,limit:1000});
-    if(page.list_complete===false)return J({error:"preview_target_scan_incomplete",prefix},409);
-    for(const item of page.keys||[])if(!restoredNames.has(item.name))return J({error:"preview_target_not_empty",key:item.name},409);
+    let targetKeys;
+    try{targetKeys=await listAllKV(env,prefix);}catch(error){return J({error:"preview_target_scan_incomplete",prefix},409);}
+    for(const item of targetKeys)if(!restoredNames.has(item.name))return J({error:"preview_target_not_empty",key:item.name},409);
   }
   for(const [key,value] of entries){
     if(key==="feed")continue;
