@@ -9,6 +9,28 @@ const CEOOutboxCoordinator = workerModule.CEOOutboxCoordinator;
 const token = "test-only-admin-token-with-at-least-32-characters";
 const auth = { Authorization: "Bearer " + token };
 
+function futureCairoSchedule(clock, daysAhead = 2) {
+  const target = new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000);
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Africa/Cairo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23"
+  }).formatToParts(target);
+  const part = type => parts.find(item => item.type === type)?.value || "";
+  const [year, month, day, hour, minute, second] = ["year", "month", "day", "hour", "minute", "second"].map(type => Number(part(type)));
+  const localAsUtc = Date.UTC(year, month - 1, day, hour, minute, second);
+  const offsetMinutes = Math.round((localAsUtc - target.getTime()) / 60000);
+  const sign = offsetMinutes >= 0 ? "+" : "-";
+  const absoluteOffset = Math.abs(offsetMinutes);
+  const offset = sign + String(Math.floor(absoluteOffset / 60)).padStart(2, "0") + ":" + String(absoluteOffset % 60).padStart(2, "0");
+  return String(year).padStart(4, "0") + "-" + String(month).padStart(2, "0") + "-" + String(day).padStart(2, "0") + "T" + clock + ":00.000" + offset;
+}
+
 function makeKV(seed = {}) {
   const values = new Map(Object.entries(seed).map(([key, value]) => [key, String(value)]));
   return {
@@ -309,13 +331,13 @@ test("approval cannot bypass the exact future 19:30 Cairo schedule through the g
   };
   const bypass = await call("/api/outbox/approve", {
     method: "POST", headers: auth,
-    body: { ...base, scheduledFor: "2026-11-18T17:31:00.000Z" }
+    body: { ...base, scheduledFor: futureCairoSchedule("19:31") }
   }, env);
   assert.equal(bypass.status, 405);
   assert.equal((await bypass.json()).error, "use_dedicated_approval_endpoint");
   const wrongClock = await call("/api/approval/approve", {
     method: "POST", headers: auth,
-    body: { ...base, scheduledFor: "2026-11-19T17:31:00.000Z" }
+    body: { ...base, scheduledFor: futureCairoSchedule("19:31") }
   }, env);
   assert.equal(wrongClock.status, 400);
   assert.equal((await wrongClock.json()).error, "scheduled_for_must_be_1930_cairo");
@@ -529,7 +551,7 @@ test("scheduled owner approval rejects any time other than 19:30 Africa/Cairo", 
       day: 1, platform: "facebook", identity: "ceo-page",
       contentHash: generated.contentHash,
       confirm: "APPROVE_CEO_NOTES_PUBLICATION",
-      scheduledFor: "2026-11-19T16:30:00.000Z"
+      scheduledFor: futureCairoSchedule("18:30")
     }
   }, env);
   assert.equal(response.status, 400);
@@ -541,7 +563,7 @@ test("production scheduler publishes only an approved due post at 19:30 Cairo ti
   const env = makeEnv();
   env.PUBLISHING_ENABLED = "true";
   const { generated } = await createPublishedPost(env);
-  const scheduledIso = "2026-11-19T17:30:00.000Z";
+  const scheduledIso = futureCairoSchedule("19:30");
   const scheduledTime = Date.parse(scheduledIso);
   await approvePost(env, generated, "facebook", scheduledIso);
   const originalNow = Date.now;
