@@ -192,3 +192,19 @@ Verified on 2026-11-15 after the latest Worker source commit:
 - Production Worker, Production Pages and Make scenario 8438190 were not changed by this Preview deployment.
 - The deployed script content contains the latest image/publication timestamp separation fix and no longer uses image-generation time as `publishedAt`.
 - Post-deployment live health and unauthenticated API checks are delegated to the GitHub Actions Preview smoke workflow; do not claim them until that run completes successfully.
+
+## 12. Isolated Preview sync — 2026-11-18
+
+The latest reviewed Worker source from PR #82 was uploaded and deployed to the dedicated `ceo-notes-ai-preview` Worker only.
+
+- PR source commit: `196dcb60bd4efdf2c5e95dd24c57921fb36c486b`.
+- Worker source blob SHA: `1be6878fa00c6b79a16fdd64d35b46aa36ce95c4` (`worker-v2.js`, 1,150 lines).
+- Preview version 8: `11e93334-8b5f-4a5c-8c74-392435cd00aa`.
+- Preview deployment: `1c1015e7-87ca-4643-9afa-564becf0e609`, 100% traffic to version 8.
+- Cloudflare read-back confirms the existing isolated KV namespace and SQLite Durable Object namespace were preserved. `PREVIEW_MODE=true` and the Preview public base remain set.
+- Preview secret inventory is empty. There is no AI binding and no Cron schedule. No Production Worker setting, secret, binding, schedule, KV value or Pages deployment was changed.
+- Pre-deployment CI evidence remains Worker Tests run [44171870827](https://github.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/actions/runs/44171870827), 49/49 passing, and Site Checks run [44171870851](https://github.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/actions/runs/44171870851), successful.
+- The runbook update triggers a fresh Worker and site workflow pass against this Preview version. Do not mark post-deployment health/auth acceptance verified until those workflow jobs complete successfully.
+- An authenticated live Preview restore or Meta preflight was not run: Preview still has no Cloudflare Access policy or `ADMIN_TOKEN`/Meta secrets. Unit tests are not a substitute for that live acceptance.
+
+This deployment is staging-only. PR #82 remains Draft, Make remains the Production runtime and stays paused, and no social post or new article was published.
