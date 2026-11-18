@@ -315,7 +315,7 @@ test("approval cannot bypass the exact future 19:30 Cairo schedule through the g
   assert.equal((await bypass.json()).error, "use_dedicated_approval_endpoint");
   const wrongClock = await call("/api/approval/approve", {
     method: "POST", headers: auth,
-    body: { ...base, scheduledFor: "2026-11-18T17:31:00.000Z" }
+    body: { ...base, scheduledFor: "2026-11-19T17:31:00.000Z" }
   }, env);
   assert.equal(wrongClock.status, 400);
   assert.equal((await wrongClock.json()).error, "scheduled_for_must_be_1930_cairo");
@@ -529,7 +529,7 @@ test("scheduled owner approval rejects any time other than 19:30 Africa/Cairo", 
       day: 1, platform: "facebook", identity: "ceo-page",
       contentHash: generated.contentHash,
       confirm: "APPROVE_CEO_NOTES_PUBLICATION",
-      scheduledFor: "2026-11-18T16:30:00.000Z"
+      scheduledFor: "2026-11-19T16:30:00.000Z"
     }
   }, env);
   assert.equal(response.status, 400);
@@ -541,7 +541,7 @@ test("production scheduler publishes only an approved due post at 19:30 Cairo ti
   const env = makeEnv();
   env.PUBLISHING_ENABLED = "true";
   const { generated } = await createPublishedPost(env);
-  const scheduledIso = "2026-11-18T17:30:00.000Z";
+  const scheduledIso = "2026-11-19T17:30:00.000Z";
   const scheduledTime = Date.parse(scheduledIso);
   await approvePost(env, generated, "facebook", scheduledIso);
   const originalNow = Date.now;
