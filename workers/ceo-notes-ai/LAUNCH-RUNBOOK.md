@@ -195,16 +195,24 @@ Verified on 2026-11-15 after the latest Worker source commit:
 
 ## 12. Isolated Preview sync — 2026-11-18
 
-The latest reviewed Worker source from PR #82 was uploaded and deployed to the dedicated `ceo-notes-ai-preview` Worker only.
+The reviewed PR #82 Worker source was deployed to the dedicated `ceo-notes-ai-preview` Worker only.
 
-- PR source commit: `196dcb60bd4efdf2c5e95dd24c57921fb36c486b`.
-- Worker source blob SHA: `1be6878fa00c6b79a16fdd64d35b46aa36ce95c4` (`worker-v2.js`, 1,150 lines).
-- Preview version 8: `11e93334-8b5f-4a5c-8c74-392435cd00aa`.
-- Preview deployment: `1c1015e7-87ca-4643-9afa-564becf0e609`, 100% traffic to version 8.
-- Cloudflare read-back confirms the existing isolated KV namespace and SQLite Durable Object namespace were preserved. `PREVIEW_MODE=true` and the Preview public base remain set.
-- Preview secret inventory is empty. There is no AI binding and no Cron schedule. No Production Worker setting, secret, binding, schedule, KV value or Pages deployment was changed.
-- Pre-deployment CI evidence remains Worker Tests run [44171870827](https://github.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/actions/runs/44171870827), 49/49 passing, and Site Checks run [44171870851](https://github.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/actions/runs/44171870851), successful.
-- The runbook update triggers a fresh Worker and site workflow pass against this Preview version. Do not mark post-deployment health/auth acceptance verified until those workflow jobs complete successfully.
-- An authenticated live Preview restore or Meta preflight was not run: Preview still has no Cloudflare Access policy or `ADMIN_TOKEN`/Meta secrets. Unit tests are not a substitute for that live acceptance.
+- Source commit: `196dcb60bd4efdf2c5e95dd24c57921fb36c486b`.
+- Source file blob SHA: `1be6878fa00c6b79a16fdd64d35b46aa36ce95c4` (`worker-v2.js`, 1,150 lines).
+- Current Preview version 9: `290d02de-8b60-42a3-809f-d37005c7b9fe`.
+- Current Preview deployment: `6b30a443-c4ee-4c5a-9593-c70ce4db6426`, 100% traffic to version 9.
+- Read-back confirms `PUBLIC_BASE` exactly matches `wrangler.preview.jsonc`: `https://ceo-notes-ai-preview.yasser-abdelaziz83.workers.dev`.
+- The existing isolated KV namespace `8dabeef7884e4c68bb50e48f51e82389` and SQLite Durable Object namespace `d01fe83461304e9bab97b7f13590b829` were preserved. `PREVIEW_MODE=true`.
+- Preview secret inventory is empty; there is no AI binding and no Cron schedule. No Production Worker setting, secret, binding, schedule, KV value or Pages deployment was changed.
 
-This deployment is staging-only. PR #82 remains Draft, Make remains the Production runtime and stays paused, and no social post or new article was published.
+### Post-deployment verification evidence
+
+- Worker Tests run [44381661934](https://github.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/actions/runs/44381661934) passed **49/49** tests. Its live Preview smoke gate returned HTTP 200 for `/health`, verified `ok=true`, KV configured, AI absent, Durable Object configured/ready, and verified unauthenticated protected API/dashboard requests fail closed.
+- Site Checks run [44381599272](https://github.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/actions/runs/44381599272) passed. Live Production route checks returned HTTP 200 for `/`, `/feed`, `/posts.json`, `/rss.xml`, `/sitemap.xml`, `/robots.txt`, `/markets`, `/post/27`, `/image/26` and `/image/27`; article canonical/social metadata checks and the offline archive-importer tests (5/5) passed.
+- The first same-day rerun exposed three date-sensitive test fixtures that had become past after the 19:30 Cairo window. Replaced them with `futureCairoSchedule()`, which derives a future Cairo date and UTC offset dynamically. Latest Worker run 162 passed all 49 tests with zero failures.
+- Version 9 was deployed after the successful version-8 smoke run above. A fresh health/auth smoke run against version 9 is pending from this runbook update; do not treat version 9 as runtime-verified until that run completes.
+
+### Remaining live gates
+
+- Authenticated Preview restore and Meta preflight remain NOT RUN because Preview has no Cloudflare Access policy, `ADMIN_TOKEN` or Meta secrets. Unit tests do not replace an authenticated live restore rehearsal.
+- This is staging-only. PR #82 remains Draft, Make remains the Production runtime and stays paused, and no social post or new article was published.
