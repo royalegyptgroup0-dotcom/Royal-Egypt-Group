@@ -54,7 +54,7 @@ Do not publish to any additional identity. Do not send CEO Notes copy to the Roy
 
 ### GitHub and CI
 
-- PR #82 remains open, Draft and unmerged, base `ceo-notes-site`; head `2c96bdd0aa4bc4591755cf28d4fadb9ccf1d4b17`. This run made two documentation-only commits on the isolated PR branch (`d02a0104d8080b64a84058eeeab4e1889c9d189f` and `2c96bdd0aa4bc4591755cf28d4fadb9ccf1d4b17`). No executable Worker/site source or Production configuration changed.
+- PR #82 remains open, Draft and unmerged, based on `ceo-notes-site`; see the PR metadata for its current head SHA. This run updated operational documentation only. No executable Worker/site source or Production configuration changed.
 - Worker Tests run [44800380017](https://github.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/actions/runs/44800380017): **49/49 passed, 0 failed**; Preview health/auth smoke passed.
 - Site Checks run [44800379728](https://github.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/actions/runs/44800379728): passed; all listed Production routes/media returned HTTP 200; offline archive importer passed 5/5.
 - PR #54 remains planning material, not a LinkedIn integration or publication.
