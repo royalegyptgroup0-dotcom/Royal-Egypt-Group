@@ -63,8 +63,8 @@ Do not publish to any additional identity. Do not send CEO Notes copy to the Roy
 ### Legacy Worker hardening (PR #83)
 
 - The Production Worker source was confirmed byte-for-byte equal to the tracked file on `ceo-notes-site`; the legacy runtime is therefore source-controlled, not an untracked Cloudflare-only artifact.
-- Draft [PR #83](https://github.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/pull/83) removes the shared hardcoded route suffix from source, reads it from `LEGACY_ROUTE_SUFFIX`, and adds authenticated POST JSON image generation while retaining GET compatibility for rollback.
-- CI run [44940754385](https://github.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/actions/runs/44940754385) passed the 7/7 legacy Worker tests and 5/5 offline archive tests; the site validation step also passed. This run tested the code commit before a later documentation-only update.
+- Draft [PR #83](https://github.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/pull/83), head `b1c6a69b55fa9a055a3ffb9eea91025d874765d2`, removes the shared hardcoded route suffix from source, reads it from `LEGACY_ROUTE_SUFFIX`, and adds authenticated POST JSON image generation while retaining GET compatibility for rollback.
+- CI run [44940965081](https://github.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/actions/runs/44940965081) passed the **7/7 legacy Worker tests**, **5/5 offline archive tests**, Worker syntax, Pages synchronization and site/content validation.
 - Production secret `LEGACY_ROUTE_SUFFIX` is staged by name. The current deployed Worker still uses the old source, and `ADMIN_TOKEN` is still missing. Make module 2 remains GET with eight query parameters. No Worker deploy or Make change was made.
 
 ## Required owner actions
