@@ -67,6 +67,13 @@ Do not publish to any additional identity. Do not send CEO Notes copy to the Roy
 - CI run [44940965081](https://github.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/actions/runs/44940965081) passed the **7/7 legacy Worker tests**, **5/5 offline archive tests**, Worker syntax, Pages synchronization and site/content validation.
 - Production secret `LEGACY_ROUTE_SUFFIX` is staged by name. The current deployed Worker still uses the old source, and `ADMIN_TOKEN` is still missing. Make module 2 remains GET with eight query parameters. No Worker deploy or Make change was made.
 
+
+### Unverified LinkedIn follow link guard (PR #84)
+
+- The current `ceo-notes-site` branch contained a personal LinkedIn follow URL that remains unverified in PR #54. The current Production Pages deployment predates that branch change and does not include the link.
+- Draft [PR #84](https://github.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/pull/84), head `9b64a88fe191b6c4d22bb29234bc29a7aca617c3`, removes the unverified link from both `notes/index.html` and the HTML embedded in `notes/_worker.js`, preserves the authorized Instagram link, and adds a validator guard.
+- [Site checks #255](https://github.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/actions/runs/44941553779) passed, including the generated Worker synchronization check and content/site validation. PR #84 remains Draft and unmerged; do not deploy the branch until the profile is confirmed or this removal is accepted.
+
 ## Required owner actions
 
 1. **Production authentication:** set/confirm Production Worker `ADMIN_TOKEN` to match the value already stored in Make HTTP connection `12949158`, using only the secure Cloudflare and Make credential interfaces. Never paste it into chat. Do not call protected endpoints until both sides are verified.
