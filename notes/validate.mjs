@@ -66,10 +66,10 @@ const htmlMarkers = [
   'name="twitter:card"',
   'article:published_time',
   'class="social-links"',
-  'href="https://www.linkedin.com/in/yasser-abdelaziz-a0440550/"',
   'href="https://www.instagram.com/kiritoon/"'
 ];
 for (const marker of htmlMarkers) assert.ok(html.includes(marker), `homepage is missing: ${marker}`);
+assert.ok(!/href="https:\/\/www\.linkedin\.com\/in\//i.test(html), "unverified personal LinkedIn profile links must remain unpublished");
 
 const inlineScripts = [...html.matchAll(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)];
 assert.ok(inlineScripts.length > 0, "homepage must include its application script");
