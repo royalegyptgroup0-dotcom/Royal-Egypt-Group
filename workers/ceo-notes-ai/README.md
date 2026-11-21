@@ -14,6 +14,10 @@ This directory tracks the source deployed as the Cloudflare Worker `ceo-notes-ai
 
 The generation, image-generation, and archive-write routes require an `Authorization: Bearer <ADMIN_TOKEN>` header. Requests fail closed when `ADMIN_TOKEN` is absent or shorter than 32 characters. Public read-only feed and image-delivery routes remain available.
 
+The three legacy protected route suffixes are no longer stored in source. Configure the Cloudflare Worker Secret LEGACY_ROUTE_SUFFIX with the existing hexadecimal suffix before deploying this revision. The value must be 32–80 lowercase hexadecimal characters. Do not put the value in GitHub, Make notes, logs, or chat.
+
+Image generation now accepts authenticated POST application/json requests with the article fields and imagePrompt. The old GET query-parameter form remains temporarily available for rollback compatibility. Do not change Make module 2 to POST until this Worker revision is deployed to an isolated Preview, its POST request is verified, and Production has the matching LEGACY_ROUTE_SUFFIX and ADMIN_TOKEN secrets.
+
 Set `ADMIN_TOKEN` as a Cloudflare Worker Secret before using the protected routes. Do not commit secrets to this repository or send them in chat.
 
 ## Publishing status
