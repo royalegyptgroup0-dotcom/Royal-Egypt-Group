@@ -20,7 +20,7 @@ After the Worker revision is deployed and the secure Worker secrets are confirme
 
 ## Required deployment gates
 
-1. Set Worker Secret LEGACY_ROUTE_SUFFIX to the existing suffix from the current protected route paths, using Cloudflare's secret manager. The suffix is never included in this repository.
+1. Set Worker Secret LEGACY_ROUTE_SUFFIX to the existing shared suffix from the current protected route paths, using Cloudflare's secret manager. The suffix is never included in this repository.
 2. Set Worker Secret ADMIN_TOKEN to the exact value already stored in Make's authorized HTTP API-key connection. Do not paste it into chat.
 3. Deploy this source only to an isolated Preview first and read back the Worker secret names and bindings.
 4. Run a synthetic authenticated POST image test with a stubbed AI binding. Do not consume Workers AI quota or create a public article.
