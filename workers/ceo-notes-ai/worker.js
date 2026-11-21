@@ -1,8 +1,7 @@
-const GEN_PATH="/generate-29c05f7671553fc8deca920ac4cc832479fc22c01d5691a2",IMAGE_PATH="/image-29c05f7671553fc8deca920ac4cc832479fc22c01d5691a2",PUBLISH_PATH="/publish-29c05f7671553fc8deca920ac4cc832479fc22c01d5691a2";
 const FEED_URL="https://raw.githubusercontent.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/ceo-notes-site/notes/posts.json";
 const PUBLIC_BASE="https://ceo-notes-ai.yasser-abdelaziz83.workers.dev";
 function authorized(req,env){const token=env.ADMIN_TOKEN;return typeof token==="string"&&token.length>=32&&req.headers.get("Authorization")==="Bearer "+token;}
-const J=(x,s=200,cors=false)=>new Response(JSON.stringify(x),{status:s,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store",...(cors?{"Access-Control-Allow-Origin":"https://royalegyptgroup.pages.dev","Access-Control-Allow-Methods":"GET, OPTIONS","Access-Control-Allow-Headers":"Content-Type"}:{})}});
+const J=(x,s=200,cors=false)=>new Response(JSON.stringify(x),{status:s,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store",...(cors?{"Access-Control-Allow-Origin":"https://royalegyptgroup.pages.dev","Access-Control-Allow-Methods":"GET, POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type, Authorization"}:{})}});
 async function getFeed(env){const saved=await env.CEO_NOTES_KV.get("feed");if(saved){try{return JSON.parse(saved);}catch(e){}}let seed={version:1,posts:[]};try{const r=await fetch(FEED_URL,{cf:{cacheTtl:0}});if(r.ok)seed=await r.json();}catch(e){}await env.CEO_NOTES_KV.put("feed",JSON.stringify(seed));return seed;}
 function parse(s){if(typeof s!=="string")throw new Error("missing AI text");const a=s.indexOf("{"),b=s.lastIndexOf("}");if(a<0||b<=a)throw new Error("invalid AI JSON");return JSON.parse(s.slice(a,b+1));}
 async function backupHash(value){const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(value));return [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,"0")).join("");}
@@ -19,8 +18,13 @@ async function createBackup(env,scheduledTime){
 }
 export default {async fetch(req,env){
  const u=new URL(req.url);
- if(req.method==="OPTIONS")return new Response(null,{status:204,headers:{"Access-Control-Allow-Origin":"https://royalegyptgroup.pages.dev","Access-Control-Allow-Methods":"GET, OPTIONS","Access-Control-Allow-Headers":"Content-Type"}});
- if((req.method==="POST"&&(u.pathname===GEN_PATH||u.pathname===PUBLISH_PATH))||(req.method==="GET"&&(u.pathname===IMAGE_PATH||u.pathname===PUBLISH_PATH))){if(!authorized(req,env))return J({error:"unauthorized"},401);}
+ const routeSuffix=String(env.LEGACY_ROUTE_SUFFIX||"");
+ const routeSuffixValid=/^[a-f0-9]{32,80}$/.test(routeSuffix);
+ const GEN_PATH=routeSuffixValid?"/generate-"+routeSuffix:"";
+ const IMAGE_PATH=routeSuffixValid?"/image-"+routeSuffix:"";
+ const PUBLISH_PATH=routeSuffixValid?"/publish-"+routeSuffix:"";
+ if(req.method==="OPTIONS")return new Response(null,{status:204,headers:{"Access-Control-Allow-Origin":"https://royalegyptgroup.pages.dev","Access-Control-Allow-Methods":"GET, POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type, Authorization"}});
+ if((req.method==="POST"&&(u.pathname===GEN_PATH||u.pathname===IMAGE_PATH||u.pathname===PUBLISH_PATH))||(req.method==="GET"&&(u.pathname===IMAGE_PATH||u.pathname===PUBLISH_PATH))){if(!routeSuffixValid||!authorized(req,env))return J({error:"unauthorized"},401);}
  if(u.pathname==="/health")return J({ok:true,service:"CEO Notes AI Publisher"});
  try{
   if(req.method==="GET"&&(u.pathname==="/"||u.pathname==="/notes"||u.pathname==="/notes/")){const page=await fetch("https://raw.githubusercontent.com/royalegyptgroup0-dotcom/Royal-Egypt-Group/main/notes/index.html",{cf:{cacheTtl:0}});if(!page.ok)return new Response("CEO Notes page unavailable",{status:502});let html=await page.text();html=html.replace("https://royalegyptgroup.pages.dev/notes/","https://ceo-notes-ai.yasser-abdelaziz83.workers.dev/notes");return new Response(html,{headers:{"content-type":"text/html; charset=utf-8","cache-control":"no-store"}});}if(req.method==="GET"&&u.pathname==="/notes/posts.json")return J(await getFeed(env),200,true);if(req.method==="GET"&&u.pathname==="/feed")return J(await getFeed(env),200,true);
@@ -54,10 +58,21 @@ imagePrompt باللغة الإنجليزية، صورة تحريرية فوتو
    if(!post.title||!post.article||String(post.article).length<500||!post.imagePrompt)return J({error:"quality_check_failed",length:String(post.article||"").length,post},502);
    return J({post,imagePrompt:post.imagePrompt,usage:{textNeurons:ai.usage?.neurons}});
   }
-  if(req.method==="GET"&&u.pathname===IMAGE_PATH){
-   const day=Number(u.searchParams.get("day")),post={day,title:u.searchParams.get("title")||"",article:u.searchParams.get("article")||"",ideaOfTheDay:u.searchParams.get("ideaOfTheDay")||"",ceoChallenge:u.searchParams.get("ceoChallenge")||"",discussionQuestion:u.searchParams.get("discussionQuestion")||"",hashtags:u.searchParams.get("hashtags")||""};
-   const prompt=u.searchParams.get("imagePrompt")||"Cinematic editorial portrait, modern executive office, black and warm gold palette, no text or logos.";
+  if((req.method==="GET"||req.method==="POST")&&u.pathname===IMAGE_PATH){
+   let payload;
+   if(req.method==="POST"){
+    const contentType=req.headers.get("content-type")||"";
+    if(!contentType.toLowerCase().includes("application/json"))return J({error:"json_body_required"},415);
+    try{payload=await req.json();}catch(e){return J({error:"invalid_json"},400);}
+   }else{
+    const q=u.searchParams;
+    payload={day:q.get("day"),title:q.get("title"),article:q.get("article"),ideaOfTheDay:q.get("ideaOfTheDay"),ceoChallenge:q.get("ceoChallenge"),discussionQuestion:q.get("discussionQuestion"),hashtags:q.get("hashtags"),imagePrompt:q.get("imagePrompt")};
+   }
+   const source=payload.post&&typeof payload.post==="object"?payload.post:payload;
+   const day=Number(source.day),post={day,title:String(source.title||""),article:String(source.article||""),ideaOfTheDay:String(source.ideaOfTheDay||""),ceoChallenge:String(source.ceoChallenge||""),discussionQuestion:String(source.discussionQuestion||""),hashtags:Array.isArray(source.hashtags)?source.hashtags.join(" "):String(source.hashtags||"")};
+   const prompt=String(payload.imagePrompt||source.imagePrompt||"Cinematic editorial portrait, modern executive office, black and warm gold palette, no text or logos.");
    if(!Number.isInteger(day)||day<26||!post.title||!post.article)return J({error:"missing_post_fields"},400);
+   if(!env.AI||typeof env.AI.run!=="function")return J({error:"ai_binding_unavailable"},503);
    const image=await env.AI.run("@cf/black-forest-labs/flux-1-schnell",{prompt:prompt.slice(0,2048),steps:4});
    if(!image.image)return J({error:"image_generation_failed"},502);
    await env.CEO_NOTES_KV.put("image:"+day,image.image);
