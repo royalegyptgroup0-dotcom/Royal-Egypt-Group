@@ -68,6 +68,10 @@ Do not publish to any additional identity. Do not send CEO Notes copy to the Roy
 - Production secret `LEGACY_ROUTE_SUFFIX` is staged by name. The current deployed Worker still uses the old source, and `ADMIN_TOKEN` is still missing. Make module 2 remains GET with eight query parameters. No Worker deploy or Make change was made.
 
 
+### Runtime path decision
+
+PR #82 is the Cloudflare-native replacement proposal. PR #83 is an incremental hardening change for the existing Make-backed legacy Worker. These are alternative runtime paths, not two releases to deploy together. Keep both Draft until the owner selects the production architecture; do not merge or deploy both into Production.
+
 ### Unverified LinkedIn follow link guard (PR #84)
 
 - The current `ceo-notes-site` branch contained a personal LinkedIn follow URL that remains unverified in PR #54. The current Production Pages deployment predates that branch change and does not include the link.
