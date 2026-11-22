@@ -66,10 +66,12 @@ const htmlMarkers = [
   'name="twitter:card"',
   'article:published_time',
   'class="social-links"',
-  'href="https://www.linkedin.com/in/yasser-abdelaziz-a0440550/"',
   'href="https://www.instagram.com/kiritoon/"'
 ];
 for (const marker of htmlMarkers) assert.ok(html.includes(marker), `homepage is missing: ${marker}`);
+assert.ok(html.includes('const fallbackUrl = "/posts.json";'), "article pages must use the site-root feed fallback");
+assert.ok(!html.includes("const fallbackUrl = (location.pathname"), "article pages must not build a route-relative feed URL");
+assert.ok(!/href="https:\/\/www\.linkedin\.com\/in\//i.test(html), "unverified personal LinkedIn profile links must remain unpublished");
 
 const inlineScripts = [...html.matchAll(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)];
 assert.ok(inlineScripts.length > 0, "homepage must include its application script");
@@ -116,6 +118,8 @@ const workerMarkers = [
   'no-store'
 ];
 for (const marker of workerMarkers) assert.ok(worker.includes(marker), `Pages Worker is missing: ${marker}`);
+assert.ok(worker.includes('const fallbackUrl = \\"/posts.json\\";'), "Pages Worker HTML must use the site-root feed fallback");
+assert.ok(!worker.includes("const fallbackUrl = (location.pathname"), "Pages Worker HTML must not build a route-relative feed URL");
 
 const radioMarkers = [
   'https://de1.api.radio-browser.info',
