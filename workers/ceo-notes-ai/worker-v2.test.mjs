@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 
 const source = await readFile(new URL("./worker-v2.js", import.meta.url), "utf8");
 const workerModule = await import("data:text/javascript;base64," + Buffer.from(source).toString("base64"));
@@ -103,7 +104,7 @@ function makeEnv({ posts = [], adminToken = token, previewMode = false, seedKV =
       return { fetch(input, init) { return coordinatorObject.fetch(input instanceof Request ? input : new Request(input, init)); } };
     }
   };
-  return { ADMIN_TOKEN: adminToken, META_APP_ID: "test-meta-app-id", META_APP_SECRET: "test-only-meta-app-secret-123456789", META_FACEBOOK_PAGE_ACCESS_TOKEN: "test-only-facebook-token-123456789", META_INSTAGRAM_ACCESS_TOKEN: "test-only-instagram-token-123456789", PREVIEW_MODE: previewMode ? "true" : undefined, CEO_NOTES_KV: kv, AI: ai, OUTBOX_COORDINATOR: coordinatorNamespace, coordinatorValues, calls };
+  return { ADMIN_TOKEN: adminToken, META_APP_ID: "test-meta-app-id", META_APP_SECRET: "test-only-meta-app-secret-123456789", META_FACEBOOK_PAGE_ACCESS_TOKEN: "test-only-facebook-token-123456789", META_INSTAGRAM_ACCESS_TOKEN: "test-only-instagram-token-123456789", PREVIEW_MODE: previewMode ? "true" : undefined, CEO_NOTES_KV: kv, AI: ai, OUTBOX_COORDINATOR: coordinatorNamespace, coordinatorValues, coordinatorValuesById, calls };
 }
 
 async function call(path, { method = "GET", headers = {}, body } = {}, env = makeEnv()) {
@@ -1035,6 +1036,69 @@ test("backup restore is preview-only, verifies checksums and restores KV plus co
   assert.equal((await repeated.json()).coordinatorOutbox, 1);
 });
 
+function makeLegacyBackupFixture(date = "2026-11-22") {
+  const feed = { version: 1, posts: [{ day: 26, status: "Published", title: "Production backup import test" }] };
+  const feedValue = JSON.stringify(feed);
+  const imageValue = "aGVsbG8=";
+  const sha256 = value => createHash("sha256").update(value, "utf8").digest("hex");
+  const manifest = {
+    version: 1,
+    date,
+    createdAt: "2026-11-22T02:00:00.000Z",
+    feedSha256: sha256(feedValue),
+    postDays: [26],
+    imageKeys: [{ name: "image:26", length: imageValue.length, sha256: sha256(imageValue) }]
+  };
+  return {
+    date,
+    feedValue,
+    imageValue,
+    seedKV: {
+      ["backup:" + date + ":manifest"]: JSON.stringify(manifest),
+      ["backup:" + date + ":feed"]: feedValue,
+      ["backup:" + date + ":image:26"]: imageValue
+    }
+  };
+}
+
+test("backup restore imports legacy v1 production backups into isolated Preview", async () => {
+  const fixture = makeLegacyBackupFixture();
+  const target = makeEnv({ previewMode: true, seedKV: fixture.seedKV });
+  const response = await call("/api/backup/restore", {
+    method: "POST",
+    headers: auth,
+    body: { date: fixture.date, confirm: "RESTORE_PREVIEW_BACKUP" }
+  }, target);
+  assert.equal(response.status, 200);
+  const restored = await response.json();
+  assert.equal(restored.previewOnly, true);
+  assert.equal(restored.sourceManifestVersion, 1);
+  assert.equal(restored.feedPosts, 1);
+  assert.equal(restored.images, 1);
+  assert.equal(restored.imageMetadata, 0);
+  assert.equal(restored.drafts, 0);
+  assert.equal(restored.legacyOutbox, 0);
+  assert.equal(restored.coordinatorOutbox, 0);
+  assert.equal(await target.CEO_NOTES_KV.get("feed"), fixture.feedValue);
+  assert.equal(await target.CEO_NOTES_KV.get("image:26"), fixture.imageValue);
+  assert.equal(target.coordinatorValuesById.get("ceo-notes-day:26").size, 0);
+});
+
+test("legacy backup import fails closed when unmanifested backup entries exist", async () => {
+  const fixture = makeLegacyBackupFixture();
+  const seedKV = { ...fixture.seedKV, ["backup:" + fixture.date + ":outbox-coordinator"]: "[]" };
+  const target = makeEnv({ previewMode: true, seedKV });
+  const response = await call("/api/backup/restore", {
+    method: "POST",
+    headers: auth,
+    body: { date: fixture.date, confirm: "RESTORE_PREVIEW_BACKUP" }
+  }, target);
+  assert.equal(response.status, 409);
+  assert.equal((await response.json()).error, "legacy_backup_has_unsupported_entries");
+  assert.equal(JSON.parse(await target.CEO_NOTES_KV.get("feed")).posts.length, 0);
+  assert.equal(await target.CEO_NOTES_KV.get("image:26"), null);
+  assert.equal(target.coordinatorValuesById.has("ceo-notes-day:26"), false);
+});
 test("backup restore scans every page before accepting an empty preview target", async () => {
   const seedKV = {};
   for (let index = 1; index <= 1000; index++) {
