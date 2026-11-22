@@ -271,9 +271,10 @@ async function restoreBackup(req,env){
     date,
     feedPosts:feed.posts.length,
     images:manifest.imageKeys.length,
-    imageMetadata:manifest.imageMetaKeys.length,
-    drafts:manifest.draftKeys.length,
-    legacyOutbox:manifest.outboxKeys.length,
+    sourceManifestVersion:manifestVersion,
+    imageMetadata:legacyManifest?0:manifest.imageMetaKeys.length,
+    drafts:legacyManifest?0:manifest.draftKeys.length,
+    legacyOutbox:legacyManifest?0:manifest.outboxKeys.length,
     coordinatorOutbox:coordinatorRecords.length
   });
 }
