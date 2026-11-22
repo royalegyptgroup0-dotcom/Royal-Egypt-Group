@@ -201,7 +201,8 @@ async function restoreBackup(req,env){
   }
   let coordinatorRecords=[];
   if(legacyManifest){
-    const backupKeys=await listAllKV(env,"backup:"+date+":");
+    let backupKeys;
+    try{backupKeys=await listAllKV(env,"backup:"+date+":");}catch(error){return J({error:"legacy_backup_scan_incomplete"},409);}
     const allowedBackupKeys=new Set(["backup:"+date+":manifest","backup:"+date+":feed",...manifest.imageKeys.map(item=>"backup:"+date+":"+String(item?.name||""))]);
     for(const item of backupKeys)if(!allowedBackupKeys.has(item.name))return J({error:"legacy_backup_has_unsupported_entries",key:item.name},409);
   }else{
