@@ -170,25 +170,27 @@ async function restoreBackup(req,env){
   if(!manifestRaw)return J({error:"backup_manifest_not_found"},404);
   let manifest;
   try{manifest=JSON.parse(manifestRaw);}catch(error){return J({error:"backup_manifest_invalid"},409);}
-  if(manifest.version!==3||manifest.date!==date)return J({error:"unsupported_backup_manifest"},409);
+  const manifestVersion=Number(manifest.version);
+  const legacyManifest=manifestVersion===1;
+  if((manifestVersion!==1&&manifestVersion!==3)||manifest.date!==date)return J({error:"unsupported_backup_manifest"},409);
   const feedValue=await env.CEO_NOTES_KV.get("backup:"+date+":feed");
   if(feedValue===null||await backupHash(feedValue)!==manifest.feedSha256)return J({error:"backup_feed_checksum_failed"},409);
   let feed;
   try{feed=JSON.parse(feedValue);}catch(error){return J({error:"backup_feed_invalid"},409);}
-  if(!Array.isArray(feed.posts))return J({error:"backup_feed_invalid"},409);
+  if(!Array.isArray(feed.posts)||!Array.isArray(manifest.postDays))return J({error:"backup_feed_invalid"},409);
   const postDays=feed.posts.map(post=>Number(post.day));
   if(JSON.stringify(postDays)!==JSON.stringify(manifest.postDays))return J({error:"backup_feed_manifest_mismatch"},409);
   const entries=[["feed",feedValue]];
   const groups=[
-    ["imageKeys","image:"],
-    ["imageMetaKeys","image-meta:"],
-    ["draftKeys","draft:"],
-    ["outboxKeys","outbox:"]
+    ["imageKeys","image:",manifest.imageKeys],
+    ["imageMetaKeys","image-meta:",legacyManifest?[]:manifest.imageMetaKeys],
+    ["draftKeys","draft:",legacyManifest?[]:manifest.draftKeys],
+    ["outboxKeys","outbox:",legacyManifest?[]:manifest.outboxKeys]
   ];
   const seen=new Set(["feed"]);
-  for(const [field,prefix] of groups){
-    if(!Array.isArray(manifest[field]))return J({error:"backup_manifest_entries_invalid",field},409);
-    for(const item of manifest[field]){
+  for(const [field,prefix,items] of groups){
+    if(!Array.isArray(items))return J({error:"backup_manifest_entries_invalid",field},409);
+    for(const item of items){
       const name=String(item?.name||"");
       if(!name.startsWith(prefix)||name.includes("..")||name.startsWith("backup:")||seen.has(name))return J({error:"backup_entry_name_invalid",field},409);
       const value=await env.CEO_NOTES_KV.get("backup:"+date+":"+name);
@@ -197,11 +199,17 @@ async function restoreBackup(req,env){
       entries.push([name,value]);
     }
   }
-  const coordinatorValue=await env.CEO_NOTES_KV.get("backup:"+date+":outbox-coordinator");
-  if(coordinatorValue===null||await backupHash(coordinatorValue)!==manifest.coordinatorOutboxSha256)return J({error:"backup_coordinator_checksum_failed"},409);
-  let coordinatorRecords;
-  try{coordinatorRecords=JSON.parse(coordinatorValue);}catch(error){return J({error:"backup_coordinator_invalid"},409);}
-  if(!Array.isArray(coordinatorRecords)||coordinatorRecords.length!==manifest.coordinatorOutboxCount)return J({error:"backup_coordinator_manifest_mismatch"},409);
+  let coordinatorRecords=[];
+  if(legacyManifest){
+    const backupKeys=await listAllKV(env,"backup:"+date+":");
+    const allowedBackupKeys=new Set(["backup:"+date+":manifest","backup:"+date+":feed",...manifest.imageKeys.map(item=>"backup:"+date+":"+String(item?.name||""))]);
+    for(const item of backupKeys)if(!allowedBackupKeys.has(item.name))return J({error:"legacy_backup_has_unsupported_entries",key:item.name},409);
+  }else{
+    const coordinatorValue=await env.CEO_NOTES_KV.get("backup:"+date+":outbox-coordinator");
+    if(coordinatorValue===null||await backupHash(coordinatorValue)!==manifest.coordinatorOutboxSha256)return J({error:"backup_coordinator_checksum_failed"},409);
+    try{coordinatorRecords=JSON.parse(coordinatorValue);}catch(error){return J({error:"backup_coordinator_invalid"},409);}
+    if(!Array.isArray(coordinatorRecords)||coordinatorRecords.length!==manifest.coordinatorOutboxCount)return J({error:"backup_coordinator_manifest_mismatch"},409);
+  }
   const byDay=new Map();
   const allowedStatuses=new Set(["reserved","attempting","unknown","receipt_recorded","succeeded"]);
   for(const record of coordinatorRecords){
